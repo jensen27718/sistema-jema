@@ -1,6 +1,14 @@
+
+# Archivos de sistema y entorno
 venv/
-*.pyc
 __pycache__/
-db.sqlite3
+*.pyc
+
+# Archivos de configuración secretos (NUNCA SUBIR ESTO)
 .env
-.DS_Store
+
+# Base de datos local (En producción tendrás otra)
+db.sqlite3
+
+# Archivos estáticos recolectados
+staticfiles/

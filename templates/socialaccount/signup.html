@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Completar Registro - JEMA{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5"
+    style="background: linear-gradient(135deg, rgba(107, 45, 123, 0.05) 0%, rgba(26, 154, 154, 0.05) 100%);">
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-7">
+                <div class="jema-card p-5 shadow-lg text-center">
+
+                    <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4"
+                        style="width: 64px; height: 64px;">
+                        <i class="bi bi-google text-white fs-3"></i>
+                    </div>
+
+                    <h3 class="fw-bold mb-3">Casi terminamos</h3>
+
+                    <p class="text-muted mb-4">
+                        Estás ingresando con <strong>{{ provider_name }}</strong>.
+                        Por favor, confirma o completa la siguiente información para finalizar.
+                    </p>
+
+                    <form class="signup" id="signup_form" method="post" action="{% url 'socialaccount_signup' %}">
+                        {% csrf_token %}
+
+                        <!-- Renderizado manual de errores -->
+                        {% if form.errors %}
+                        <div class="alert alert-danger rounded-3 mb-4 text-start">
+                            <ul class="mb-0 ps-3 small">
+                                {% for field in form %}
+                                {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- Renderizado de campos con estilo JEMA -->
+                        {% for field in form %}
+                        <div class="mb-4 text-start">
+                            <label class="form-label fw-medium">{{ field.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0 rounded-start-3"
+                                    style="border: 2px solid var(--border); border-right: none;">
+                                    <i class="bi bi-pencil text-muted"></i>
+                                </span>
+                                <!-- Forzamos clases de bootstrap al input de django -->
+                                <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}"
+                                    class="form-control border-start-0 rounded-end-3 py-3"
+                                    value="{{ field.value|default:'' }}"
+                                    style="border: 2px solid var(--border); border-left: none;">
+                            </div>
+                            {% if field.help_text %}
+                            <small class="text-muted">{{ field.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        <button type="submit" class="btn btn-jema-primary w-100 py-3 fw-bold">
+                            Registrarme &raquo;
+                        </button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,143 @@
+<!-- Footer Component -->
+<footer class="pt-5 pb-4" style="background-color: var(--foreground);">
+    <div class="container">
+        <div class="row g-4 mb-5">
+            <!-- Brand Column -->
+            <div class="col-lg-4 col-md-6">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-shop text-white fs-5"></i>
+                    </div>
+                    <span class="fw-bold fs-4 text-white">JEMA</span>
+                </div>
+                <p class="text-white-50 mb-4" style="line-height: 1.8;">
+                    Tu tienda en línea de confianza. Ofrecemos los mejores productos con la mejor calidad y servicio al cliente.
+                </p>
+                <div class="d-flex gap-2">
+                    <a href="#" class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center" 
+                       style="width: 40px; height: 40px; opacity: 0.7; transition: all 0.3s;">
+                        <i class="bi bi-facebook"></i>
+                    </a>
+                    <a href="#" class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center" 
+                       style="width: 40px; height: 40px; opacity: 0.7;">
+                        <i class="bi bi-instagram"></i>
+                    </a>
+                    <a href="#" class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center" 
+                       style="width: 40px; height: 40px; opacity: 0.7;">
+                        <i class="bi bi-twitter-x"></i>
+                    </a>
+                    <a href="#" class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center" 
+                       style="width: 40px; height: 40px; opacity: 0.7;">
+                        <i class="bi bi-youtube"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="col-lg-2 col-md-6">
+                <h5 class="text-white fw-semibold mb-4">Enlaces Rápidos</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="{% url 'home' %}" class="text-white-50 text-decoration-none footer-link">Inicio</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{% url 'catalogo' %}" class="text-white-50 text-decoration-none footer-link">Catálogo</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-white-50 text-decoration-none footer-link">Ofertas</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-white-50 text-decoration-none footer-link">Sobre Nosotros</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-white-50 text-decoration-none footer-link">Contacto</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Help -->
+            <div class="col-lg-2 col-md-6">
+                <h5 class="text-white fw-semibold mb-4">Ayuda</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="#" class="text-white-50 text-decoration-none footer-link">FAQ</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-white-50 text-decoration-none footer-link">Envíos</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-white-50 text-decoration-none footer-link">Devoluciones</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-white-50 text-decoration-none footer-link">Términos</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-white-50 text-decoration-none footer-link">Privacidad</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Contact -->
+            <div class="col-lg-4 col-md-6">
+                <h5 class="text-white fw-semibold mb-4">Contacto</h5>
+                <ul class="list-unstyled">
+                    <li class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 40px; height: 40px; background-color: rgba(26, 154, 154, 0.2);">
+                            <i class="bi bi-geo-alt text-white"></i>
+                        </div>
+                        <span class="text-white-50">Av. Principal #123, Ciudad</span>
+                    </li>
+                    <li class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 40px; height: 40px; background-color: rgba(26, 154, 154, 0.2);">
+                            <i class="bi bi-telephone text-white"></i>
+                        </div>
+                        <span class="text-white-50">+1 234 567 8900</span>
+                    </li>
+                    <li class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 40px; height: 40px; background-color: rgba(26, 154, 154, 0.2);">
+                            <i class="bi bi-envelope text-white"></i>
+                        </div>
+                        <span class="text-white-50">contacto@jema.com</span>
+                    </li>
+                    <li class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 40px; height: 40px; background-color: rgba(26, 154, 154, 0.2);">
+                            <i class="bi bi-clock text-white"></i>
+                        </div>
+                        <span class="text-white-50">Lun - Vie: 9:00 - 18:00</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="border-top pt-4" style="border-color: rgba(255,255,255,0.1) !important;">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                    <p class="text-white-50 mb-0">
+                        © 2024 <span class="text-white fw-medium">JEMA</span>. Todos los derechos reservados.
+                    </p>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <div class="d-flex align-items-center justify-content-center justify-content-md-end gap-3">
+                        <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/visa.svg" 
+                             alt="Visa" height="24" style="filter: brightness(0) invert(1); opacity: 0.5;">
+                        <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/mastercard.svg" 
+                             alt="Mastercard" height="24" style="filter: brightness(0) invert(1); opacity: 0.5;">
+                        <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/paypal.svg" 
+                             alt="PayPal" height="24" style="filter: brightness(0) invert(1); opacity: 0.5;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<style>
+    .footer-link:hover {
+        color: var(--jema-teal) !important;
+    }
+</style>

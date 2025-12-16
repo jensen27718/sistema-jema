@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Panel de Administración - JEMA{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            /* JEMA Brand Colors */
+            --jema-purple: #6B2D7B;
+            --jema-purple-light: #8B4D9B;
+            --jema-purple-dark: #4B1D5B;
+            --jema-teal: #1A9A9A;
+            --jema-teal-light: #2ABABA;
+            --jema-magenta: #E91E8C;
+
+            /* Theme Colors */
+            --primary: #6B2D7B;
+            --secondary: #1A9A9A;
+            --accent: #E91E8C;
+            --background: #FAFAFA;
+            --foreground: #2D1F3D;
+            --card-bg: #FFFFFF;
+            --muted: #F0EDF2;
+            --muted-foreground: #6B5A7A;
+            --border: #E0DAE5;
+
+            /* Admin Sidebar */
+            --sidebar-bg: #2D1F3D;
+            --sidebar-text: rgba(255, 255, 255, 0.9);
+            --sidebar-muted: rgba(255, 255, 255, 0.6);
+            --sidebar-hover: rgba(255, 255, 255, 0.1);
+            --sidebar-active: rgba(26, 154, 154, 0.3);
+
+            /* Shadows */
+            --shadow-sm: 0 2px 8px rgba(45, 31, 61, 0.08);
+            --shadow-md: 0 4px 16px rgba(45, 31, 61, 0.12);
+            --shadow-lg: 0 8px 32px rgba(45, 31, 61, 0.16);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--muted);
+            color: var(--foreground);
+            line-height: 1.6;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Sidebar Styles */
+        .admin-sidebar {
+            width: 280px;
+            min-height: 100vh;
+            background-color: var(--sidebar-bg);
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .admin-sidebar.collapsed {
+            transform: translateX(-280px);
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-nav {
+            padding: 16px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--sidebar-muted);
+            padding: 0 12px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .sidebar-link:hover {
+            background-color: var(--sidebar-hover);
+            color: white;
+        }
+
+        .sidebar-link.active {
+            background-color: var(--sidebar-active);
+            color: var(--jema-teal-light);
+        }
+
+        .sidebar-link i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        /* Main Content */
+        .admin-content {
+            margin-left: 280px;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .admin-content.expanded {
+            margin-left: 0;
+        }
+
+        .admin-header {
+            background-color: var(--card-bg);
+            padding: 16px 32px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .admin-main {
+            padding: 32px;
+        }
+
+        /* Custom Components */
+        .btn-jema-primary {
+            background: linear-gradient(135deg, var(--jema-purple) 0%, var(--jema-teal) 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-jema-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            color: white;
+        }
+
+        .btn-jema-secondary {
+            background-color: var(--jema-teal);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+
+        .btn-jema-secondary:hover {
+            background-color: var(--jema-teal-light);
+            color: white;
+        }
+
+        .btn-jema-outline {
+            background-color: transparent;
+            color: var(--jema-purple);
+            border: 2px solid var(--jema-purple);
+            padding: 10px 22px;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+
+        .btn-jema-outline:hover {
+            background-color: var(--jema-purple);
+            color: white;
+        }
+
+        .jema-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .jema-text-gradient {
+            background: linear-gradient(135deg, var(--jema-purple) 0%, var(--jema-teal) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .jema-gradient {
+            background: linear-gradient(135deg, var(--jema-purple) 0%, var(--jema-teal) 100%);
+        }
+
+        .jema-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 20px;
+        }
+
+        .jema-badge-purple {
+            background-color: rgba(107, 45, 123, 0.1);
+            color: var(--jema-purple);
+        }
+
+        .jema-badge-teal {
+            background-color: rgba(26, 154, 154, 0.1);
+            color: var(--jema-teal);
+        }
+
+        .jema-badge-magenta {
+            background-color: rgba(233, 30, 140, 0.1);
+            color: var(--jema-magenta);
+        }
+
+        .jema-badge-success {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+        }
+
+        .jema-badge-warning {
+            background-color: rgba(234, 179, 8, 0.1);
+            color: #ca8a04;
+        }
+
+        .jema-badge-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .text-jema-purple {
+            color: var(--jema-purple);
+        }
+
+        .text-jema-teal {
+            color: var(--jema-teal);
+        }
+
+        .text-jema-magenta {
+            color: var(--jema-magenta);
+        }
+
+        /* Responsive */
+        @media (max-width: 991px) {
+            .admin-sidebar {
+                transform: translateX(-280px);
+            }
+
+            .admin-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .admin-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <!-- Logo -->
+        <div class="sidebar-header">
+            <a href="{% url 'panel_home' %}" class="d-flex align-items-center gap-3 text-decoration-none">
+                <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 44px; height: 44px;">
+                    <i class="bi bi-shop text-white"></i>
+                </div>
+                <div>
+                    <span class="fw-bold fs-5 text-white">JEMA</span>
+                    <span class="d-block text-white-50 small">Admin Panel</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Navigation -->
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Principal</div>
+                <!-- CORREGIDO: panel_home -->
+                <a href="{% url 'panel_home' %}"
+                    class="sidebar-link {% if request.path == '/panel/' %}active{% endif %}">
+                    <i class="bi bi-grid-1x2"></i>
+                    <span>Dashboard</span>
+                </a>
+                <!-- CORREGIDO: panel_pedidos -->
+                <a href="{% url 'panel_pedidos' %}"
+                    class="sidebar-link {% if 'pedidos' in request.path %}active{% endif %}">
+                    <i class="bi bi-bag-check"></i>
+                    <span>Pedidos</span>
+                </a>
+                <a href="#" class="sidebar-link">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Productos</span>
+                </a>
+                <a href="#" class="sidebar-link">
+                    <i class="bi bi-people"></i>
+                    <span>Clientes</span>
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Gestión</div>
+                <!-- CORREGIDO: panel_tareas -->
+                <a href="{% url 'panel_tareas' %}"
+                    class="sidebar-link {% if 'tareas' in request.path %}active{% endif %}">
+                    <i class="bi bi-list-check"></i>
+                    <span>Tareas</span>
+                </a>
+                <a href="#" class="sidebar-link">
+                    <i class="bi bi-bar-chart"></i>
+                    <span>Reportes</span>
+                </a>
+                <a href="#" class="sidebar-link">
+                    <i class="bi bi-gear"></i>
+                    <span>Configuración</span>
+                </a>
+            </div>
+        </nav>
+
+
+        <!-- Footer -->
+        <div class="sidebar-footer">
+            <a href="{% url 'home' %}" class="sidebar-link">
+                <i class="bi bi-arrow-left"></i>
+                <span>Volver a la tienda</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="admin-content" id="adminContent">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-light d-lg-none" id="sidebarToggle">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <h4 class="mb-0 fw-bold" style="color: var(--foreground);">{% block page_title %}Dashboard{% endblock %}
+                </h4>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <!-- Search -->
+                <div class="input-group d-none d-md-flex" style="width: 300px;">
+                    <span class="input-group-text bg-light border-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control bg-light border-0" placeholder="Buscar...">
+                </div>
+
+                <!-- Notifications -->
+                <button class="btn btn-light position-relative">
+                    <i class="bi bi-bell"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+                        style="background-color: var(--jema-magenta); font-size: 0.6rem;">
+                        3
+                    </span>
+                </button>
+
+                <!-- User Menu -->
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2"
+                        data-bs-toggle="dropdown">
+                        <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                            style="width: 36px; height: 36px;">
+                            <span class="text-white fw-bold small">AD</span>
+                        </div>
+                        <span class="d-none d-md-inline fw-medium">Admin</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2">
+                        <li><a class="dropdown-item rounded-2 py-2" href="#"><i class="bi bi-person me-2"></i> Mi
+                                Perfil</a></li>
+                        <li><a class="dropdown-item rounded-2 py-2" href="#"><i class="bi bi-gear me-2"></i>
+                                Configuración</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item rounded-2 py-2 text-danger" href="{% url 'account_logout' %}"><i
+                                    class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="admin-main">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Sidebar Toggle
+        document.getElementById('sidebarToggle')?.addEventListener('click', function () {
+            document.getElementById('adminSidebar').classList.toggle('show');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function (e) {
+            const sidebar = document.getElementById('adminSidebar');
+            const toggle = document.getElementById('sidebarToggle');
+
+            if (window.innerWidth < 992 &&
+                !sidebar.contains(e.target) &&
+                !toggle.contains(e.target) &&
+                sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

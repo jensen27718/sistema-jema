@@ -1,0 +1,332 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Pedidos - JEMA Admin{% endblock %}
+{% block page_title %}Gestión de Pedidos{% endblock %}
+
+{% block content %}
+<!-- Header Actions -->
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
+    <div class="d-flex gap-3">
+        <div class="input-group" style="width: 300px;">
+            <span class="input-group-text bg-white border-end-0">
+                <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" class="form-control border-start-0" placeholder="Buscar pedido...">
+        </div>
+        <select class="form-select" style="width: auto;">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="proceso">En Proceso</option>
+            <option value="enviado">Enviado</option>
+            <option value="entregado">Entregado</option>
+            <option value="cancelado">Cancelado</option>
+        </select>
+    </div>
+    <button class="btn btn-jema-primary">
+        <i class="bi bi-plus-circle me-2"></i>
+        Nuevo Pedido
+    </button>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="jema-card p-3 text-center">
+            <div class="fs-3 fw-bold text-jema-purple">156</div>
+            <div class="text-muted small">Total Pedidos</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="jema-card p-3 text-center">
+            <div class="fs-3 fw-bold" style="color: #eab308;">23</div>
+            <div class="text-muted small">Pendientes</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="jema-card p-3 text-center">
+            <div class="fs-3 fw-bold text-jema-teal">45</div>
+            <div class="text-muted small">En Proceso</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="jema-card p-3 text-center">
+            <div class="fs-3 fw-bold" style="color: #16a34a;">88</div>
+            <div class="text-muted small">Completados</div>
+        </div>
+    </div>
+</div>
+
+<!-- Orders Table -->
+<div class="jema-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead style="background-color: var(--muted);">
+                <tr>
+                    <th class="border-0 py-3 px-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAll">
+                        </div>
+                    </th>
+                    <th class="border-0 py-3">ID Pedido</th>
+                    <th class="border-0 py-3">Cliente</th>
+                    <th class="border-0 py-3">Fecha</th>
+                    <th class="border-0 py-3">Productos</th>
+                    <th class="border-0 py-3">Total</th>
+                    <th class="border-0 py-3">Estado</th>
+                    <th class="border-0 py-3 px-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="px-4 py-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox">
+                        </div>
+                    </td>
+                    <td class="py-3">
+                        <span class="fw-semibold text-jema-purple">#ORD-001</span>
+                    </td>
+                    <td class="py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 36px; height: 36px;">
+                                <span class="text-white small fw-bold">MG</span>
+                            </div>
+                            <div>
+                                <div class="fw-medium">María García</div>
+                                <div class="text-muted small">maria@email.com</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 text-muted">14 Dic 2024</td>
+                    <td class="py-3">3 productos</td>
+                    <td class="py-3 fw-semibold">$125.00</td>
+                    <td class="py-3">
+                        <span class="jema-badge jema-badge-warning">Pendiente</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2">
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i
+                                            class="bi bi-eye me-2 text-jema-purple"></i> Ver Detalle</a></li>
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i
+                                            class="bi bi-pencil me-2 text-jema-teal"></i> Editar</a></li>
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i class="bi bi-truck me-2"></i>
+                                        Marcar Enviado</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item rounded-2 py-2 text-danger" href="#"><i
+                                            class="bi bi-x-circle me-2"></i> Cancelar</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="px-4 py-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox">
+                        </div>
+                    </td>
+                    <td class="py-3">
+                        <span class="fw-semibold text-jema-purple">#ORD-002</span>
+                    </td>
+                    <td class="py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 36px; height: 36px; background-color: var(--jema-teal);">
+                                <span class="text-white small fw-bold">JL</span>
+                            </div>
+                            <div>
+                                <div class="fw-medium">Juan López</div>
+                                <div class="text-muted small">juan@email.com</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 text-muted">13 Dic 2024</td>
+                    <td class="py-3">1 producto</td>
+                    <td class="py-3 fw-semibold">$89.99</td>
+                    <td class="py-3">
+                        <span class="jema-badge jema-badge-teal">En Proceso</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2">
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i
+                                            class="bi bi-eye me-2 text-jema-purple"></i> Ver Detalle</a></li>
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i
+                                            class="bi bi-pencil me-2 text-jema-teal"></i> Editar</a></li>
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i class="bi bi-truck me-2"></i>
+                                        Marcar Enviado</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item rounded-2 py-2 text-danger" href="#"><i
+                                            class="bi bi-x-circle me-2"></i> Cancelar</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="px-4 py-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox">
+                        </div>
+                    </td>
+                    <td class="py-3">
+                        <span class="fw-semibold text-jema-purple">#ORD-003</span>
+                    </td>
+                    <td class="py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 36px; height: 36px; background-color: var(--jema-magenta);">
+                                <span class="text-white small fw-bold">AR</span>
+                            </div>
+                            <div>
+                                <div class="fw-medium">Ana Rodríguez</div>
+                                <div class="text-muted small">ana@email.com</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 text-muted">12 Dic 2024</td>
+                    <td class="py-3">5 productos</td>
+                    <td class="py-3 fw-semibold">$342.50</td>
+                    <td class="py-3">
+                        <span class="jema-badge jema-badge-success">Entregado</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2">
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i
+                                            class="bi bi-eye me-2 text-jema-purple"></i> Ver Detalle</a></li>
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i class="bi bi-printer me-2"></i>
+                                        Imprimir</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="px-4 py-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox">
+                        </div>
+                    </td>
+                    <td class="py-3">
+                        <span class="fw-semibold text-jema-purple">#ORD-004</span>
+                    </td>
+                    <td class="py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 36px; height: 36px;">
+                                <span class="text-white small fw-bold">CM</span>
+                            </div>
+                            <div>
+                                <div class="fw-medium">Carlos Martínez</div>
+                                <div class="text-muted small">carlos@email.com</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 text-muted">11 Dic 2024</td>
+                    <td class="py-3">2 productos</td>
+                    <td class="py-3 fw-semibold">$199.00</td>
+                    <td class="py-3">
+                        <span class="jema-badge jema-badge-purple">Enviado</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2">
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i
+                                            class="bi bi-eye me-2 text-jema-purple"></i> Ver Detalle</a></li>
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i
+                                            class="bi bi-check-circle me-2 text-success"></i> Marcar Entregado</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="px-4 py-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox">
+                        </div>
+                    </td>
+                    <td class="py-3">
+                        <span class="fw-semibold text-jema-purple">#ORD-005</span>
+                    </td>
+                    <td class="py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 36px; height: 36px; background-color: var(--jema-teal);">
+                                <span class="text-white small fw-bold">LF</span>
+                            </div>
+                            <div>
+                                <div class="fw-medium">Laura Fernández</div>
+                                <div class="text-muted small">laura@email.com</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 text-muted">10 Dic 2024</td>
+                    <td class="py-3">4 productos</td>
+                    <td class="py-3 fw-semibold">$278.00</td>
+                    <td class="py-3">
+                        <span class="jema-badge jema-badge-danger">Cancelado</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2">
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i
+                                            class="bi bi-eye me-2 text-jema-purple"></i> Ver Detalle</a></li>
+                                <li><a class="dropdown-item rounded-2 py-2" href="#"><i
+                                            class="bi bi-arrow-counterclockwise me-2"></i> Reactivar</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="p-4 border-top d-flex justify-content-between align-items-center"
+        style="border-color: var(--border) !important;">
+        <p class="text-muted mb-0">Mostrando 1-5 de 156 pedidos</p>
+        <nav>
+            <ul class="pagination mb-0 gap-1">
+                <li class="page-item disabled">
+                    <a class="page-link border-0 rounded-2" href="#">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                <li class="page-item active">
+                    <a class="page-link border-0 rounded-2 jema-gradient" href="#">1</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link border-0 rounded-2" href="#">2</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link border-0 rounded-2" href="#">3</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link border-0 rounded-2" href="#">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endblock %}

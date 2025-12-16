@@ -1,0 +1,267 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Dashboard - JEMA Admin{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-xl-3">
+        <div class="jema-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 48px; height: 48px; background-color: rgba(107, 45, 123, 0.1);">
+                    <i class="bi bi-currency-dollar fs-5 text-jema-purple"></i>
+                </div>
+                <span class="jema-badge jema-badge-success">
+                    <i class="bi bi-arrow-up me-1"></i>+12%
+                </span>
+            </div>
+            <h3 class="fw-bold mb-1">$45,230</h3>
+            <p class="text-muted mb-0">Ventas del Mes</p>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="jema-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 48px; height: 48px; background-color: rgba(26, 154, 154, 0.1);">
+                    <i class="bi bi-bag-check fs-5 text-jema-teal"></i>
+                </div>
+                <span class="jema-badge jema-badge-success">
+                    <i class="bi bi-arrow-up me-1"></i>+8%
+                </span>
+            </div>
+            <h3 class="fw-bold mb-1">328</h3>
+            <p class="text-muted mb-0">Pedidos del Mes</p>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="jema-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 48px; height: 48px; background-color: rgba(233, 30, 140, 0.1);">
+                    <i class="bi bi-people fs-5 text-jema-magenta"></i>
+                </div>
+                <span class="jema-badge jema-badge-success">
+                    <i class="bi bi-arrow-up me-1"></i>+23%
+                </span>
+            </div>
+            <h3 class="fw-bold mb-1">1,245</h3>
+            <p class="text-muted mb-0">Clientes Activos</p>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="jema-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 48px; height: 48px; background-color: rgba(107, 45, 123, 0.1);">
+                    <i class="bi bi-box-seam fs-5 text-jema-purple"></i>
+                </div>
+                <span class="jema-badge jema-badge-warning">
+                    <i class="bi bi-arrow-down me-1"></i>-3%
+                </span>
+            </div>
+            <h3 class="fw-bold mb-1">89</h3>
+            <p class="text-muted mb-0">Productos Activos</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Recent Orders -->
+    <div class="col-lg-8">
+        <div class="jema-card">
+            <div class="p-4 border-bottom" style="border-color: var(--border) !important;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold mb-0">Pedidos Recientes</h5>
+                    <a href="{% url 'panel_pedidos' %}" class="btn btn-jema-outline btn-sm">
+                        Ver Todos <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background-color: var(--muted);">
+                        <tr>
+                            <th class="border-0 py-3 px-4">ID Pedido</th>
+                            <th class="border-0 py-3">Cliente</th>
+                            <th class="border-0 py-3">Productos</th>
+                            <th class="border-0 py-3">Total</th>
+                            <th class="border-0 py-3">Estado</th>
+                            <th class="border-0 py-3 px-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="px-4 py-3">
+                                <span class="fw-semibold text-jema-purple">#ORD-001</span>
+                            </td>
+                            <td class="py-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 36px; height: 36px;">
+                                        <span class="text-white small fw-bold">MG</span>
+                                    </div>
+                                    <span>María García</span>
+                                </div>
+                            </td>
+                            <td class="py-3">3 productos</td>
+                            <td class="py-3 fw-semibold">$125.00</td>
+                            <td class="py-3">
+                                <span class="jema-badge jema-badge-warning">Pendiente</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-light"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3">
+                                <span class="fw-semibold text-jema-purple">#ORD-002</span>
+                            </td>
+                            <td class="py-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 36px; height: 36px; background-color: var(--jema-teal);">
+                                        <span class="text-white small fw-bold">JL</span>
+                                    </div>
+                                    <span>Juan López</span>
+                                </div>
+                            </td>
+                            <td class="py-3">1 producto</td>
+                            <td class="py-3 fw-semibold">$89.99</td>
+                            <td class="py-3">
+                                <span class="jema-badge jema-badge-teal">En Proceso</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-light"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3">
+                                <span class="fw-semibold text-jema-purple">#ORD-003</span>
+                            </td>
+                            <td class="py-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 36px; height: 36px; background-color: var(--jema-magenta);">
+                                        <span class="text-white small fw-bold">AR</span>
+                                    </div>
+                                    <span>Ana Rodríguez</span>
+                                </div>
+                            </td>
+                            <td class="py-3">5 productos</td>
+                            <td class="py-3 fw-semibold">$342.50</td>
+                            <td class="py-3">
+                                <span class="jema-badge jema-badge-success">Entregado</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-light"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3">
+                                <span class="fw-semibold text-jema-purple">#ORD-004</span>
+                            </td>
+                            <td class="py-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 36px; height: 36px;">
+                                        <span class="text-white small fw-bold">CM</span>
+                                    </div>
+                                    <span>Carlos Martínez</span>
+                                </div>
+                            </td>
+                            <td class="py-3">2 productos</td>
+                            <td class="py-3 fw-semibold">$199.00</td>
+                            <td class="py-3">
+                                <span class="jema-badge jema-badge-purple">Enviado</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-light"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks & Quick Actions -->
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="jema-card p-4 mb-4">
+            <h5 class="fw-bold mb-4">Acciones Rápidas</h5>
+            <div class="d-grid gap-3">
+                <button class="btn btn-jema-primary text-start d-flex align-items-center gap-3">
+                    <i class="bi bi-plus-circle fs-5"></i>
+                    <span>Nuevo Producto</span>
+                </button>
+                <button class="btn btn-jema-secondary text-start d-flex align-items-center gap-3">
+                    <i class="bi bi-bag-plus fs-5"></i>
+                    <span>Nuevo Pedido</span>
+                </button>
+                <button class="btn btn-jema-outline text-start d-flex align-items-center gap-3">
+                    <i class="bi bi-bar-chart fs-5"></i>
+                    <span>Ver Reportes</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Pending Tasks -->
+        <div class="jema-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h5 class="fw-bold mb-0">Tareas Pendientes</h5>
+                <a href="{% url 'panel_tareas' %}" class="btn btn-sm btn-light">
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="d-flex flex-column gap-3">
+                <div class="d-flex align-items-start gap-3 p-3 rounded-3" style="background-color: var(--muted);">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" style="border-color: var(--jema-purple);">
+                    </div>
+                    <div class="flex-grow-1">
+                        <p class="fw-medium mb-1">Revisar inventario</p>
+                        <span class="jema-badge jema-badge-danger small">Alta</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start gap-3 p-3 rounded-3" style="background-color: var(--muted);">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" style="border-color: var(--jema-purple);">
+                    </div>
+                    <div class="flex-grow-1">
+                        <p class="fw-medium mb-1">Actualizar precios</p>
+                        <span class="jema-badge jema-badge-warning small">Media</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start gap-3 p-3 rounded-3" style="background-color: var(--muted);">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" checked
+                            style="border-color: var(--jema-purple);">
+                    </div>
+                    <div class="flex-grow-1">
+                        <p class="fw-medium mb-1 text-decoration-line-through text-muted">Contactar proveedor</p>
+                        <span class="jema-badge jema-badge-success small">Completada</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

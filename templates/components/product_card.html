@@ -1,0 +1,85 @@
+<!-- Product Card Component -->
+
+
+<div class="jema-card h-100 overflow-hidden">
+    <!-- Image Container -->
+    <div class="position-relative overflow-hidden" style="height: 220px;">
+        <img src="{{ product.image }}" alt="{{ product.name }}" class="w-100 h-100 object-fit-cover product-image">
+
+        <!-- Discount Badge -->
+        {% if product.discount %}
+        <span class="position-absolute top-0 end-0 m-3 jema-badge"
+            style="background: linear-gradient(135deg, var(--jema-purple) 0%, var(--jema-magenta) 100%); color: white;">
+            -{{ product.discount }}%
+        </span>
+        {% endif %}
+
+        <!-- Hover Actions -->
+        <div class="product-actions position-absolute top-50 start-50 translate-middle d-flex gap-2">
+            <button class="btn btn-light rounded-circle shadow" style="width: 44px; height: 44px;">
+                <i class="bi bi-heart text-jema-magenta"></i>
+            </button>
+            <button class="btn btn-light rounded-circle shadow" style="width: 44px; height: 44px;">
+                <i class="bi bi-eye text-jema-purple"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="p-4">
+        <!-- Category -->
+        <span class="jema-badge jema-badge-purple mb-2">{{ product.category }}</span>
+
+        <!-- Name -->
+        <h5 class="fw-semibold mb-2" style="color: var(--foreground);">
+            {{ product.name }}
+        </h5>
+
+        <!-- Rating -->
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="d-flex">
+                {% for i in "12345" %}
+                {% if forloop.counter <= product.rating %} <i class="bi bi-star-fill text-warning small"></i>
+                    {% else %}
+                    <i class="bi bi-star text-warning small"></i>
+                    {% endif %}
+                    {% endfor %}
+            </div>
+            <span class="text-muted small">({{ product.reviews }})</span>
+        </div>
+
+        <!-- Price -->
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <span class="fs-5 fw-bold text-jema-purple">${{ product.price }}</span>
+                {% if product.original_price %}
+                <span class="text-muted text-decoration-line-through small">${{ product.original_price }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Add to Cart Button -->
+            <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
+                <i class="bi bi-cart-plus"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .product-image {
+        transition: transform 0.3s ease;
+    }
+
+    .jema-card:hover .product-image {
+        transform: scale(1.05);
+    }
+
+    .product-actions {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .jema-card:hover .product-actions {
+        opacity: 1;
+    }
+</style>

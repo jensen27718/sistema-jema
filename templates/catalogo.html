@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+
+{% block title %}Catálogo - JEMA{% endblock %}
+
+{% block content %}
+<div class="py-5" style="background-color: var(--muted);">
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <span class="jema-badge jema-badge-purple mb-3">
+                <i class="bi bi-grid-3x3 me-1"></i> Catálogo
+            </span>
+            <h1 class="display-4 fw-bold" style="color: var(--foreground);">
+                Nuestros <span class="jema-text-gradient">Productos</span>
+            </h1>
+            <p class="lead text-muted">Encuentra todo lo que necesitas en un solo lugar</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Sidebar Filters -->
+            <div class="col-lg-3">
+                <div class="jema-card p-4 sticky-top" style="top: 100px;">
+                    <h5 class="fw-bold mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-funnel text-jema-purple"></i>
+                        Filtros
+                    </h5>
+
+                    <!-- Search -->
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">Buscar</label>
+                        <div class="input-group">
+                            <input type="text" class="jema-input" placeholder="Buscar productos..." name="search" value="{{ request.GET.search }}">
+                            <button class="btn btn-jema-primary">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Categories -->
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">Categoría</label>
+                        <select class="jema-input" name="categoria">
+                            <option value="">Todas las categorías</option>
+                            <option value="electronica" {% if request.GET.categoria == 'electronica' %}selected{% endif %}>Electrónica</option>
+                            <option value="moda" {% if request.GET.categoria == 'moda' %}selected{% endif %}>Moda</option>
+                            <option value="hogar" {% if request.GET.categoria == 'hogar' %}selected{% endif %}>Hogar</option>
+                            <option value="deportes" {% if request.GET.categoria == 'deportes' %}selected{% endif %}>Deportes</option>
+                            <option value="belleza" {% if request.GET.categoria == 'belleza' %}selected{% endif %}>Belleza</option>
+                        </select>
+                    </div>
+
+                    <!-- Price Range -->
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">Rango de Precio</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="number" class="jema-input" placeholder="Mín" name="precio_min" value="{{ request.GET.precio_min }}">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="jema-input" placeholder="Máx" name="precio_max" value="{{ request.GET.precio_max }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rating Filter -->
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">Calificación Mínima</label>
+                        <div class="d-flex flex-column gap-2">
+                            <label class="d-flex align-items-center gap-2 cursor-pointer">
+                                <input type="radio" name="rating" value="4" class="form-check-input" style="border-color: var(--jema-purple);">
+                                <span class="text-warning">★★★★☆</span>
+                                <span class="text-muted small">y más</span>
+                            </label>
+                            <label class="d-flex align-items-center gap-2 cursor-pointer">
+                                <input type="radio" name="rating" value="3" class="form-check-input">
+                                <span class="text-warning">★★★☆☆</span>
+                                <span class="text-muted small">y más</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Apply Filters Button -->
+                    <button type="submit" class="btn btn-jema-primary w-100">
+                        <i class="bi bi-check2 me-2"></i>
+                        Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="col-lg-9">
+                <!-- Toolbar -->
+                <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded-3 shadow-sm">
+                    <p class="mb-0 text-muted">
+                        Mostrando <span class="fw-semibold text-jema-purple">{{ products.count|default:"12" }}</span> productos
+                    </p>
+                    <div class="d-flex align-items-center gap-3">
+                        <select class="form-select border-0 bg-light rounded-3" style="width: auto;" name="orden">
+                            <option value="relevancia">Más Relevantes</option>
+                            <option value="precio_asc">Menor Precio</option>
+                            <option value="precio_desc">Mayor Precio</option>
+                            <option value="nuevo">Más Nuevos</option>
+                            <option value="popular">Más Populares</option>
+                        </select>
+                        <div class="btn-group d-none d-md-flex">
+                            <button class="btn btn-light active">
+                                <i class="bi bi-grid-3x3-gap"></i>
+                            </button>
+                            <button class="btn btn-light">
+                                <i class="bi bi-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products -->
+                <div class="row g-4">
+                    {% for product in products %}
+                        <div class="col-md-6 col-xl-4">
+                            {% include 'components/product_card.html' with product=product %}
+                        </div>
+                    {% empty %}
+                        <!-- Demo Products -->
+                        <div class="col-md-6 col-xl-4">
+                            <div class="jema-card h-100 overflow-hidden">
+                                <div class="position-relative overflow-hidden" style="height: 220px;">
+                                    <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400" 
+                                         alt="Smart Watch" class="w-100 h-100 object-fit-cover">
+                                    <span class="position-absolute top-0 end-0 m-3 jema-badge jema-gradient-accent text-white">-20%</span>
+                                </div>
+                                <div class="p-4">
+                                    <span class="jema-badge jema-badge-purple mb-2">Electrónica</span>
+                                    <h5 class="fw-semibold mb-2">Smart Watch Pro</h5>
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <div class="text-warning">★★★★★</div>
+                                        <span class="text-muted small">(128)</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="fs-5 fw-bold text-jema-purple">$199.99</span>
+                                            <span class="text-muted text-decoration-line-through small ms-2">$249.99</span>
+                                        </div>
+                                        <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="jema-card h-100 overflow-hidden">
+                                <div class="position-relative overflow-hidden" style="height: 220px;">
+                                    <img src="https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400" 
+                                         alt="Skincare" class="w-100 h-100 object-fit-cover">
+                                </div>
+                                <div class="p-4">
+                                    <span class="jema-badge jema-badge-teal mb-2">Belleza</span>
+                                    <h5 class="fw-semibold mb-2">Kit Skincare Premium</h5>
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <div class="text-warning">★★★★☆</div>
+                                        <span class="text-muted small">(89)</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="fs-5 fw-bold text-jema-purple">$89.99</span>
+                                        <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="jema-card h-100 overflow-hidden">
+                                <div class="position-relative overflow-hidden" style="height: 220px;">
+                                    <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400" 
+                                         alt="Headphones" class="w-100 h-100 object-fit-cover">
+                                    <span class="position-absolute top-0 end-0 m-3 jema-badge jema-gradient-accent text-white">-15%</span>
+                                </div>
+                                <div class="p-4">
+                                    <span class="jema-badge jema-badge-purple mb-2">Audio</span>
+                                    <h5 class="fw-semibold mb-2">Audífonos Wireless</h5>
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <div class="text-warning">★★★★★</div>
+                                        <span class="text-muted small">(256)</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="fs-5 fw-bold text-jema-purple">$149.99</span>
+                                            <span class="text-muted text-decoration-line-through small ms-2">$179.99</span>
+                                        </div>
+                                        <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="jema-card h-100 overflow-hidden">
+                                <div class="position-relative overflow-hidden" style="height: 220px;">
+                                    <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400" 
+                                         alt="Running Shoes" class="w-100 h-100 object-fit-cover">
+                                </div>
+                                <div class="p-4">
+                                    <span class="jema-badge jema-badge-magenta mb-2">Deportes</span>
+                                    <h5 class="fw-semibold mb-2">Running Shoes Elite</h5>
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <div class="text-warning">★★★★☆</div>
+                                        <span class="text-muted small">(167)</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="fs-5 fw-bold text-jema-purple">$129.99</span>
+                                        <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="jema-card h-100 overflow-hidden">
+                                <div class="position-relative overflow-hidden" style="height: 220px;">
+                                    <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400" 
+                                         alt="Camera" class="w-100 h-100 object-fit-cover">
+                                    <span class="position-absolute top-0 end-0 m-3 jema-badge jema-gradient-accent text-white">Nuevo</span>
+                                </div>
+                                <div class="p-4">
+                                    <span class="jema-badge jema-badge-purple mb-2">Fotografía</span>
+                                    <h5 class="fw-semibold mb-2">Cámara Polaroid</h5>
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <div class="text-warning">★★★★★</div>
+                                        <span class="text-muted small">(92)</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="fs-5 fw-bold text-jema-purple">$79.99</span>
+                                        <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="jema-card h-100 overflow-hidden">
+                                <div class="position-relative overflow-hidden" style="height: 220px;">
+                                    <img src="https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400" 
+                                         alt="Sunglasses" class="w-100 h-100 object-fit-cover">
+                                </div>
+                                <div class="p-4">
+                                    <span class="jema-badge jema-badge-teal mb-2">Accesorios</span>
+                                    <h5 class="fw-semibold mb-2">Gafas de Sol Premium</h5>
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <div class="text-warning">★★★★☆</div>
+                                        <span class="text-muted small">(54)</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="fs-5 fw-bold text-jema-purple">$59.99</span>
+                                        <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                <nav class="mt-5">
+                    <ul class="pagination justify-content-center gap-2">
+                        <li class="page-item">
+                            <a class="page-link border-0 rounded-3 px-4 py-2" href="#" style="color: var(--muted-foreground);">
+                                <i class="bi bi-chevron-left me-1"></i> Anterior
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link border-0 rounded-3 px-3 py-2 jema-gradient text-white" href="#">1</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link border-0 rounded-3 px-3 py-2" href="#" style="color: var(--foreground);">2</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link border-0 rounded-3 px-3 py-2" href="#" style="color: var(--foreground);">3</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link border-0 rounded-3 px-4 py-2" href="#" style="color: var(--muted-foreground);">
+                                Siguiente <i class="bi bi-chevron-right ms-1"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
