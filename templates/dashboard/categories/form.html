@@ -1,0 +1,37 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}{{ title }} - JEMA Admin{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="jema-card p-4">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Nombre de la Categoría</label>
+                    {{ form.name }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Icono (Bootstrap Icons)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-star"></i></span>
+                        {{ form.icon }}
+                    </div>
+                    <div class="form-text small">{{ form.icon.help_text }}</div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'panel_category_list' %}" class="btn btn-light">Cancelar</a>
+                    <button type="submit" class="btn btn-jema-primary px-4">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

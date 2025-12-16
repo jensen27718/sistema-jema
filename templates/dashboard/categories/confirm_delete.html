@@ -1,0 +1,30 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Eliminar Categoría{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="jema-card p-5 text-center shadow-lg border-danger" style="border-width: 1px;">
+            <div class="mb-4 text-danger">
+                <i class="bi bi-exclamation-triangle display-1"></i>
+            </div>
+            <h3 class="fw-bold mb-3">¿Estás seguro?</h3>
+            <p class="text-muted mb-4">
+                Vas a eliminar la categoría <strong>"{{ object.name }}"</strong>.
+                <br>
+                <span class="text-danger small">Si eliminas esto, los productos asociados también podrían
+                    eliminarse.</span>
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-danger py-2">Sí, eliminar</button>
+                    <a href="{% url 'panel_category_list' %}" class="btn btn-light py-2">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

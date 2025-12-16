@@ -1,0 +1,69 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Productos - JEMA Admin{% endblock %}
+{% block page_title %}Gestión de Productos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="input-group" style="width: 300px;">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control border-start-0" placeholder="Buscar referencia...">
+    </div>
+    <a href="{% url 'panel_product_create' %}" class="btn btn-jema-primary">
+        <i class="bi bi-plus-circle me-2"></i> Nuevo Producto
+    </a>
+</div>
+
+<div class="jema-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead style="background-color: var(--muted);">
+                <tr>
+                    <th class="py-3 ps-4">Imagen</th>
+                    <th>Referencia</th>
+                    <th>Categoría</th>
+                    <th>Tipo</th>
+                    <th>Archivo Fuente</th>
+                    <th class="pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td class="ps-4">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" class="rounded-3 object-fit-cover" width="50" height="50">
+                        {% else %}
+                        <div class="rounded-3 bg-light d-flex align-items-center justify-content-center"
+                            style="width: 50px; height: 50px;">
+                            <i class="bi bi-image text-muted"></i>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="fw-medium text-jema-purple">{{ product.name }}</td>
+                    <td><span class="jema-badge jema-badge-teal">{{ product.category.name }}</span></td>
+                    <td>{{ product.get_product_type_display }}</td>
+                    <td>
+                        {% if product.source_file %}
+                        <a href="{{ product.source_file.url }}" target="_blank"
+                            class="text-decoration-none text-danger">
+                            <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+                        </a>
+                        {% else %}
+                        <span class="text-muted small">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4">
+                        <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">No hay productos registrados aún.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

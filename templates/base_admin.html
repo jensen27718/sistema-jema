@@ -342,10 +342,22 @@
                     <i class="bi bi-bag-check"></i>
                     <span>Pedidos</span>
                 </a>
-                <a href="#" class="sidebar-link">
+                <!-- ENLACES DE CATÁLOGO -->
+                <div class="sidebar-section-title mt-3">Catálogo</div>
+                <!-- Productos -->
+                <a href="{% url 'panel_product_list' %}"
+                    class="sidebar-link {% if '/productos/' in request.path %}active{% endif %}">
                     <i class="bi bi-box-seam"></i>
                     <span>Productos</span>
                 </a>
+
+                <!-- Categorías (NUEVO) -->
+                <a href="{% url 'panel_category_list' %}"
+                    class="sidebar-link {% if '/categorias/' in request.path %}active{% endif %}">
+                    <i class="bi bi-tags"></i>
+                    <span>Categorías</span>
+                </a>
+
                 <a href="#" class="sidebar-link">
                     <i class="bi bi-people"></i>
                     <span>Clientes</span>

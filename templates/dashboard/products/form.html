@@ -1,0 +1,62 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Nuevo Producto - JEMA Admin{% endblock %}
+{% block page_title %}Agregar Producto{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="jema-card p-4">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <h5 class="fw-bold mb-4 text-jema-purple">Información General</h5>
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Nombre / Referencia</label>
+                    {{ form.name }}
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Categoría</label>
+                        {{ form.category }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Tipo de Producto</label>
+                        {{ form.product_type }}
+                        <div class="form-text">Si eliges "Vinilo de Corte", los precios se generarán solos.</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Descripción</label>
+                    {{ form.description }}
+                </div>
+
+                <h5 class="fw-bold mb-4 mt-5 text-jema-teal">Archivos</h5>
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Archivo Fuente (PDF para producción)</label>
+                    {{ form.source_file }}
+                    <div class="form-text">El sistema intentará crear una imagen de vista previa si subes un PDF.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Imagen para Catálogo (Opcional)</label>
+                    {{ form.image }}
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-end gap-3">
+                    <a href="{% url 'panel_product_list' %}" class="btn btn-light px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-jema-primary px-5">
+                        <i class="bi bi-save me-2"></i> Guardar Producto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
