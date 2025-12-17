@@ -4,8 +4,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 # Importa TANTO Product COMO Category
 from .models import Product, Category, ProductVariant
 from .forms import ProductForm, CategoryForm
-from .services import generar_variantes_vinilo # <--- Importamos la magia
-
+from .services import generar_variantes_vinilo, generar_variantes_impresos # <--- Importamos la magia
+from django.db.models import Min
 
 
 def is_staff(user):
@@ -25,19 +25,29 @@ def product_create_view(request):
         if form.is_valid():
             product = form.save()
             
-            # --- AQUÍ OCURRE LA AUTOMATIZACIÓN ---
-            if product.product_type == 'vinilo_corte':
-                try:
+            count = 0
+            # --- LÓGICA DE SELECCIÓN DE PRECIOS ---
+            try:
+                if product.product_type == 'vinilo_corte':
                     count = generar_variantes_vinilo(product)
-                    messages.success(request, f"Producto creado con éxito. Se generaron {count} variantes de precios automáticamente.")
-                except Exception as e:
-                    messages.warning(request, f"Producto creado, pero hubo un error generando precios: {e}")
+                
+                elif product.product_type == 'impreso_globo':
+                    count = generar_variantes_impresos(product) # <--- NUEVA LÍNEA
+                
+                if count > 0:
+                    messages.success(request, f"Producto creado. Se generaron {count} precios automáticamente.")
+                else:
+                    messages.warning(request, "Producto creado, pero no se generaron precios (revisa los tamaños).")
+
+            except Exception as e:
+                messages.warning(request, f"Error generando precios: {e}")
             
             return redirect('panel_product_list')
+            
     else:
         form = ProductForm()
     
-    return render(request, 'dashboard/products/form.html', {'form': form})
+    return render(request, 'dashboard/products/form.html', {'form': form, 'title': 'Nuevo Producto'})
 
 
 
@@ -83,3 +93,55 @@ def category_delete_view(request, category_id):
         return redirect('panel_category_list')
     
     return render(request, 'dashboard/categories/confirm_delete.html', {'object': category})
+
+
+def catalogo_publico_view(request):
+    # Traemos los productos y calculamos el precio mínimo de sus variantes
+    products = Product.objects.annotate(
+        min_price=Min('variants__price')
+    ).filter(
+        variants__isnull=False # Solo mostrar productos que tengan variantes (precios)
+    ).distinct()
+
+    # Filtros básicos (Categoría)
+    categoria_slug = request.GET.get('categoria')
+    if categoria_slug:
+        products = products.filter(category__slug=categoria_slug)
+
+    context = {
+        'products': products,
+        'categories': Category.objects.all() # Para el filtro lateral
+    }
+    return render(request, 'catalogo.html', context)
+
+# --- CRUD PRODUCTOS EXTRA ---
+
+@login_required
+@user_passes_test(is_staff)
+def product_update_view(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            return redirect('panel_product_list')
+    else:
+        form = ProductForm(instance=product)
+    return render(request, 'dashboard/products/form.html', {'form': form, 'title': 'Editar Producto'})
+
+@login_required
+@user_passes_test(is_staff)
+def product_delete_view(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        product.delete()
+        return redirect('panel_product_list')
+    # Reusamos la plantilla de borrar categorías para no crear otra
+    return render(request, 'dashboard/categories/confirm_delete.html', {'object': product})
+
+@login_required
+@user_passes_test(is_staff)
+def product_variants_view(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    variants = product.variants.all().order_by('price')
+    return render(request, 'dashboard/products/variants.html', {'product': product, 'variants': variants})

@@ -1,14 +1,22 @@
 from django.db import models
+from django.utils.text import slugify
 from django.core.files.base import ContentFile
 from pdf2image import convert_from_bytes
+from PIL import Image  
 import io
 import os
 
 # --- MODELOS AUXILIARES ---
 class Category(models.Model):
     name = models.CharField("Categoría", max_length=100)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, blank=True) # Agregamos blank=True por si acaso
     icon = models.CharField(max_length=50, default='bi-tag', help_text="Clase de icono Bootstrap (ej: bi-star)")
+    # --- 2. AGREGA ESTE MÉTODO SAVE ---
+    def save(self, *args, **kwargs):
+        if not self.slug:  # Si no tiene slug...
+            self.slug = slugify(self.name)  # ...lo crea desde el nombre (Ej: "Globos Rojos" -> "globos-rojos")
+        super().save(*args, **kwargs)
+
     def __str__(self): return self.name
 
 class Size(models.Model):
@@ -43,29 +51,53 @@ class Product(models.Model):
     product_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='vinilo_corte')
     description = models.TextField(blank=True)
     
-    # EL PDF ORIGINAL (Se va a AWS S3)
-    source_file = models.FileField("Archivo PDF/Fuente", upload_to='source_files/', blank=True, null=True)
+    # Archivo original (Alta Calidad / Vector) -> Se va a AWS S3
+    source_file = models.FileField("Archivo Fuente (PDF/PNG)", upload_to='source_files/', blank=True, null=True)
     
-    # LA IMAGEN DEL CATÁLOGO (Se genera auto o manual)
+    # Imagen ligera para la web -> Se va a AWS S3
     image = models.ImageField("Imagen Catálogo", upload_to='products_img/', blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # Auto-generar imagen si suben un PDF
-        if self.source_file and self.source_file.name.lower().endswith('.pdf') and not self.image:
+        # SOLO actuamos si hay un archivo fuente y NO hay imagen de catálogo subida manualmente
+        if self.source_file and not self.image:
+            
+            # Obtener extensión del archivo (.pdf, .png, .jpg)
+            ext = os.path.splitext(self.source_file.name)[1].lower()
+            file_name = os.path.splitext(os.path.basename(self.source_file.name))[0]
+
             try:
-                # Nota: pdf2image requiere poppler instalado en el sistema
-                images = convert_from_bytes(self.source_file.read())
-                if images:
-                    # Convertimos a RGB y guardamos en memoria
+                # --- CASO 1: ES UN PDF (Tus Vinilos de Corte) ---
+                if ext == '.pdf':
+                    images = convert_from_bytes(self.source_file.read())
+                    if images:
+                        thumb_io = io.BytesIO()
+                        # Convertimos a RGB y guardamos como JPEG
+                        images[0].convert('RGB').save(thumb_io, format='JPEG', quality=85)
+                        self.image.save(f"{file_name}_preview.jpg", ContentFile(thumb_io.getvalue()), save=False)
+
+                # --- CASO 2: ES UNA IMAGEN (Tus Stickers Impresos PNG/JPG) ---
+                elif ext in ['.png', '.jpg', '.jpeg']:
+                    # Abrimos la imagen original
+                    img = Image.open(self.source_file)
+                    
+                    # Si es PNG con transparencia (RGBA), poner fondo blanco
+                    if img.mode in ('RGBA', 'LA'):
+                        background = Image.new('RGB', img.size, (255, 255, 255))
+                        background.paste(img, mask=img.split()[3])
+                        img = background
+                    else:
+                        img = img.convert('RGB')
+
+                    # Guardamos optimizada en formato WebP (Muy ligero)
                     thumb_io = io.BytesIO()
-                    images[0].convert('RGB').save(thumb_io, format='JPEG', quality=85)
-                    # Guardamos el archivo en el campo image
-                    filename = f"{self.name}_preview.jpg"
-                    self.image.save(filename, ContentFile(thumb_io.getvalue()), save=False)
+                    img.save(thumb_io, format='WEBP', quality=80)
+                    
+                    self.image.save(f"{file_name}_web.webp", ContentFile(thumb_io.getvalue()), save=False)
+
             except Exception as e:
-                print(f"Advertencia: No se pudo generar preview del PDF. {e}")
+                print(f"Error procesando archivo fuente: {e}")
         
         super().save(*args, **kwargs)
 

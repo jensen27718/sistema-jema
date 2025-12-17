@@ -53,8 +53,24 @@
                         <span class="text-muted small">-</span>
                         {% endif %}
                     </td>
-                    <td class="pe-4">
-                        <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
+                    <td class="pe-4 text-end">
+                        <!-- Botón Ver Precios -->
+                        <a href="{% url 'panel_product_variants' product.id %}"
+                            class="btn btn-sm btn-light text-success me-1" title="Ver Precios">
+                            <i class="bi bi-currency-dollar"></i>
+                        </a>
+
+                        <!-- Botón Editar -->
+                        <a href="{% url 'panel_product_update' product.id %}"
+                            class="btn btn-sm btn-light text-jema-teal me-1" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <!-- Botón Eliminar -->
+                        <a href="{% url 'panel_product_delete' product.id %}" class="btn btn-sm btn-light text-danger"
+                            title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </a>
                     </td>
                 </tr>
                 {% empty %}

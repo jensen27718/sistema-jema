@@ -71,3 +71,44 @@ def generar_variantes_vinilo(product):
                 variants_created += 1
 
     return variants_created
+
+# ... (Tu función generar_variantes_vinilo sigue arriba) ...
+
+def generar_variantes_impresos(product):
+    """
+    Genera precios para Stickers Impresos de Globos.
+    Regla: Pequeño = 1300, Mediano = 1600.
+    Material: Vinilo Impreso (Fijo). Color: Full Color (Fijo).
+    """
+    # 1. Asegurar que existan los atributos base para este tipo
+    # Usamos get_or_create para que no falle si no existen
+    mat_impreso, _ = Material.objects.get_or_create(name="Vinilo Impreso", defaults={'is_special': False})
+    col_full, _ = Color.objects.get_or_create(name="Full Color", defaults={'hex_code': '#FFFFFF'}) # Blanco/Multi
+
+    # 2. Buscar los tamaños (Asumimos que ya existen por el script anterior)
+    # Buscamos por texto flexible para asegurar que los encuentre
+    sizes = Size.objects.filter(name__in=["Pequeño", "Mediano"])
+
+    created_count = 0
+
+    for size in sizes:
+        price = 0
+        
+        # --- REGLAS DE PRECIO ---
+        if "Pequeño" in size.name:
+            price = 1300.00
+        elif "Mediano" in size.name:
+            price = 1600.00
+        
+        # Si encontró precio, creamos la variante
+        if price > 0:
+            ProductVariant.objects.get_or_create(
+                product=product,
+                size=size,
+                material=mat_impreso,
+                color=col_full,
+                defaults={'price': price, 'stock': 100}
+            )
+            created_count += 1
+            
+    return created_count
