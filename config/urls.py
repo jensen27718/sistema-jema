@@ -37,6 +37,15 @@ urlpatterns = [
 
     # --- RUTAS DE CARRITO (NUEVAS) ---
     path('api/add-to-cart/', views_products.add_to_cart_api, name='api_add_to_cart'),
+    path('carrito/', views_products.cart_view, name='cart_view'),
+    path('api/cart/update/', views_products.api_update_cart_item, name='api_update_cart'),
+    path('api/cart/remove/', views_products.api_remove_cart_item, name='api_remove_cart'),
+
+
+    # ...
+    path('checkout/', views_products.checkout_process_view, name='checkout_process'),
+    path('direccion/nueva/', views_products.address_create_view, name='address_create'),
+    path('pedido/<int:order_id>/', views_products.order_detail_view, name='order_detail'),
     
 ]
 # --- AGREGA ESTO AL FINAL DEL ARCHIVO ---

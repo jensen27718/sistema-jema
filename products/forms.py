@@ -1,5 +1,21 @@
 from django import forms
 from .models import Product, Category # <--- Asegúrate de importar Category
+from .models import ShippingAddress
+
+class AddressForm(forms.ModelForm):
+    class Meta:
+        model = ShippingAddress
+        fields = ['full_name', 'phone', 'department', 'city', 'neighborhood', 'address_line']
+        widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre quien recibe'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'type': 'tel', 'placeholder': 'Celular'}),
+            'department': forms.Select(attrs={'class': 'form-select', 'id': 'dept-select'}),
+            'city': forms.Select(attrs={'class': 'form-select', 'id': 'city-select'}),
+            'neighborhood': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre del barrio'}),
+            'address_line': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Calle, Carrera, #Casa...'}),
+        }
+
+
 
 class ProductForm(forms.ModelForm):
     class Meta:

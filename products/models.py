@@ -140,3 +140,38 @@ class ProductVariant(models.Model):
     
     def __str__(self):
         return f"{self.product.name} - {self.size.name} - ${self.price}"
+
+# ... (Tus modelos anteriores Cart, etc.) ...
+
+class ShippingAddress(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    full_name = models.CharField("Nombre Completo", max_length=200)
+    department = models.CharField("Departamento", max_length=100)
+    city = models.CharField("Ciudad", max_length=100)
+    neighborhood = models.CharField("Barrio", max_length=100)
+    address_line = models.CharField("Dirección Exacta", max_length=255)
+    phone = models.CharField("Teléfono", max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.city} - {self.address_line}"
+
+class Order(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    address = models.ForeignKey(ShippingAddress, on_delete=models.PROTECT)
+    total = models.DecimalField(max_digits=12, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_paid = models.BooleanField(default=False) # Para futuro
+
+    def __str__(self):
+        return f"Pedido #{self.id}"
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    product_name = models.CharField(max_length=200)
+    variant_text = models.CharField(max_length=200) # Ej: "Grande - Dorado"
+    quantity = models.IntegerField()
+    price = models.DecimalField(max_digits=10, decimal_places=2) # Precio en el momento de compra
+
+    def get_total(self):
+        return self.price * self.quantity
