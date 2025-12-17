@@ -18,41 +18,37 @@
             --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
         }
         
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         
         body {
             margin: 0;
-            background: #000; /* Fondo oscuro detrás */
+            background: #000;
             font-family: 'Poppins', sans-serif;
-            overflow: hidden; /* Bloquear scroll del body */
+            overflow: hidden;
         }
 
-        /* --- CORRECCIÓN SCROLL PEGAJOSO --- */
         .feed-container {
-            height: 100dvh; /* Dynamic Viewport Height: Se ajusta a la barra del navegador móvil */
+            height: 100dvh;
             width: 100%;
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch; /* Suavidad en iOS */
+            -webkit-overflow-scrolling: touch;
         }
 
         .product-slide {
-            height: 100dvh; /* Ocupa exactamente la pantalla visible */
+            height: 100dvh;
             width: 100%;
             scroll-snap-align: start;
-            scroll-snap-stop: always; /* OBLIGA a parar en cada elemento, no salta varios */
+            scroll-snap-stop: always;
             position: relative;
             display: flex;
             flex-direction: column;
             padding: 15px;
-            padding-top: 60px; /* Un poco menos para dar espacio */
-            background: linear-gradient(135deg, #f8f5fa 0%, #f0f7f7 100%); /* Fondo movido aquí */
+            padding-top: 60px;
+            background: linear-gradient(135deg, #f8f5fa 0%, #f0f7f7 100%);
         }
 
-        /* Card Unificada */
         .product-card-unified {
             flex: 1;
             background: white;
@@ -61,73 +57,58 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            /* Asegura que quepa en pantalla pequeña */
             max-height: 100%; 
         }
 
-        /* Sección Imagen */
+        /* IMAGEN FULL WIDTH */
         .slide-image {
-            height: 45%; /* Reducido un poco para dar espacio a opciones */
+            height: 45%; 
             width: 100%;
             position: relative;
-            background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+            background: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
         }
         
         .slide-image img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            padding: 20px;
+            object-fit: cover; /* Cubre todo el área */
+            object-position: center;
+            padding: 0;
         }
         
-        /* Badge Categoría */
+        /* BADGE TRANSPARENTE */
         .category-badge {
             position: absolute;
             top: 15px;
             right: 15px;
-            background: white;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(8px);
             color: var(--jema-purple);
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border: 1px solid rgba(107, 45, 123, 0.15);
-        }
-        
-        /* Placeholder imagen */
-        .image-placeholder {
-            width: 150px;
-            height: 150px;
-            background: linear-gradient(135deg, var(--jema-purple-light) 0%, rgba(26, 154, 154, 0.1) 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .image-placeholder i {
-            font-size: 3rem;
-            color: var(--jema-purple);
-            opacity: 0.5;
+            font-size: 0.75rem;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            z-index: 10;
         }
 
-        /* Sección Detalles */
         .slide-details {
             flex: 1;
-            padding: 20px; /* Padding ajustado */
+            padding: 20px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             border-top: 1px solid rgba(107, 45, 123, 0.08);
-            overflow-y: auto; /* Permite scroll interno si el texto es muy largo en pantallas muy pequeñas */
+            overflow-y: auto;
         }
         
         .product-name {
-            font-size: 1.2rem; /* Ajustado para móviles pequeños */
+            font-size: 1.2rem;
             font-weight: 700;
             color: #1a1a2e;
             margin-bottom: 4px;
@@ -140,13 +121,9 @@
             margin-bottom: 12px;
             line-height: 1.3;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* Limita a 2 líneas */
+            -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-        }
-        
-        .options-section {
-            margin-bottom: 12px;
         }
         
         .option-label {
@@ -158,15 +135,15 @@
             margin-bottom: 8px;
         }
 
-        /* Botones de opciones JEMA */
         .options-wrapper {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            min-height: 35px;
         }
         
         .option-btn {
-            border: 1px solid #e9ecef; /* Borde más fino */
+            border: 1px solid #e9ecef;
             background: white;
             color: #495057;
             padding: 8px 14px;
@@ -175,7 +152,7 @@
             font-weight: 500;
             transition: all 0.2s ease;
             cursor: pointer;
-            white-space: nowrap; /* Evita que el texto se parta feo */
+            white-space: nowrap;
         }
         
         .option-btn:hover {
@@ -192,11 +169,10 @@
             box-shadow: 0 2px 5px rgba(107, 45, 123, 0.1);
         }
 
-        /* Footer de compra */
         .purchase-footer {
             padding-top: 12px;
             border-top: 1px solid #f0f0f0;
-            margin-top: auto; /* Empuja al fondo */
+            margin-top: auto;
         }
         
         .price-row {
@@ -204,12 +180,6 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
-        }
-        
-        .price-label {
-            font-size: 0.8rem;
-            color: #6c757d;
-            display: block;
         }
         
         .price-value {
@@ -222,7 +192,6 @@
             line-height: 1;
         }
         
-        /* Selector de cantidad JEMA */
         .qty-selector {
             display: flex;
             align-items: center;
@@ -246,10 +215,6 @@
             justify-content: center;
         }
         
-        .qty-btn:active {
-            background: rgba(0,0,0,0.05);
-        }
-        
         .qty-value {
             width: 40px;
             text-align: center;
@@ -261,7 +226,6 @@
             padding: 0;
         }
 
-        /* Botón Agregar al Carrito JEMA */
         .btn-add-cart {
             width: 100%;
             padding: 14px;
@@ -280,11 +244,8 @@
             gap: 10px;
         }
         
-        .btn-add-cart:active {
-            transform: scale(0.98);
-        }
+        .btn-add-cart:active { transform: scale(0.98); }
 
-        /* Animación de inicio */
         .swipe-hint {
             position: fixed;
             bottom: 30px;
@@ -309,7 +270,6 @@
             60% {transform: translateX(-50%) translateY(-5px);}
         }
         
-        /* Botón Flotante Volver JEMA */
         .btn-back {
             position: fixed;
             top: 20px;
@@ -317,7 +277,7 @@
             z-index: 100;
             background: white;
             border: none;
-            border-radius: 50%; /* Perfectamente redondo */
+            border-radius: 50%;
             width: 45px;
             height: 45px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -327,20 +287,9 @@
             text-decoration: none;
         }
         
-        .btn-back i {
-            font-size: 1.2rem;
-            color: var(--jema-purple);
-        }
-        
-        /* Scrollbar oculta */
-        .feed-container::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .feed-container {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .btn-back i { font-size: 1.2rem; color: var(--jema-purple); }
+        .feed-container::-webkit-scrollbar { display: none; }
+        .feed-container { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
@@ -362,8 +311,8 @@
                     {% if product.image %}
                         <img src="{{ product.image.url }}" alt="{{ product.name }}">
                     {% else %}
-                        <div class="image-placeholder">
-                            <i class="bi bi-image"></i>
+                        <div class="d-flex align-items-center justify-content-center w-100 h-100 bg-light">
+                            <i class="bi bi-image display-1 text-muted opacity-25"></i>
                         </div>
                     {% endif %}
                     
@@ -375,23 +324,19 @@
                 <!-- Detalles -->
                 <div class="slide-details">
                     <div class="details-content">
-                        <!-- CORRECCIÓN: Palabra Referencia Agregada -->
                         <h2 class="product-name">Referencia {{ product.name }}</h2>
                         <p class="product-description">{{ product.description|default:"" }}</p>
                         
                         <div class="options-section">
                             <p class="option-label">Tamaño</p>
                             <div class="options-wrapper" id="size-options-{{ product.id }}">
-                                <!-- Se llenan con JS -->
+                                <span class="text-muted small">Cargando opciones...</span>
                             </div>
                         </div>
                         
-                        <!-- Contenedor de colores (Se oculta si no hay) -->
                         <div class="options-section" id="color-section-{{ product.id }}" style="display:none;">
                             <p class="option-label">Color / Material</p>
-                            <div class="options-wrapper" id="color-options-{{ product.id }}">
-                                <!-- Se llenan con JS -->
-                            </div>
+                            <div class="options-wrapper" id="color-options-{{ product.id }}"></div>
                         </div>
                     </div>
 
@@ -404,13 +349,9 @@
                             </div>
                             
                             <div class="qty-selector">
-                                <button class="qty-btn" onclick="changeQty({{ product.id }}, -1)">
-                                    <i class="bi bi-dash"></i>
-                                </button>
+                                <button class="qty-btn" onclick="changeQty({{ product.id }}, -1)"><i class="bi bi-dash"></i></button>
                                 <input type="number" class="qty-value" id="qty-{{ product.id }}" value="1" readonly>
-                                <button class="qty-btn" onclick="changeQty({{ product.id }}, 1)">
-                                    <i class="bi bi-plus"></i>
-                                </button>
+                                <button class="qty-btn" onclick="changeQty({{ product.id }}, 1)"><i class="bi bi-plus"></i></button>
                             </div>
                         </div>
 
@@ -425,154 +366,159 @@
         {% endfor %}
     </div>
 
-    <!-- JSON de variantes desde el backend -->
+    <!-- JSON de variantes -->
     {{ variants_json|json_script:"variants-data" }}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // --- 1. CORRECCIÓN HINT (Desaparecer al mínimo toque) ---
+        // --- PARSEO ROBUSTO DEL JSON ---
+        let rawData = document.getElementById('variants-data').textContent;
+        let variantsData = {};
+        
+        try {
+            let parsed = JSON.parse(rawData);
+            if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+            variantsData = parsed;
+        } catch (e) {
+            console.error("Error crítico parseando variantes:", e);
+        }
+
+        const productState = {}; 
+
+        // Ocultar hint
         const feedContainer = document.getElementById('feedContainer');
         const swipeHint = document.getElementById('swipeHint');
-        
-        feedContainer.addEventListener('scroll', function() {
+        feedContainer.addEventListener('scroll', () => {
             swipeHint.style.opacity = '0';
-            // Se elimina del DOM poco después para que no estorbe clicks
             setTimeout(() => swipeHint.style.display = 'none', 300);
         }, { once: true, passive: true });
 
-        // --- 2. LÓGICA DE PRODUCTOS ---
-        const variantsData = JSON.parse(document.getElementById('variants-data').textContent);
-        const productState = {}; // Guarda qué tiene seleccionado cada producto
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll('.product-slide').forEach(slide => {
+                // Forzamos el ID a string para evitar problemas de tipos (number vs string)
+                const pid = String(slide.dataset.productId); 
+                
+                // Buscamos en el JSON usando string (que es lo más seguro)
+                const variants = variantsData[pid];
 
-        // Inicializar cada tarjeta
-        document.querySelectorAll('.product-slide').forEach(slide => {
-            const pid = slide.dataset.productId;
-            const variants = variantsData[pid];
+                const sizeContainer = document.getElementById(`size-options-${pid}`);
+                
+                if (!variants || variants.length === 0) {
+                    document.getElementById(`price-${pid}`).textContent = "Agotado";
+                    sizeContainer.innerHTML = '<span class="text-danger small">No disponible</span>';
+                    return;
+                }
 
-            if (!variants || variants.length === 0) {
-                document.getElementById(`price-${pid}`).textContent = "Agotado";
-                return;
-            }
+                // 1. Extraer Tamaños Únicos (Usando Map y IDs como string)
+                const sizesMap = new Map();
+                variants.forEach(v => {
+                    const sId = String(v.size_id);
+                    if (!sizesMap.has(sId)) {
+                        sizesMap.set(sId, v.size_name);
+                    }
+                });
 
-            // 1. Extraer Tamaños Únicos (Size ID y Name)
-            const sizes = [];
-            const sizeMap = new Map();
-            variants.forEach(v => {
-                if(!sizeMap.has(v.size_id)){
-                    sizeMap.set(v.size_id, true);
-                    sizes.push({id: v.size_id, name: v.size_name});
+                sizeContainer.innerHTML = ''; 
+                let firstSizeId = null;
+
+                // Crear Botones
+                sizesMap.forEach((sizeName, sizeId) => {
+                    if (!firstSizeId) firstSizeId = sizeId;
+
+                    const btn = document.createElement('button');
+                    btn.className = `option-btn`;
+                    btn.textContent = sizeName;
+                    btn.onclick = () => selectSize(pid, sizeId, btn);
+                    sizeContainer.appendChild(btn);
+                });
+
+                // Inicializar estado
+                productState[pid] = { selectedSizeId: null, selectedVariant: null };
+
+                // Auto-seleccionar primer tamaño
+                if (firstSizeId) {
+                    const firstBtn = sizeContainer.querySelector('button');
+                    selectSize(pid, firstSizeId, firstBtn);
                 }
             });
-
-            // 2. Renderizar Botones de Tamaño
-            const sizeContainer = document.getElementById(`size-options-${pid}`);
-            sizes.forEach((s, idx) => {
-                const btn = document.createElement('button');
-                btn.className = `option-btn ${idx === 0 ? 'active' : ''}`;
-                btn.textContent = s.name;
-                btn.onclick = () => selectSize(pid, s.id, btn);
-                sizeContainer.appendChild(btn);
-            });
-
-            // 3. Estado Inicial (Seleccionar primer tamaño)
-            productState[pid] = {
-                selectedSizeId: sizes[0].id,
-                selectedVariant: null
-            };
-
-            // 4. Cargar Colores para ese tamaño
-            updateColors(pid);
         });
 
         function selectSize(pid, sizeId, btnElement) {
-            // Actualizar botones visualmente
+            sizeId = String(sizeId); // Asegurar tipo string
+            
             const container = document.getElementById(`size-options-${pid}`);
             container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
-            btnElement.classList.add('active');
+            if(btnElement) btnElement.classList.add('active');
 
-            // Guardar selección
             productState[pid].selectedSizeId = sizeId;
-            productState[pid].selectedVariant = null; // Resetear variante hasta elegir color (o auto)
-
             updateColors(pid);
         }
 
         function updateColors(pid) {
-            const sizeId = productState[pid].selectedSizeId;
-            // Filtrar variantes que coincidan con el tamaño seleccionado
-            const availableVariants = variantsData[pid].filter(v => v.size_id === sizeId);
+            const sizeId = String(productState[pid].selectedSizeId);
+            const allVariants = variantsData[pid];
             
-            const colorSection = document.getElementById(`color-section-${pid}`);
+            // Filtro seguro convirtiendo ambos a string
+            const availableVariants = allVariants.filter(v => String(v.size_id) === sizeId);
+
             const colorContainer = document.getElementById(`color-options-${pid}`);
-            colorContainer.innerHTML = ''; // Limpiar
+            const colorSection = document.getElementById(`color-section-${pid}`);
+            colorContainer.innerHTML = '';
 
-            // CASO A: Solo hay 1 opción (Ej: Globos impresos que no tienen color, o solo 1 material)
-            // Ocultamos selector de color y seleccionamos la variante automáticamente.
-            // PERO: Si quieres que siempre se vea aunque sea 1, quita el if length === 1
-            
-            // Lógica inteligente: Si hay más de 1 variante para este tamaño, mostramos opciones.
-            // Si las variantes tienen nombres de color reales, mostramos.
-            
-            let autoSelect = false;
+            let firstVariant = null;
 
-            // Renderizar botones de color/material
-            availableVariants.forEach((v, idx) => {
-                const btn = document.createElement('button');
+            if (availableVariants.length > 0) {
+                let showSection = true;
                 
-                // Construir nombre amigable: Color + (Material si es especial)
-                let name = v.color_name || "Estándar";
-                if (v.material_name && v.material_name.includes("Mailan")) {
-                    name += " (Metalizado)";
+                // Si solo hay 1 y es genérico, ocultar
+                if (availableVariants.length === 1) {
+                    const v = availableVariants[0];
+                    if (v.color_name === "Full Color" || v.color_name === "Estándar") {
+                        showSection = false;
+                        firstVariant = v;
+                    }
                 }
-                
-                btn.textContent = name;
-                btn.className = `option-btn ${idx === 0 ? 'active' : ''}`;
-                
-                btn.onclick = () => selectVariant(pid, v, btn);
-                colorContainer.appendChild(btn);
 
-                // Auto-seleccionar el primero
-                if (idx === 0) {
-                    productState[pid].selectedVariant = v;
-                }
-            });
-
-            // Si hay variantes, mostrar sección. Si solo hay 1 y es "Estándar" o "Full Color", podríamos ocultarlo.
-            // Para tu caso de Globos (Full Color), vamos a ocultarlo si solo hay 1 opción y el nombre es "Full Color" o "Estándar".
-            if (availableVariants.length === 1) {
-                const v = availableVariants[0];
-                if (v.color_name === "Full Color" || v.color_name === "Estándar") {
-                    colorSection.style.display = 'none';
-                } else {
+                if (showSection) {
                     colorSection.style.display = 'block';
+                    availableVariants.forEach((v, idx) => {
+                        const btn = document.createElement('button');
+                        let name = v.color_name || "Estándar";
+                        if (v.material_name && v.material_name.includes("Mailan")) name += " (Metalizado)";
+                        
+                        btn.textContent = name;
+                        btn.className = 'option-btn';
+                        btn.onclick = () => selectVariant(pid, v, btn);
+                        colorContainer.appendChild(btn);
+
+                        if (idx === 0) firstVariant = v;
+                    });
+                } else {
+                    colorSection.style.display = 'none';
                 }
-            } else {
-                colorSection.style.display = 'block';
             }
 
-            updatePriceDisplay(pid);
+            // Auto-seleccionar variante si no hay botones o es la única
+            if (firstVariant) {
+                const firstBtn = colorContainer.querySelector('button');
+                selectVariant(pid, firstVariant, firstBtn);
+            }
         }
 
         function selectVariant(pid, variant, btnElement) {
-            const container = document.getElementById(`color-options-${pid}`);
-            container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
-            btnElement.classList.add('active');
+            if (btnElement) {
+                const container = document.getElementById(`color-options-${pid}`);
+                container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
 
             productState[pid].selectedVariant = variant;
-            updatePriceDisplay(pid);
-        }
-
-        function updatePriceDisplay(pid) {
-            const variant = productState[pid].selectedVariant;
-            const qty = parseInt(document.getElementById(`qty-${pid}`).value);
+            
+            // Actualizar Precio
+            const qty = parseInt(document.getElementById(`qty-${pid}`).value) || 1;
             const priceEl = document.getElementById(`price-${pid}`);
-
-            if (variant) {
-                const total = variant.price * qty;
-                priceEl.textContent = `$${total.toLocaleString('es-CO')}`; // Formato moneda
-            } else {
-                priceEl.textContent = "---";
-            }
+            const total = variant.price * qty;
+            priceEl.textContent = `$${total.toLocaleString('es-CO')}`;
         }
 
         function changeQty(pid, delta) {
@@ -580,45 +526,44 @@
             let val = parseInt(input.value) + delta;
             if (val < 1) val = 1;
             input.value = val;
-            updatePriceDisplay(pid);
+            
+            // Recalcular precio
+            if (productState[pid] && productState[pid].selectedVariant) {
+                const variant = productState[pid].selectedVariant;
+                const total = variant.price * val;
+                document.getElementById(`price-${pid}`).textContent = `$${total.toLocaleString('es-CO')}`;
+            }
         }
 
         function addToCart(pid) {
-            const variant = productState[pid].selectedVariant;
+            const variant = productState[pid]?.selectedVariant;
             const qty = document.getElementById(`qty-${pid}`).value;
 
             if (!variant) {
-                alert("Por favor selecciona las opciones disponibles.");
+                alert("Selecciona las opciones primero");
                 return;
             }
 
-            // Llamada AJAX al servidor
             fetch("{% url 'api_add_to_cart' %}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': '{{ csrf_token }}'
                 },
-                body: JSON.stringify({
-                    variant_id: variant.id,
-                    quantity: qty
-                })
+                body: JSON.stringify({ variant_id: variant.id, quantity: qty })
             })
-            .then(res => res.json())
+            .then(r => r.json())
             .then(data => {
-                if(data.status === 'ok') {
-                    // Feedback visual sutil en lugar de alert feo
+                if (data.status === 'ok') {
                     const btn = document.querySelector(`.product-slide[data-product-id="${pid}"] .btn-add-cart`);
-                    const originalText = btn.innerHTML;
-                    btn.innerHTML = '<i class="bi bi-check-lg"></i> ¡Agregado!';
-                    btn.style.background = '#1A9A9A'; // Teal
-                    
+                    btn.innerHTML = '<i class="bi bi-check-lg"></i> ¡Listo!';
+                    btn.style.background = '#1A9A9A';
                     setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.style.background = ''; // Volver al gradiente
+                        btn.innerHTML = '<i class="bi bi-cart-plus"></i> Agregar al Carrito';
+                        btn.style.background = '';
                     }, 2000);
                 } else {
-                    alert("Hubo un error. Intenta recargar.");
+                    alert("Por favor inicia sesión para comprar");
                 }
             })
             .catch(err => console.error(err));
