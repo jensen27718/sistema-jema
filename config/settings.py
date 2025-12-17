@@ -3,22 +3,30 @@ Django settings for config project.
 """
 from pathlib import Path
 import os
-from dotenv import load_dotenv # Importar librería
+from dotenv import load_dotenv
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
+# --- 1. CARGAR VARIABLES DE ENTORNO (LO PRIMERO DE TODO) ---
+load_dotenv(BASE_DIR / '.env')
 
-# Si no encuentra las claves, usará 'None' y dará error (lo cual es bueno para no subir cosas sin querer)
+# --- 2. SEGURIDAD ---
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+
+# --- 3. CONFIGURACIÓN AWS S3 (OHIO us-east-2) ---
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
-
-AWS_S3_REGION_NAME = 'us-east-2' # Esto no es secreto, puede quedarse aquí
+AWS_S3_REGION_NAME = 'us-east-2'
 AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_S3_ADDRESSING_STYLE = 'virtual' # <--- IMPORTANTE PARA OHIO
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
 AWS_S3_VERIFY = True
 
-# Configuración de Almacenamiento
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
@@ -28,25 +36,7 @@ STORAGES = {
     },
 }
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0&h7!*(2wjje&%rbw!%xt#oz+kakt1%m&m$r62u&1cb=1d^h_n'
-
-# Cargar variables de entorno desde el archivo .env
-load_dotenv(BASE_DIR / '.env')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-# Lee la lista de hosts separados por coma
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
-
-# Modelo de usuario personalizado
-AUTH_USER_MODEL = 'users.User'
-
-# Application definition
+# --- 4. APLICACIONES ---
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -54,7 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',  # Requerido por allauth
+    'django.contrib.sites',
     
     # Apps de terceros
     'allauth',
@@ -76,7 +66,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware', # Allauth middleware
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -98,13 +88,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# --- MODIFICA LA SECCIÓN DE BASE DE DATOS ---
+# --- 5. BASE DE DATOS ---
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / os.getenv('DATABASE_NAME', 'db.sqlite3'),
     }
 }
+
+# Modelo de usuario
+AUTH_USER_MODEL = 'users.User'
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -120,23 +113,16 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# --- 6. ARCHIVOS ESTÁTICOS ---
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles' # Requerido para PythonAnywhere
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# Cierra sesión inmediatamente sin preguntar confirmación
-ACCOUNT_LOGOUT_ON_GET = True
-
-# Salta la pantalla intermedia de confirmación de Google
-SOCIALACCOUNT_LOGIN_ON_GET = True
-
-
 # ==========================================
-# CONFIGURACIÓN DE ALLAUTH (LOGIN SOLO POR EMAIL)
+# CONFIGURACIÓN ALLAUTH
 # ==========================================
-
-SITE_ID = 2
+SITE_ID = 2 
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -146,40 +132,28 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_ON_GET = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
-# --- ESTO ES LO QUE OBLIGA A USAR EMAIL ---
-ACCOUNT_AUTHENTICATION_METHOD = 'email'  # <--- Solo Email
-ACCOUNT_EMAIL_REQUIRED = True            # <--- Email obligatorio
-ACCOUNT_USERNAME_REQUIRED = False        # <--- No pedir usuario
-ACCOUNT_EMAIL_VERIFICATION = 'optional'  # <--- No bloquear si no ha confirmado
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_VERIFICATION = 'optional'
 
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 
-# Configuración del Formulario de Registro
 ACCOUNT_SIGNUP_FIELDS = ['email', 'password1'] 
 ACCOUNT_FORMS = {
     'signup': 'users.forms.CustomSignupForm',
 }
 
-
-
-# ==========================================
-# CONFIGURACIÓN DE CORREO (SOLO DESARROLLO)
-# ==========================================
-# Si no está definido en el .env (como en producción), no usará el de consola
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-
-# Configuración específica de Google
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
-        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
         'OAUTH_PKCE_ENABLED': True,
     }
 }
+
+# Email Backend (Consola para local, SMTP real vendrá después)
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
