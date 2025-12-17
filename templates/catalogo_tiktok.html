@@ -24,29 +24,32 @@
         
         body {
             margin: 0;
-            background: linear-gradient(135deg, #f8f5fa 0%, #f0f7f7 100%);
+            background: #000; /* Fondo oscuro detrás */
             font-family: 'Poppins', sans-serif;
-            overflow: hidden;
+            overflow: hidden; /* Bloquear scroll del body */
         }
 
-        /* Contenedor Scroll Snap (TikTok Style) */
+        /* --- CORRECCIÓN SCROLL PEGAJOSO --- */
         .feed-container {
-            height: 100vh;
+            height: 100dvh; /* Dynamic Viewport Height: Se ajusta a la barra del navegador móvil */
+            width: 100%;
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch; /* Suavidad en iOS */
         }
 
-        /* Cada Producto es una pantalla completa */
         .product-slide {
-            height: 100vh;
+            height: 100dvh; /* Ocupa exactamente la pantalla visible */
             width: 100%;
             scroll-snap-align: start;
+            scroll-snap-stop: always; /* OBLIGA a parar en cada elemento, no salta varios */
             position: relative;
             display: flex;
             flex-direction: column;
             padding: 15px;
-            padding-top: 70px;
+            padding-top: 60px; /* Un poco menos para dar espacio */
+            background: linear-gradient(135deg, #f8f5fa 0%, #f0f7f7 100%); /* Fondo movido aquí */
         }
 
         /* Card Unificada */
@@ -58,13 +61,13 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            max-height: calc(100vh - 100px);
+            /* Asegura que quepa en pantalla pequeña */
+            max-height: 100%; 
         }
 
         /* Sección Imagen */
         .slide-image {
-            height: 50%;
-            min-height: 45%;
+            height: 45%; /* Reducido un poco para dar espacio a opciones */
             width: 100%;
             position: relative;
             background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
@@ -74,9 +77,10 @@
         }
         
         .slide-image img {
-            max-width: 90%;
-            max-height: 90%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
+            padding: 20px;
         }
         
         /* Badge Categoría */
@@ -114,38 +118,44 @@
         /* Sección Detalles */
         .slide-details {
             flex: 1;
-            padding: 24px;
+            padding: 20px; /* Padding ajustado */
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             border-top: 1px solid rgba(107, 45, 123, 0.08);
+            overflow-y: auto; /* Permite scroll interno si el texto es muy largo en pantallas muy pequeñas */
         }
         
         .product-name {
-            font-size: 1.4rem;
+            font-size: 1.2rem; /* Ajustado para móviles pequeños */
             font-weight: 700;
             color: #1a1a2e;
             margin-bottom: 4px;
+            line-height: 1.2;
         }
         
         .product-description {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: #6c757d;
-            margin-bottom: 16px;
-            line-height: 1.4;
+            margin-bottom: 12px;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Limita a 2 líneas */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         
         .options-section {
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         .option-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             color: var(--jema-purple);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         /* Botones de opciones JEMA */
@@ -156,15 +166,16 @@
         }
         
         .option-btn {
-            border: 2px solid #e9ecef;
+            border: 1px solid #e9ecef; /* Borde más fino */
             background: white;
             color: #495057;
-            padding: 10px 18px;
+            padding: 8px 14px;
             border-radius: 12px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 500;
-            transition: all 0.25s ease;
+            transition: all 0.2s ease;
             cursor: pointer;
+            white-space: nowrap; /* Evita que el texto se parta feo */
         }
         
         .option-btn:hover {
@@ -178,33 +189,37 @@
             background: var(--jema-purple-light);
             color: var(--jema-purple);
             font-weight: 600;
+            box-shadow: 0 2px 5px rgba(107, 45, 123, 0.1);
         }
 
         /* Footer de compra */
         .purchase-footer {
-            padding-top: 16px;
+            padding-top: 12px;
             border-top: 1px solid #f0f0f0;
+            margin-top: auto; /* Empuja al fondo */
         }
         
         .price-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         .price-label {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #6c757d;
+            display: block;
         }
         
         .price-value {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 700;
             background: var(--jema-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            line-height: 1;
         }
         
         /* Selector de cantidad JEMA */
@@ -215,45 +230,41 @@
             border-radius: 12px;
             overflow: hidden;
             border: 1px solid #e9ecef;
+            height: 40px;
         }
         
         .qty-btn {
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 100%;
             border: none;
             background: transparent;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--jema-purple);
             cursor: pointer;
-            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         
-        .qty-btn:hover {
-            background: var(--jema-purple-light);
-        }
-        
         .qty-btn:active {
-            background: var(--jema-purple);
-            color: white;
+            background: rgba(0,0,0,0.05);
         }
         
         .qty-value {
-            width: 50px;
+            width: 40px;
             text-align: center;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: #1a1a2e;
             border: none;
             background: transparent;
+            padding: 0;
         }
 
         /* Botón Agregar al Carrito JEMA */
         .btn-add-cart {
             width: 100%;
-            padding: 16px 24px;
+            padding: 14px;
             border: none;
             border-radius: 14px;
             font-size: 1rem;
@@ -262,24 +273,15 @@
             background: var(--jema-gradient);
             box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.1s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
         }
         
-        .btn-add-cart:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(107, 45, 123, 0.4);
-        }
-        
         .btn-add-cart:active {
-            transform: translateY(0);
-        }
-        
-        .btn-add-cart i {
-            font-size: 1.1rem;
+            transform: scale(0.98);
         }
 
         /* Animación de inicio */
@@ -290,20 +292,21 @@
             transform: translateX(-50%);
             z-index: 1000;
             color: white;
-            background: var(--jema-gradient);
-            padding: 12px 24px;
+            background: rgba(107, 45, 123, 0.9);
+            padding: 10px 20px;
             border-radius: 30px;
             animation: bounce 2s infinite;
             pointer-events: none;
             font-size: 0.85rem;
             font-weight: 500;
-            box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: opacity 0.3s ease;
         }
         
         @keyframes bounce {
             0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
-            40% {transform: translateX(-50%) translateY(-8px);}
-            60% {transform: translateX(-50%) translateY(-4px);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
         }
         
         /* Botón Flotante Volver JEMA */
@@ -314,18 +317,14 @@
             z-index: 100;
             background: white;
             border: none;
-            border-radius: 14px;
-            width: 48px;
-            height: 48px;
+            border-radius: 50%; /* Perfectamente redondo */
+            width: 45px;
+            height: 45px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-back:hover {
-            background: var(--jema-purple-light);
+            text-decoration: none;
         }
         
         .btn-back i {
@@ -347,7 +346,7 @@
 <body>
 
     <div class="swipe-hint" id="swipeHint">
-        <i class="bi bi-chevron-up me-2"></i> Desliza hacia arriba
+        <i class="bi bi-chevron-up me-2"></i> Desliza para ver más
     </div>
 
     <a href="{% url 'home' %}" class="btn-back">
@@ -376,18 +375,19 @@
                 <!-- Detalles -->
                 <div class="slide-details">
                     <div class="details-content">
-                        <h2 class="product-name">{{ product.name }}</h2>
-                        <p class="product-description">{{ product.description|default:"Sin descripción" }}</p>
+                        <!-- CORRECCIÓN: Palabra Referencia Agregada -->
+                        <h2 class="product-name">Referencia {{ product.name }}</h2>
+                        <p class="product-description">{{ product.description|default:"" }}</p>
                         
                         <div class="options-section">
-                            <!-- Tamaño -->
                             <p class="option-label">Tamaño</p>
                             <div class="options-wrapper" id="size-options-{{ product.id }}">
                                 <!-- Se llenan con JS -->
                             </div>
                         </div>
                         
-                        <div class="options-section">
+                        <!-- Contenedor de colores (Se oculta si no hay) -->
+                        <div class="options-section" id="color-section-{{ product.id }}" style="display:none;">
                             <p class="option-label">Color / Material</p>
                             <div class="options-wrapper" id="color-options-{{ product.id }}">
                                 <!-- Se llenan con JS -->
@@ -407,7 +407,7 @@
                                 <button class="qty-btn" onclick="changeQty({{ product.id }}, -1)">
                                     <i class="bi bi-dash"></i>
                                 </button>
-                                <input type="text" class="qty-value" id="qty-{{ product.id }}" value="1" readonly>
+                                <input type="number" class="qty-value" id="qty-{{ product.id }}" value="1" readonly>
                                 <button class="qty-btn" onclick="changeQty({{ product.id }}, 1)">
                                     <i class="bi bi-plus"></i>
                                 </button>
@@ -425,90 +425,203 @@
         {% endfor %}
     </div>
 
-    <!-- JSON de variantes -->
+    <!-- JSON de variantes desde el backend -->
     {{ variants_json|json_script:"variants-data" }}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Ocultar hint después de primer scroll
+        // --- 1. CORRECCIÓN HINT (Desaparecer al mínimo toque) ---
         const feedContainer = document.getElementById('feedContainer');
         const swipeHint = document.getElementById('swipeHint');
         
         feedContainer.addEventListener('scroll', function() {
-            if (feedContainer.scrollTop > 50) {
-                swipeHint.style.opacity = '0';
-                swipeHint.style.transition = 'opacity 0.3s ease';
-                setTimeout(() => swipeHint.style.display = 'none', 300);
-            }
-        }, { once: true });
+            swipeHint.style.opacity = '0';
+            // Se elimina del DOM poco después para que no estorbe clicks
+            setTimeout(() => swipeHint.style.display = 'none', 300);
+        }, { once: true, passive: true });
 
-        // Cargar variantes
+        // --- 2. LÓGICA DE PRODUCTOS ---
         const variantsData = JSON.parse(document.getElementById('variants-data').textContent);
-        
-        // Inicializar opciones para cada producto
+        const productState = {}; // Guarda qué tiene seleccionado cada producto
+
+        // Inicializar cada tarjeta
         document.querySelectorAll('.product-slide').forEach(slide => {
-            const productId = slide.dataset.productId;
-            const variants = variantsData[productId] || { sizes: [], colors: [] };
-            
-            const sizeContainer = document.getElementById(`size-options-${productId}`);
-            const colorContainer = document.getElementById(`color-options-${productId}`);
-            
-            variants.sizes.forEach((size, index) => {
+            const pid = slide.dataset.productId;
+            const variants = variantsData[pid];
+
+            if (!variants || variants.length === 0) {
+                document.getElementById(`price-${pid}`).textContent = "Agotado";
+                return;
+            }
+
+            // 1. Extraer Tamaños Únicos (Size ID y Name)
+            const sizes = [];
+            const sizeMap = new Map();
+            variants.forEach(v => {
+                if(!sizeMap.has(v.size_id)){
+                    sizeMap.set(v.size_id, true);
+                    sizes.push({id: v.size_id, name: v.size_name});
+                }
+            });
+
+            // 2. Renderizar Botones de Tamaño
+            const sizeContainer = document.getElementById(`size-options-${pid}`);
+            sizes.forEach((s, idx) => {
                 const btn = document.createElement('button');
-                btn.className = `option-btn${index === 0 ? ' active' : ''}`;
-                btn.textContent = size.name;
-                btn.dataset.price = size.price;
-                btn.onclick = () => selectOption(btn, productId, 'size');
+                btn.className = `option-btn ${idx === 0 ? 'active' : ''}`;
+                btn.textContent = s.name;
+                btn.onclick = () => selectSize(pid, s.id, btn);
                 sizeContainer.appendChild(btn);
             });
-            
-            variants.colors.forEach((color, index) => {
-                const btn = document.createElement('button');
-                btn.className = `option-btn${index === 0 ? ' active' : ''}`;
-                btn.textContent = color;
-                btn.onclick = () => selectOption(btn, productId, 'color');
-                colorContainer.appendChild(btn);
-            });
-            
-            updatePrice(productId);
+
+            // 3. Estado Inicial (Seleccionar primer tamaño)
+            productState[pid] = {
+                selectedSizeId: sizes[0].id,
+                selectedVariant: null
+            };
+
+            // 4. Cargar Colores para ese tamaño
+            updateColors(pid);
         });
-        
-        function selectOption(btn, productId, type) {
-            const container = btn.parentElement;
+
+        function selectSize(pid, sizeId, btnElement) {
+            // Actualizar botones visualmente
+            const container = document.getElementById(`size-options-${pid}`);
             container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            updatePrice(productId);
+            btnElement.classList.add('active');
+
+            // Guardar selección
+            productState[pid].selectedSizeId = sizeId;
+            productState[pid].selectedVariant = null; // Resetear variante hasta elegir color (o auto)
+
+            updateColors(pid);
         }
-        
-        function updatePrice(productId) {
-            const sizeBtn = document.querySelector(`#size-options-${productId} .option-btn.active`);
-            const qty = parseInt(document.getElementById(`qty-${productId}`).value) || 1;
-            const price = sizeBtn ? parseFloat(sizeBtn.dataset.price) || 0 : 0;
-            const total = price * qty;
-            document.getElementById(`price-${productId}`).textContent = `$${total.toLocaleString('es-CO', {minimumFractionDigits: 2})}`;
-        }
-        
-        function changeQty(productId, delta) {
-            const input = document.getElementById(`qty-${productId}`);
-            let qty = parseInt(input.value) || 1;
-            qty = Math.max(1, qty + delta);
-            input.value = qty;
-            updatePrice(productId);
-        }
-        
-        function addToCart(productId) {
-            const sizeBtn = document.querySelector(`#size-options-${productId} .option-btn.active`);
-            const colorBtn = document.querySelector(`#color-options-${productId} .option-btn.active`);
-            const qty = document.getElementById(`qty-${productId}`).value;
+
+        function updateColors(pid) {
+            const sizeId = productState[pid].selectedSizeId;
+            // Filtrar variantes que coincidan con el tamaño seleccionado
+            const availableVariants = variantsData[pid].filter(v => v.size_id === sizeId);
             
-            console.log('Agregar al carrito:', {
-                productId,
-                size: sizeBtn?.textContent,
-                color: colorBtn?.textContent,
-                qty
+            const colorSection = document.getElementById(`color-section-${pid}`);
+            const colorContainer = document.getElementById(`color-options-${pid}`);
+            colorContainer.innerHTML = ''; // Limpiar
+
+            // CASO A: Solo hay 1 opción (Ej: Globos impresos que no tienen color, o solo 1 material)
+            // Ocultamos selector de color y seleccionamos la variante automáticamente.
+            // PERO: Si quieres que siempre se vea aunque sea 1, quita el if length === 1
+            
+            // Lógica inteligente: Si hay más de 1 variante para este tamaño, mostramos opciones.
+            // Si las variantes tienen nombres de color reales, mostramos.
+            
+            let autoSelect = false;
+
+            // Renderizar botones de color/material
+            availableVariants.forEach((v, idx) => {
+                const btn = document.createElement('button');
+                
+                // Construir nombre amigable: Color + (Material si es especial)
+                let name = v.color_name || "Estándar";
+                if (v.material_name && v.material_name.includes("Mailan")) {
+                    name += " (Metalizado)";
+                }
+                
+                btn.textContent = name;
+                btn.className = `option-btn ${idx === 0 ? 'active' : ''}`;
+                
+                btn.onclick = () => selectVariant(pid, v, btn);
+                colorContainer.appendChild(btn);
+
+                // Auto-seleccionar el primero
+                if (idx === 0) {
+                    productState[pid].selectedVariant = v;
+                }
             });
-            
-            // Aquí tu lógica de agregar al carrito
+
+            // Si hay variantes, mostrar sección. Si solo hay 1 y es "Estándar" o "Full Color", podríamos ocultarlo.
+            // Para tu caso de Globos (Full Color), vamos a ocultarlo si solo hay 1 opción y el nombre es "Full Color" o "Estándar".
+            if (availableVariants.length === 1) {
+                const v = availableVariants[0];
+                if (v.color_name === "Full Color" || v.color_name === "Estándar") {
+                    colorSection.style.display = 'none';
+                } else {
+                    colorSection.style.display = 'block';
+                }
+            } else {
+                colorSection.style.display = 'block';
+            }
+
+            updatePriceDisplay(pid);
+        }
+
+        function selectVariant(pid, variant, btnElement) {
+            const container = document.getElementById(`color-options-${pid}`);
+            container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            productState[pid].selectedVariant = variant;
+            updatePriceDisplay(pid);
+        }
+
+        function updatePriceDisplay(pid) {
+            const variant = productState[pid].selectedVariant;
+            const qty = parseInt(document.getElementById(`qty-${pid}`).value);
+            const priceEl = document.getElementById(`price-${pid}`);
+
+            if (variant) {
+                const total = variant.price * qty;
+                priceEl.textContent = `$${total.toLocaleString('es-CO')}`; // Formato moneda
+            } else {
+                priceEl.textContent = "---";
+            }
+        }
+
+        function changeQty(pid, delta) {
+            const input = document.getElementById(`qty-${pid}`);
+            let val = parseInt(input.value) + delta;
+            if (val < 1) val = 1;
+            input.value = val;
+            updatePriceDisplay(pid);
+        }
+
+        function addToCart(pid) {
+            const variant = productState[pid].selectedVariant;
+            const qty = document.getElementById(`qty-${pid}`).value;
+
+            if (!variant) {
+                alert("Por favor selecciona las opciones disponibles.");
+                return;
+            }
+
+            // Llamada AJAX al servidor
+            fetch("{% url 'api_add_to_cart' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    variant_id: variant.id,
+                    quantity: qty
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'ok') {
+                    // Feedback visual sutil en lugar de alert feo
+                    const btn = document.querySelector(`.product-slide[data-product-id="${pid}"] .btn-add-cart`);
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-check-lg"></i> ¡Agregado!';
+                    btn.style.background = '#1A9A9A'; // Teal
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = ''; // Volver al gradiente
+                    }, 2000);
+                } else {
+                    alert("Hubo un error. Intenta recargar.");
+                }
+            })
+            .catch(err => console.error(err));
         }
     </script>
 </body>
