@@ -5,6 +5,29 @@ from pdf2image import convert_from_bytes
 from PIL import Image  
 import io
 import os
+from django.conf import settings
+# ... (Tus modelos anteriores Product, Variant, etc) ...
+
+
+
+class Cart(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='cart', null=True, blank=True)
+    # Si quisieras carrito para no logueados usaríamos sesiones, pero empecemos con usuarios
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def get_total(self):
+        return sum(item.get_cost() for item in self.items.all())
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
+    variant = models.ForeignKey('ProductVariant', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def get_cost(self):
+        return self.variant.price * self.quantity
+
+
+
 
 # --- MODELOS AUXILIARES ---
 class Category(models.Model):

@@ -1,0 +1,370 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Catálogo JEMA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --jema-purple: #6B2D7B;
+            --jema-teal: #1A9A9A;
+        }
+        body {
+            margin: 0;
+            background-color: #000; /* Fondo estático oscuro */
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden; /* Evitar scroll del body */
+        }
+
+        /* Contenedor Scroll Snap (TikTok Style) */
+        .feed-container {
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        /* Cada Producto es una pantalla completa */
+        .product-slide {
+            height: 100vh;
+            width: 100%;
+            scroll-snap-align: start;
+            position: relative;
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Mitad Superior: Imagen */
+        .slide-image {
+            height: 55%;
+            width: 100%;
+            position: relative;
+            background-color: #f8f9fa;
+        }
+        .slide-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* O cover, según prefieras */
+            padding: 20px;
+        }
+
+        /* Mitad Inferior: Opciones */
+        .slide-details {
+            height: 45%;
+            padding: 20px 25px;
+            background: white;
+            border-top-left-radius: 25px;
+            border-top-right-radius: 25px;
+            margin-top: -25px; /* Efecto solapa */
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Botones de opciones */
+        .option-btn {
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            transition: all 0.2s;
+        }
+        .option-btn.active {
+            border-color: var(--jema-purple);
+            background-color: rgba(107, 45, 123, 0.1);
+            color: var(--jema-purple);
+            font-weight: 600;
+        }
+
+        /* Animación de inicio */
+        .swipe-hint {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            color: white;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 20px;
+            border-radius: 30px;
+            animation: bounce 2s infinite;
+            pointer-events: none; /* Click through */
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
+        }
+        
+        /* Botón Flotante Volver */
+        .btn-back {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(5px);
+            border: none;
+            border-radius: 50%;
+            width: 40px; height: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Animación Guía (Se oculta con JS al hacer scroll) -->
+    <div class="swipe-hint" id="swipeHint">
+        <i class="bi bi-hand-index-thumb"></i> Desliza hacia arriba
+    </div>
+
+    <!-- Botón volver -->
+    <a href="{% url 'home' %}" class="btn btn-back shadow-sm d-flex align-items-center justify-content-center">
+        <i class="bi bi-arrow-left text-dark"></i>
+    </a>
+
+    <div class="feed-container" id="feedContainer">
+        {% for product in products %}
+        <div class="product-slide" data-product-id="{{ product.id }}">
+            
+            <!-- IMAGEN -->
+            <div class="slide-image">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                {% else %}
+                    <div class="d-flex h-100 align-items-center justify-content-center">
+                        <i class="bi bi-image display-1 text-muted"></i>
+                    </div>
+                {% endif %}
+                
+                <!-- Badge Categoria -->
+                <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-white text-dark shadow-sm px-3 py-2">
+                    {{ product.category.name }}
+                </span>
+            </div>
+
+            <!-- DETALLES Y OPCIONES -->
+            <div class="slide-details">
+                <div>
+                    <h2 class="fw-bold mb-1 text-truncate">{{ product.name }}</h2>
+                    <p class="text-muted small mb-3 text-truncate">{{ product.description|default:"Sin descripción" }}</p>
+
+                    <!-- CONTENEDOR DE OPCIONES (Se llena con JS) -->
+                    <div id="options-container-{{ product.id }}">
+                        <!-- 1. TAMAÑOS -->
+                        <p class="small fw-bold mb-2 text-uppercase text-secondary" style="font-size: 0.75rem;">Tamaño</p>
+                        <div class="d-flex flex-wrap mb-3" id="sizes-{{ product.id }}">
+                            <!-- JS insertará botones aquí -->
+                        </div>
+
+                        <!-- 2. COLOR / MATERIAL (Solo si aplica) -->
+                        <div id="colors-wrapper-{{ product.id }}" style="display:none;">
+                            <p class="small fw-bold mb-2 text-uppercase text-secondary" style="font-size: 0.75rem;">Color / Material</p>
+                            <div class="d-flex flex-wrap mb-3" id="colors-{{ product.id }}">
+                                <!-- JS insertará botones aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRECIO Y ACCIÓN -->
+                <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="small text-muted d-block">Precio Total</span>
+                            <span class="fs-2 fw-bold text-jema-purple" id="price-{{ product.id }}">$0.00</span>
+                        </div>
+                        
+                        <!-- Cantidad -->
+                        <div class="d-flex align-items-center border rounded-pill px-2 py-1">
+                            <button class="btn btn-link text-dark p-0" onclick="changeQty({{ product.id }}, -1)"><i class="bi bi-dash"></i></button>
+                            <input type="number" id="qty-{{ product.id }}" value="1" class="form-control border-0 text-center p-0" style="width: 40px;" readonly>
+                            <button class="btn btn-link text-dark p-0" onclick="changeQty({{ product.id }}, 1)"><i class="bi bi-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-jema-primary w-100 py-3 rounded-4 fw-bold shadow" onclick="addToCart({{ product.id }})">
+                        Agregar al Carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- DATOS JSON (OCULTOS) -->
+    {{ variants_json|json_script:"variants-data" }}
+
+    <script>
+        // 1. LEER DATOS DEL BACKEND
+        const variantsData = JSON.parse(document.getElementById('variants-data').textContent);
+        const state = {}; // Guardar selección actual de cada producto
+
+        // 2. INICIALIZAR EL CATÁLOGO
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('feedContainer');
+            
+            // Ocultar animación al hacer scroll
+            container.addEventListener('scroll', () => {
+                document.getElementById('swipeHint').style.opacity = '0';
+            });
+
+            // Renderizar opciones para cada producto
+            document.querySelectorAll('.product-slide').forEach(slide => {
+                const pid = slide.dataset.productId;
+                initProduct(pid);
+            });
+        });
+
+        function initProduct(pid) {
+            const variants = variantsData[pid];
+            if (!variants || variants.length === 0) return;
+
+            // Obtener Tamaños Únicos
+            const sizes = [...new Set(variants.map(v => JSON.stringify({id: v.size_id, name: v.size_name})))].map(JSON.parse);
+            
+            const sizeContainer = document.getElementById(`sizes-${pid}`);
+            sizes.forEach((s, index) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn ${index === 0 ? 'active' : ''}`; // Seleccionar primero por defecto
+                btn.innerText = s.name;
+                btn.onclick = () => selectSize(pid, s.id, btn);
+                sizeContainer.appendChild(btn);
+            });
+
+            // Estado Inicial
+            state[pid] = {
+                size: sizes[0].id,
+                variant: null
+            };
+
+            updateColorsAndPrice(pid);
+        }
+
+        function selectSize(pid, sizeId, btnElement) {
+            // Actualizar visual botón
+            const container = document.getElementById(`sizes-${pid}`);
+            container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            // Actualizar estado
+            state[pid].size = sizeId;
+            updateColorsAndPrice(pid);
+        }
+
+        function updateColorsAndPrice(pid) {
+            const currentSize = state[pid].size;
+            const variants = variantsData[pid].filter(v => v.size_id === currentSize);
+            
+            // Lógica de Colores
+            const colorWrapper = document.getElementById(`colors-wrapper-${pid}`);
+            const colorContainer = document.getElementById(`colors-${pid}`);
+            colorContainer.innerHTML = '';
+
+            // ¿Tiene colores reales? (Si es "Full Color" o null, ocultamos la sección visualmente pero la seleccionamos lógicamente)
+            // Asumimos que si hay más de 1 variante para este tamaño, hay colores/materiales distintos
+            
+            if (variants.length > 0) {
+                // Si el primer variante es "Full Color" o similar, ocultamos selector
+                // Para tu caso de globos (1 sola opción por tamaño):
+                if (variants.length === 1) {
+                    colorWrapper.style.display = 'none';
+                    state[pid].variant = variants[0];
+                } else {
+                    // Caso Vinilos (Múltiples colores/materiales)
+                    colorWrapper.style.display = 'block';
+                    
+                    variants.forEach((v, index) => {
+                        const btn = document.createElement('button');
+                        // Nombre compuesto: Material + Color (ej: Mailan Dorado)
+        
+                        let btnLabel = v.color_name;
+                        if (v.material_name.includes("Mailan")) btnLabel += " (Metalizado)";
+                        // Aquí deberíamos pasar el nombre del color desde el backend, 
+                        // por simplicidad usaré el precio como distintivo visual rápido o el ID.
+                        // MEJORA: En la vista, pasa 'color_name' y 'material_name'.
+                        // Por ahora usaré un texto genérico, pero verás el precio cambiar.
+                        btnLabel = `$${v.price}`; 
+
+                        btn.className = `option-btn ${state[pid].variant?.id === v.id ? 'active' : ''}`;
+                        if (!state[pid].variant && index === 0) {
+                            btn.classList.add('active');
+                            state[pid].variant = v;
+                        }
+
+                        btn.onclick = () => {
+                            colorContainer.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                            state[pid].variant = v;
+                            updatePriceDisplay(pid);
+                        };
+                        btn.innerText = btnLabel; // En prod, usa nombre de color real
+                        colorContainer.appendChild(btn);
+                    });
+                }
+                updatePriceDisplay(pid);
+            }
+        }
+
+        function updatePriceDisplay(pid) {
+            const variant = state[pid].variant;
+            const priceEl = document.getElementById(`price-${pid}`);
+            if (variant) {
+                priceEl.innerText = `$${variant.price}`;
+            } else {
+                priceEl.innerText = '---';
+            }
+        }
+
+        function changeQty(pid, delta) {
+            const input = document.getElementById(`qty-${pid}`);
+            let val = parseInt(input.value) + delta;
+            if (val < 1) val = 1;
+            input.value = val;
+        }
+
+        function addToCart(pid) {
+            const variant = state[pid].variant;
+            const qty = document.getElementById(`qty-${pid}`).value;
+
+            if (!variant) {
+                alert("Por favor selecciona las opciones");
+                return;
+            }
+
+            // AJAX al servidor
+            fetch("{% url 'api_add_to_cart' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    variant_id: variant.id,
+                    quantity: qty
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'ok') {
+                    // Animación de éxito simple
+                    alert("¡Agregado al carrito!");
+                } else {
+                    alert("Error al agregar. Asegúrate de iniciar sesión.");
+                }
+            });
+        }
+    </script>
+</body>
+</html>

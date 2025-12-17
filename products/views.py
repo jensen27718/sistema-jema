@@ -6,6 +6,11 @@ from .models import Product, Category, ProductVariant
 from .forms import ProductForm, CategoryForm
 from .services import generar_variantes_vinilo, generar_variantes_impresos # <--- Importamos la magia
 from django.db.models import Min
+import json  # <--- AGREGAR ESTA LÍNEA
+from django.http import JsonResponse
+from django.core.serializers import serialize
+from django.core.serializers.json import DjangoJSONEncoder
+
 
 
 def is_staff(user):
@@ -96,25 +101,54 @@ def category_delete_view(request, category_id):
 
 
 def catalogo_publico_view(request):
-    # Traemos los productos y calculamos el precio mínimo de sus variantes
-    products = Product.objects.annotate(
-        min_price=Min('variants__price')
-    ).filter(
-        variants__isnull=False # Solo mostrar productos que tengan variantes (precios)
-    ).distinct()
-
-    # Filtros básicos (Categoría)
-    categoria_slug = request.GET.get('categoria')
-    if categoria_slug:
-        products = products.filter(category__slug=categoria_slug)
+    # 1. Obtener productos
+    products = Product.objects.filter(variants__isnull=False).distinct().order_by('-created_at')
+    
+    # 2. Construir JSON de variantes para el Frontend (Magia para que sea rápido)
+    variants_data = {}
+    for product in products:
+        p_variants = product.variants.all()
+        variants_data[product.id] = []
+        for v in p_variants:
+            variants_data[product.id].append({
+                'id': v.id,
+                'size_id': v.size.id,
+                'size_name': v.size.name,
+                'material_id': v.material.id, # Para diferenciar vinilo de mailan
+                'color_name': v.color.name if v.color else "Estándar", # AGREGAR ESTO
+    'material_name': v.material.name,  
+                'color_id': v.color.id if v.color else None,
+                'price': float(v.price),
+                'stock': v.stock
+            })
 
     context = {
         'products': products,
-        'categories': Category.objects.all() # Para el filtro lateral
+        'variants_json': json.dumps(variants_data, cls=DjangoJSONEncoder)
     }
-    return render(request, 'catalogo.html', context)
+    return render(request, 'catalogo_tiktok.html', context) # Usaremos una plantilla nueva
 
-# --- CRUD PRODUCTOS EXTRA ---
+# --- API PARA EL CARRITO (AJAX) ---
+@login_required
+def add_to_cart_api(request):
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+        variant_id = data.get('variant_id')
+        quantity = int(data.get('quantity', 1))
+
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        variant = get_object_or_404(ProductVariant, id=variant_id)
+
+        item, created = CartItem.objects.get_or_create(cart=cart, variant=variant)
+        if not created:
+            item.quantity += quantity
+        else:
+            item.quantity = quantity
+        item.save()
+
+        return JsonResponse({'status': 'ok', 'total_items': cart.items.count()})
+    return JsonResponse({'status': 'error'}, status=400)
 
 @login_required
 @user_passes_test(is_staff)

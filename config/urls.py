@@ -35,6 +35,8 @@ urlpatterns = [
     path('panel/categorias/editar/<int:category_id>/', views_products.category_update_view, name='panel_category_update'),
     path('panel/categorias/eliminar/<int:category_id>/', views_products.category_delete_view, name='panel_category_delete'),
 
+    # --- RUTAS DE CARRITO (NUEVAS) ---
+    path('api/add-to-cart/', views_products.add_to_cart_api, name='api_add_to_cart'),
     
 ]
 # --- AGREGA ESTO AL FINAL DEL ARCHIVO ---
