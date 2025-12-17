@@ -28,7 +28,7 @@
         }
 
         .feed-container {
-            height: 100dvh; /* Altura dinámica para móviles */
+            height: 100dvh;
             width: 100%;
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
@@ -60,7 +60,6 @@
             max-height: 100%; 
         }
 
-        /* IMAGEN FULL WIDTH */
         .slide-image {
             height: 45%; 
             width: 100%;
@@ -253,7 +252,6 @@
             60% {transform: translateX(-50%) translateY(-5px);}
         }
         
-        /* BOTÓN VOLVER (IZQUIERDA) */
         .btn-back {
             position: fixed;
             top: 20px;
@@ -272,7 +270,6 @@
         }
         .btn-back i { font-size: 1.2rem; color: var(--jema-purple); }
 
-        /* BOTÓN CARRITO (DERECHA) */
         .btn-cart-float {
             position: fixed;
             top: 20px;
@@ -292,7 +289,6 @@
             transition: transform 0.2s ease;
         }
         
-        /* Contador del Carrito */
         .cart-badge {
             position: absolute;
             top: -5px;
@@ -310,7 +306,6 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Animación Pop */
         @keyframes pop {
             0% { transform: scale(1); }
             50% { transform: scale(1.3); }
@@ -320,6 +315,55 @@
 
         .feed-container::-webkit-scrollbar { display: none; }
         .feed-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* NUEVOS ESTILOS PARA EL MODAL DE LOGIN */
+        .jema-modal-content {
+            border-radius: 24px;
+            border: none;
+            padding: 20px 10px;
+            text-align: center;
+        }
+        .jema-modal-icon {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            background: var(--jema-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        .jema-modal-title {
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+        .jema-modal-text {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+        }
+        .btn-jema-primary {
+            background: var(--jema-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(107, 45, 123, 0.2);
+            text-decoration: none;
+            display: block;
+        }
+        .btn-jema-primary:hover { color: white; opacity: 0.95; }
+        .btn-jema-secondary {
+            color: #999;
+            background: transparent;
+            border: none;
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -328,15 +372,12 @@
         <i class="bi bi-chevron-up me-2"></i> Desliza para ver más
     </div>
 
-    <!-- Botón Izquierdo: Volver -->
     <a href="{% url 'home' %}" class="btn-back">
         <i class="bi bi-arrow-left"></i>
     </a>
 
-    <!-- Botón Derecho: CARRITO -->
     <a href="{% url 'cart_view' %}" class="btn-cart-float" id="cartBtn">
         <i class="bi bi-cart3 fs-5"></i>
-        <!-- Lógica de visualización del contador -->
         {% if user.is_authenticated and user.cart.items.count > 0 %}
             <span class="cart-badge" id="cartBadge">{{ user.cart.items.count }}</span>
         {% else %}
@@ -348,7 +389,6 @@
         {% for product in products %}
         <div class="product-slide" data-product-id="{{ product.id }}">
             <div class="product-card-unified">
-                <!-- Imagen -->
                 <div class="slide-image">
                     {% if product.image %}
                         <img src="{{ product.image.url }}" alt="{{ product.name }}">
@@ -359,7 +399,6 @@
                     {% endif %}
                 </div>
 
-                <!-- Detalles -->
                 <div class="slide-details">
                     <div class="details-content">
                         <h2 class="product-name">Referencia {{ product.name }}</h2>
@@ -378,7 +417,6 @@
                         </div>
                     </div>
 
-                    <!-- Footer de compra -->
                     <div class="purchase-footer">
                         <div class="price-row">
                             <div>
@@ -404,6 +442,26 @@
         {% endfor %}
     </div>
 
+    <!-- MODAL DE LOGIN PERSONALIZADO -->
+    <div class="modal fade" id="loginPromptModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content jema-modal-content">
+                <div class="modal-body p-2">
+                    <i class="bi bi-shield-lock-fill jema-modal-icon"></i>
+                    <h4 class="jema-modal-title">Inicia Sesión</h4>
+                    <p class="jema-modal-text">Para agregar productos a tu carrito y guardar tu selección, necesitas ingresar a tu cuenta.</p>
+                    
+                    <a href="{% url 'account_login' %}?next={% url 'catalogo' %}" class="btn btn-jema-primary mb-2">
+                        Ingresar ahora
+                    </a>
+                    <button type="button" class="btn-jema-secondary" data-bs-dismiss="modal">
+                        Seguir viendo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JSON de variantes -->
     {{ variants_json|json_script:"variants-data" }}
 
@@ -422,7 +480,6 @@
 
         const productState = {}; 
 
-        // Ocultar hint
         const feedContainer = document.getElementById('feedContainer');
         const swipeHint = document.getElementById('swipeHint');
         feedContainer.addEventListener('scroll', () => {
@@ -430,8 +487,14 @@
             setTimeout(() => swipeHint.style.display = 'none', 300);
         }, { once: true, passive: true });
 
-        // Inicializar
+        // Inicializar Modal de Bootstrap
+        let loginModal;
         document.addEventListener("DOMContentLoaded", () => {
+            const modalEl = document.getElementById('loginPromptModal');
+            if(modalEl) {
+                loginModal = new bootstrap.Modal(modalEl);
+            }
+
             document.querySelectorAll('.product-slide').forEach(slide => {
                 const pid = String(slide.dataset.productId); 
                 const variants = variantsData[pid];
@@ -465,7 +528,6 @@
 
                 productState[pid] = { selectedSizeId: null, selectedVariant: null };
 
-                // Auto-seleccionar primer tamaño
                 if (firstSizeId) {
                     const firstBtn = sizeContainer.querySelector('button');
                     selectSize(pid, firstSizeId, firstBtn);
@@ -550,13 +612,31 @@
         }
 
         function addToCart(pid) {
+            // 1. VERIFICAR LOGUEO CON MODAL PERSONALIZADO
+            const isUserLoggedIn = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
+
+            if (!isUserLoggedIn) {
+                // Abre el modal de Bootstrap definido arriba
+                if(loginModal) loginModal.show();
+                return;
+            }
+
+            // 2. Lógica normal
             const variant = productState[pid]?.selectedVariant;
             const qty = document.getElementById(`qty-${pid}`).value;
 
             if (!variant) {
-                alert("Selecciona las opciones primero");
+                // Podemos usar un modal simple para esto también si quisieras, 
+                // pero un alert rápido para validación técnica está "ok", 
+                // aunque lo ideal sería un Toast.
+                alert("⚠️ Por favor selecciona las opciones (Tamaño/Color) primero.");
                 return;
             }
+
+            const btn = document.querySelector(`.product-slide[data-product-id="${pid}"] .btn-add-cart`);
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Agregando...';
+            btn.disabled = true;
 
             fetch("{% url 'api_add_to_cart' %}", {
                 method: 'POST',
@@ -566,36 +646,41 @@
                 },
                 body: JSON.stringify({ variant_id: variant.id, quantity: qty })
             })
-            .then(r => r.json())
+            .then(r => {
+                if (r.status === 401 || r.status === 403) {
+                    // Si la sesión expiró en segundo plano
+                    window.location.href = "{% url 'account_login' %}";
+                    throw new Error("No autenticado");
+                }
+                return r.json();
+            })
             .then(data => {
                 if (data.status === 'ok') {
-                    // 1. Feedback en Botón
-                    const btn = document.querySelector(`.product-slide[data-product-id="${pid}"] .btn-add-cart`);
-                    const originalHTML = btn.innerHTML;
-                    btn.innerHTML = '<i class="bi bi-check-lg"></i> ¡Agregado!';
+                    btn.innerHTML = '<i class="bi bi-check-lg"></i> ¡Listo!';
                     btn.style.background = '#1A9A9A';
                     
-                    // 2. Animar Carrito Flotante (Botón superior derecho)
                     const cartBadge = document.getElementById('cartBadge');
-                    const cartBtn = document.getElementById('cartBtn');
-                    
                     cartBadge.style.display = 'flex';
                     cartBadge.innerText = data.total_items;
-                    
-                    // Efecto Pop
-                    cartBtn.classList.add('pop-anim');
-                    setTimeout(() => cartBtn.classList.remove('pop-anim'), 300);
+                    document.getElementById('cartBtn').classList.add('pop-anim');
+                    setTimeout(() => document.getElementById('cartBtn').classList.remove('pop-anim'), 300);
 
-                    // Restaurar botón después de 2 seg
                     setTimeout(() => {
                         btn.innerHTML = originalHTML;
                         btn.style.background = ''; 
+                        btn.disabled = false;
                     }, 2000);
                 } else {
-                    alert("Error: Inicia sesión para comprar");
+                    alert("Error al agregar. Intenta de nuevo.");
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
                 }
             })
-            .catch(err => console.error(err));
+            .catch(err => {
+                console.error(err);
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            });
         }
     </script>
 </body>

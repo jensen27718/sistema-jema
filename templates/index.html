@@ -1,148 +1,66 @@
 {% extends 'base.html' %}
 
-{% block title %}JEMA - Tu Tienda en Línea de Confianza{% endblock %}
+{% block title %}JEMA - Stickers al Mayor{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="position-relative overflow-hidden" style="min-height: 600px;">
-    <!-- Background Pattern -->
-    <div class="position-absolute w-100 h-100" 
-         style="background: linear-gradient(135deg, rgba(107, 45, 123, 0.05) 0%, rgba(26, 154, 154, 0.05) 100%);">
-        <div class="position-absolute" 
-             style="width: 400px; height: 400px; background: radial-gradient(circle, rgba(107, 45, 123, 0.1) 0%, transparent 70%); top: -100px; right: -100px; border-radius: 50%;"></div>
-        <div class="position-absolute" 
-             style="width: 300px; height: 300px; background: radial-gradient(circle, rgba(26, 154, 154, 0.1) 0%, transparent 70%); bottom: -50px; left: -50px; border-radius: 50%;"></div>
-    </div>
-    
-    <div class="container py-5 position-relative">
-        <div class="row align-items-center min-vh-50">
-            <div class="col-lg-6 py-5">
-                <span class="jema-badge jema-badge-purple mb-3 animate-fade-in">
-                    <i class="bi bi-stars me-1"></i> Nueva Colección 2024
+<section class="position-relative overflow-hidden pt-4 pb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-12 text-center py-4">
+                <span class="badge bg-light text-jema-purple border mb-3 px-3 py-2 rounded-pill">
+                    🚀 Venta exclusiva para negocios
                 </span>
-                
-                <h1 class="display-3 fw-bold mb-4 animate-slide-up" style="color: var(--foreground);">
-                    Descubre el Estilo que
-                    <span class="jema-text-gradient">Te Define</span>
+
+                <h1 class="display-4 fw-bold mb-3" style="color: var(--foreground); line-height: 1.1;">
+                    Stickers Impresos<br>
+                    <span class="jema-text-gradient">Full Color</span>
                 </h1>
-                
-                <p class="lead mb-4 animate-slide-up" style="color: var(--muted-foreground); animation-delay: 0.1s;">
-                    Explora nuestra colección exclusiva de productos con la mejor calidad y los mejores precios. Tu satisfacción es nuestra prioridad.
+
+                <p class="lead mb-4 mx-auto fs-6 text-muted" style="max-width: 500px;">
+                    La solución perfecta para decorar globos, cajas y empaques.
+                    Olvídate de depilar vinilo: <strong>Imprime, pega y vende.</strong>
                 </p>
-                
-                <div class="d-flex flex-wrap gap-3 mb-5 animate-slide-up" style="animation-delay: 0.2s;">
-                    <a href="{% url 'catalogo' %}" class="btn btn-jema-primary btn-lg">
-                        <i class="bi bi-bag me-2"></i>
-                        Explorar Catálogo
+
+                <div class="d-grid gap-2 col-10 col-md-5 mx-auto">
+                    <a href="{% url 'catalogo' %}" class="btn btn-jema-primary btn-lg shadow-lg py-3 rounded-4 fw-bold">
+                        <i class="bi bi-collection-play me-2"></i> Ver Catálogo
                     </a>
-                    <a href="#ofertas" class="btn btn-jema-outline btn-lg">
-                        <i class="bi bi-percent me-2"></i>
-                        Ver Ofertas
-                    </a>
-                </div>
-                
-                <!-- Stats -->
-                <div class="row g-4 animate-slide-up" style="animation-delay: 0.3s;">
-                    <div class="col-4">
-                        <div class="text-center">
-                            <h3 class="fw-bold mb-1 jema-text-gradient">10K+</h3>
-                            <p class="text-muted small mb-0">Clientes Felices</p>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="text-center">
-                            <h3 class="fw-bold mb-1 jema-text-gradient">500+</h3>
-                            <p class="text-muted small mb-0">Productos</p>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="text-center">
-                            <h3 class="fw-bold mb-1 jema-text-gradient">99%</h3>
-                            <p class="text-muted small mb-0">Satisfacción</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-6 d-none d-lg-block">
-                <div class="position-relative">
-                    <div class="jema-gradient rounded-4 p-4 shadow-lg" style="transform: rotate(3deg);">
-                        <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600" 
-                             alt="Featured Products" 
-                             class="rounded-3 w-100" 
-                             style="transform: rotate(-3deg);">
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Categories Section -->
-<section class="py-5" style="background-color: var(--muted);">
+<!-- Categorías Rápidas -->
+<section class="py-4 bg-light">
     <div class="container">
-        <div class="text-center mb-5">
-            <span class="jema-badge jema-badge-teal mb-3">
-                <i class="bi bi-grid me-1"></i> Categorías
-            </span>
-            <h2 class="display-5 fw-bold" style="color: var(--foreground);">
-                Explora por <span class="jema-text-gradient">Categoría</span>
-            </h2>
-        </div>
-        
-        <div class="row g-4">
-            <!-- Category 1 -->
-            <div class="col-lg-3 col-md-6">
-                <a href="{% url 'catalogo' %}?categoria=electronica" class="text-decoration-none">
-                    <div class="jema-card text-center p-4">
-                        <div class="jema-gradient rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
-                             style="width: 80px; height: 80px;">
-                            <i class="bi bi-phone fs-2 text-white"></i>
-                        </div>
-                        <h5 class="fw-semibold mb-2" style="color: var(--foreground);">Electrónica</h5>
-                        <p class="text-muted small mb-0">150+ productos</p>
+        <h5 class="fw-bold mb-4 text-center">Categorías</h5>
+        <div class="row g-3 justify-content-center">
+            <!-- Globo -->
+            <div class="col-4 col-md-2">
+                <a href="{% url 'catalogo' %}?categoria=impreso-globo" class="text-decoration-none text-dark">
+                    <div class="bg-white p-3 rounded-4 text-center shadow-sm h-100">
+                        <i class="bi bi-balloon-heart fs-1 text-jema-teal"></i>
+                        <p class="small fw-bold mb-0 mt-2 line-height-sm">Para Globos</p>
                     </div>
                 </a>
             </div>
-            
-            <!-- Category 2 -->
-            <div class="col-lg-3 col-md-6">
-                <a href="{% url 'catalogo' %}?categoria=moda" class="text-decoration-none">
-                    <div class="jema-card text-center p-4">
-                        <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
-                             style="width: 80px; height: 80px; background-color: var(--jema-teal);">
-                            <i class="bi bi-bag fs-2 text-white"></i>
-                        </div>
-                        <h5 class="fw-semibold mb-2" style="color: var(--foreground);">Moda</h5>
-                        <p class="text-muted small mb-0">200+ productos</p>
+            <!-- Cajas -->
+            <div class="col-4 col-md-2">
+                <a href="{% url 'catalogo' %}?categoria=vinilo-corte" class="text-decoration-none text-dark">
+                    <div class="bg-white p-3 rounded-4 text-center shadow-sm h-100">
+                        <i class="bi bi-box2-heart fs-1 text-jema-purple"></i>
+                        <p class="small fw-bold mb-0 mt-2 line-height-sm">Vinilo Corte</p>
                     </div>
                 </a>
             </div>
-            
-            <!-- Category 3 -->
-            <div class="col-lg-3 col-md-6">
-                <a href="{% url 'catalogo' %}?categoria=hogar" class="text-decoration-none">
-                    <div class="jema-card text-center p-4">
-                        <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
-                             style="width: 80px; height: 80px; background-color: var(--jema-magenta);">
-                            <i class="bi bi-house fs-2 text-white"></i>
-                        </div>
-                        <h5 class="fw-semibold mb-2" style="color: var(--foreground);">Hogar</h5>
-                        <p class="text-muted small mb-0">100+ productos</p>
-                    </div>
-                </a>
-            </div>
-            
-            <!-- Category 4 -->
-            <div class="col-lg-3 col-md-6">
-                <a href="{% url 'catalogo' %}?categoria=deportes" class="text-decoration-none">
-                    <div class="jema-card text-center p-4">
-                        <div class="jema-gradient-accent rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
-                             style="width: 80px; height: 80px;">
-                            <i class="bi bi-bicycle fs-2 text-white"></i>
-                        </div>
-                        <h5 class="fw-semibold mb-2" style="color: var(--foreground);">Deportes</h5>
-                        <p class="text-muted small mb-0">80+ productos</p>
+            <!-- Marcas -->
+            <div class="col-4 col-md-2">
+                <a href="{% url 'catalogo' %}?categoria=logo" class="text-decoration-none text-dark">
+                    <div class="bg-white p-3 rounded-4 text-center shadow-sm h-100">
+                        <i class="bi bi-briefcase fs-1 text-jema-magenta"></i>
+                        <p class="small fw-bold mb-0 mt-2 line-height-sm">Tu Marca</p>
                     </div>
                 </a>
             </div>
@@ -150,161 +68,43 @@
     </div>
 </section>
 
-<!-- Featured Products Section -->
+<!-- Recién Llegados -->
 <section class="py-5">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-5">
-            <div>
-                <span class="jema-badge jema-badge-magenta mb-2">
-                    <i class="bi bi-fire me-1"></i> Destacados
-                </span>
-                <h2 class="display-6 fw-bold mb-0" style="color: var(--foreground);">
-                    Productos <span class="jema-text-gradient">Populares</span>
-                </h2>
-            </div>
-            <a href="{% url 'catalogo' %}" class="btn btn-jema-outline d-none d-md-flex">
-                Ver Todo <i class="bi bi-arrow-right ms-2"></i>
-            </a>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">Recién Llegados</h4>
+            <a href="{% url 'catalogo' %}" class="text-jema-purple text-decoration-none small fw-bold">Ver todo</a>
         </div>
-        
-        <div class="row g-4">
+
+        <div class="row g-3">
             {% for product in featured_products %}
-                <div class="col-lg-3 col-md-6">
-                    {% include 'components/product_card.html' with product=product %}
-                </div>
-            {% empty %}
-                <!-- Demo products if none exist -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="jema-card h-100 overflow-hidden">
-                        <div class="position-relative overflow-hidden" style="height: 220px;">
-                            <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400" 
-                                 alt="Producto" class="w-100 h-100 object-fit-cover">
-                            <span class="position-absolute top-0 end-0 m-3 jema-badge jema-gradient-accent text-white">-20%</span>
+            <div class="col-6 col-md-3">
+                <a href="{% url 'catalogo' %}" class="text-decoration-none">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div class="position-relative" style="padding-top: 100%;">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}"
+                                class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+                                alt="{{ product.name }}">
+                            {% else %}
+                            <div
+                                class="position-absolute top-0 start-0 w-100 h-100 bg-light d-flex align-items-center justify-content-center">
+                                <i class="bi bi-image text-muted"></i>
+                            </div>
+                            {% endif %}
                         </div>
-                        <div class="p-4">
-                            <span class="jema-badge jema-badge-purple mb-2">Electrónica</span>
-                            <h5 class="fw-semibold mb-2">Smart Watch Pro</h5>
-                            <div class="d-flex align-items-center gap-2 mb-3">
-                                <div class="text-warning">★★★★★</div>
-                                <span class="text-muted small">(128)</span>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <span class="fs-5 fw-bold text-jema-purple">$199.99</span>
-                                    <span class="text-muted text-decoration-line-through small ms-2">$249.99</span>
-                                </div>
-                                <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
-                                    <i class="bi bi-cart-plus"></i>
-                                </button>
-                            </div>
+                        <div class="card-body p-2 text-center">
+                            <h6 class="card-title fs-6 mb-0 text-dark text-truncate">{{ product.name }}</h6>
+                            <small class="text-muted">{{ product.category.name }}</small>
                         </div>
                     </div>
-                </div>
-                <!-- Repeat for more demo products -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="jema-card h-100 overflow-hidden">
-                        <div class="position-relative overflow-hidden" style="height: 220px;">
-                            <img src="https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400" 
-                                 alt="Producto" class="w-100 h-100 object-fit-cover">
-                        </div>
-                        <div class="p-4">
-                            <span class="jema-badge jema-badge-teal mb-2">Belleza</span>
-                            <h5 class="fw-semibold mb-2">Kit Skincare Premium</h5>
-                            <div class="d-flex align-items-center gap-2 mb-3">
-                                <div class="text-warning">★★★★☆</div>
-                                <span class="text-muted small">(89)</span>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <span class="fs-5 fw-bold text-jema-purple">$89.99</span>
-                                <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
-                                    <i class="bi bi-cart-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="jema-card h-100 overflow-hidden">
-                        <div class="position-relative overflow-hidden" style="height: 220px;">
-                            <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400" 
-                                 alt="Producto" class="w-100 h-100 object-fit-cover">
-                            <span class="position-absolute top-0 end-0 m-3 jema-badge jema-gradient-accent text-white">-15%</span>
-                        </div>
-                        <div class="p-4">
-                            <span class="jema-badge jema-badge-purple mb-2">Audio</span>
-                            <h5 class="fw-semibold mb-2">Audífonos Wireless</h5>
-                            <div class="d-flex align-items-center gap-2 mb-3">
-                                <div class="text-warning">★★★★★</div>
-                                <span class="text-muted small">(256)</span>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <span class="fs-5 fw-bold text-jema-purple">$149.99</span>
-                                    <span class="text-muted text-decoration-line-through small ms-2">$179.99</span>
-                                </div>
-                                <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
-                                    <i class="bi bi-cart-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="jema-card h-100 overflow-hidden">
-                        <div class="position-relative overflow-hidden" style="height: 220px;">
-                            <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400" 
-                                 alt="Producto" class="w-100 h-100 object-fit-cover">
-                        </div>
-                        <div class="p-4">
-                            <span class="jema-badge jema-badge-magenta mb-2">Deportes</span>
-                            <h5 class="fw-semibold mb-2">Running Shoes Elite</h5>
-                            <div class="d-flex align-items-center gap-2 mb-3">
-                                <div class="text-warning">★★★★☆</div>
-                                <span class="text-muted small">(167)</span>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <span class="fs-5 fw-bold text-jema-purple">$129.99</span>
-                                <button class="btn btn-jema-secondary rounded-circle" style="width: 44px; height: 44px;">
-                                    <i class="bi bi-cart-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-</section>
-
-<!-- CTA Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="jema-gradient rounded-4 p-5 text-center position-relative overflow-hidden">
-            <!-- Decorative circles -->
-            <div class="position-absolute" style="width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%; top: -50px; left: -50px;"></div>
-            <div class="position-absolute" style="width: 150px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 50%; bottom: -30px; right: -30px;"></div>
-            
-            <div class="position-relative" style="z-index: 1;">
-                <h2 class="display-5 fw-bold text-white mb-3">
-                    ¡Únete a Nuestra Comunidad!
-                </h2>
-                <p class="lead text-white mb-4" style="opacity: 0.9;">
-                    Suscríbete y recibe ofertas exclusivas, descuentos especiales y las últimas novedades.
-                </p>
-                <form class="row g-3 justify-content-center" style="max-width: 500px; margin: 0 auto;">
-                    <div class="col-12 col-md-8">
-                        <input type="email" 
-                               class="form-control form-control-lg border-0 rounded-3" 
-                               placeholder="Tu correo electrónico"
-                               style="padding: 16px 20px;">
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <button type="submit" class="btn btn-light btn-lg w-100 fw-semibold rounded-3 text-jema-purple">
-                            Suscribirse
-                        </button>
-                    </div>
-                </form>
+                </a>
             </div>
+            {% empty %}
+            <div class="col-12 text-center py-4">
+                <p class="text-muted">Cargando nuevos diseños...</p>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </section>
