@@ -41,6 +41,16 @@ urlpatterns = [
     path('carrito/', views_products.cart_view, name='cart_view'),
     path('api/cart/update/', views_products.api_update_cart_item, name='api_update_cart'),
     path('api/cart/remove/', views_products.api_remove_cart_item, name='api_remove_cart'),
+    
+    # --- RUTAS DE ESTADOS (NUEVAS) ---
+    path('panel/estados/', views_products.status_list_view, name='panel_status_list'),
+    path('panel/estados/crear/', views_products.status_create_view, name='panel_status_create'),
+    path('panel/estados/editar/<int:status_id>/', views_products.status_update_view, name='panel_status_update'),
+    path('panel/estados/eliminar/<int:status_id>/', views_products.status_delete_view, name='panel_status_delete'),
+
+    # --- RUTAS DE PEDIDOS (ADMIN) ---
+    path('panel/ordenes/', views_products.panel_orders_list_view, name='panel_pedidos'), # Reemplaza el placeholder
+    path('panel/ordenes/<int:order_id>/', views_products.panel_order_detail_view, name='panel_order_detail'),
 
 
     # ...

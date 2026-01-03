@@ -1,0 +1,113 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Pedido #{{ order.id }} - JEMA{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'panel_pedidos' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    Detalle del Pedido #{{ order.id }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Columna Izquierda: Items y Detalles -->
+    <div class="col-lg-8">
+        <div class="jema-card p-4 h-100">
+            <h6 class="text-muted fw-bold small mb-3 text-uppercase">Productos del Pedido</h6>
+
+            <div class="d-flex flex-column gap-3">
+                {% for item in order.items.all %}
+                <div class="d-flex align-items-center gap-3 p-3 rounded-3 bg-light border">
+                    <div class="bg-white rounded p-2 border d-flex align-items-center justify-content-center"
+                        style="width: 50px; height: 50px;">
+                        <i class="bi bi-box text-muted"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0 fw-bold">{{ item.product_name }}</h6>
+                        <span class="small text-muted">{{ item.variant_text }}</span>
+                    </div>
+                    <div class="text-end">
+                        <span class="d-block small text-muted">{{ item.quantity }} x ${{ item.price|intcomma }}</span>
+                        <span class="fw-bold">${{ item.get_total|intcomma }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                <span class="text-muted">Total del Pedido</span>
+                <h3 class="jema-text-gradient fw-bold mb-0">${{ order.total|intcomma }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Estado y Cliente -->
+    <div class="col-lg-4">
+        <!-- Card de Estado -->
+        <div class="jema-card p-4 mb-4">
+            <h6 class="text-muted fw-bold small mb-3 text-uppercase">Estado Actual</h6>
+
+            <div class="text-center py-3 rounded-3 mb-4"
+                style="background-color: {{ order.status.color }}15; border: 1px solid {{ order.status.color }}30;">
+                <h4 class="mb-0 fw-bold" style="color: {{ order.status.color }};">
+                    {{ order.status.name|default:"Sin Estado" }}
+                </h4>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                <label class="form-label small text-muted fw-bold">CAMBIAR ESTADO</label>
+                <div class="d-flex gap-2">
+                    <select name="status_id" class="form-select">
+                        {% for status in statuses %}
+                        <option value="{{ status.id }}" {% if order.status_id == status.id %}selected{% endif %}>
+                            {{ status.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-dark">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Card de Cliente -->
+        <div class="jema-card p-4">
+            <h6 class="text-muted fw-bold small mb-3 text-uppercase">Datos de Envío</h6>
+
+            <div class="mb-3">
+                <label class="d-block small text-muted">Cliente</label>
+                <span class="fw-medium">{{ order.address.full_name }}</span>
+            </div>
+
+            <div class="mb-3">
+                <label class="d-block small text-muted">Teléfono</label>
+                <a href="https://wa.me/57{{ order.address.phone }}" target="_blank" class="text-decoration-none">
+                    <i class="bi bi-whatsapp text-success me-1"></i> {{ order.address.phone }}
+                </a>
+            </div>
+
+            <div class="mb-3">
+                <label class="d-block small text-muted">Dirección</label>
+                <div>{{ order.address.address_line }}</div>
+                <div class="small text-muted">{{ order.address.neighborhood }}</div>
+                <div class="fw-medium">{{ order.address.city }} - {{ order.address.department }}</div>
+            </div>
+
+            <hr>
+
+            <div class="d-grid">
+                <a href="https://wa.me/57{{ order.address.phone }}?text=Hola%20{{ order.address.full_name }},%20te%20escribimos%20de%20JEMA%20sobre%20tu%20pedido%20%23{{ order.id }}..."
+                    target="_blank" class="btn btn-outline-success">
+                    <i class="bi bi-whatsapp me-2"></i> Contactar Cliente
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

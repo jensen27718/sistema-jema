@@ -156,15 +156,28 @@ class ShippingAddress(models.Model):
     def __str__(self):
         return f"{self.city} - {self.address_line}"
 
+# --- NUEVO MODELO DE ESTADOS ---
+class OrderStatus(models.Model):
+    name = models.CharField("Nombre del Estado", max_length=50) # Ej: Recibido, Descartonando
+    color = models.CharField("Color (Hex)", max_length=7, default="#6B2D7B") # Para el badge
+    is_default = models.BooleanField("Por defecto al crear pedido", default=False)
+    
+    def __str__(self): return self.name
+
 class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     address = models.ForeignKey(ShippingAddress, on_delete=models.PROTECT)
+    
+    # Nuevo campo de estado
+    status = models.ForeignKey(OrderStatus, on_delete=models.PROTECT, null=True, blank=True)
+    
     total = models.DecimalField(max_digits=12, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_paid = models.BooleanField(default=False) # Para futuro
+    is_paid = models.BooleanField(default=False) # Mantenemos por compatibilidad
 
     def __str__(self):
-        return f"Pedido #{self.id}"
+        return f"Pedido #{self.id} - {self.status.name if self.status else 'Sin Estado'}"
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')

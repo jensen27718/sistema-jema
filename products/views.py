@@ -13,7 +13,7 @@ from django.core.serializers import serialize
 from django.core.serializers.json import DjangoJSONEncoder
 
 import urllib.parse # <--- AGREGAR ARRIBA
-from .models import ShippingAddress, Order, OrderItem # <--- IMPORTAR NUEVOS MODELOS
+from .models import ShippingAddress, Order, OrderItem, OrderStatus # <--- IMPORTAR NUEVOS MODELOS
 from .forms import AddressForm # <--- IMPORTAR FORM
 
 # ... (Tus otras vistas) ...
@@ -33,10 +33,13 @@ def checkout_process_view(request):
         return redirect('address_create')
     
     # 3. Si tiene dirección, CREAR PEDIDO
+    default_status = OrderStatus.objects.filter(is_default=True).first() # Obtener estado por defecto
+    
     order = Order.objects.create(
         user=request.user,
         address=last_address,
-        total=cart.get_total()
+        total=cart.get_total(),
+        status=default_status # Asignar estado
     )
 
     # Mover items del carrito al pedido (Snapshot)
@@ -240,6 +243,103 @@ def catalogo_publico_view(request, category_slug=None):
         'variants_json': json.dumps(variants_data, cls=DjangoJSONEncoder)
     }
     return render(request, 'catalogo_tiktok.html', context) # Usaremos una plantilla nueva
+
+# --- 3. VISTAS DE ESTADOS DE PEDIDO (CRUD) ---
+@login_required
+@user_passes_test(is_staff)
+def status_list_view(request):
+    statuses = OrderStatus.objects.all()
+    return render(request, 'dashboard/statuses/list.html', {'statuses': statuses})
+
+@login_required
+@user_passes_test(is_staff)
+def status_create_view(request):
+    # Usaremos un form manual o genérico por brevedad
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        color = request.POST.get('color')
+        is_default = request.POST.get('is_default') == 'on'
+        
+        if is_default:
+            # Quitamos el default de otros
+            OrderStatus.objects.update(is_default=False)
+            
+        OrderStatus.objects.create(name=name, color=color, is_default=is_default)
+        messages.success(request, "Estado creado correctamente.")
+        return redirect('panel_status_list')
+        
+    return render(request, 'dashboard/statuses/form.html', {'title': 'Nuevo Estado'})
+
+@login_required
+@user_passes_test(is_staff)
+def status_update_view(request, status_id):
+    state = get_object_or_404(OrderStatus, id=status_id)
+    if request.method == 'POST':
+        state.name = request.POST.get('name')
+        state.color = request.POST.get('color')
+        is_default = request.POST.get('is_default') == 'on'
+        
+        if is_default:
+            OrderStatus.objects.exclude(id=state.id).update(is_default=False)
+        
+        state.is_default = is_default
+        state.save()
+        messages.success(request, "Estado actualizado.")
+        return redirect('panel_status_list')
+    
+    return render(request, 'dashboard/statuses/form.html', {'object': state, 'title': 'Editar Estado'})
+
+@login_required
+@user_passes_test(is_staff)
+def status_delete_view(request, status_id):
+    state = get_object_or_404(OrderStatus, id=status_id)
+    if request.method == 'POST':
+        try:
+            state.delete()
+            messages.success(request, "Estado eliminado.")
+        except:
+            messages.error(request, "No se puede eliminar este estado porque hay pedidos usándolo.")
+        return redirect('panel_status_list')
+    # Reusamos confirmación de categorías
+    return render(request, 'dashboard/categories/confirm_delete.html', {'object': state})
+
+
+# --- 4. VISTAS DE GESTIÓN DE PEDIDOS ---
+@login_required
+@user_passes_test(is_staff)
+def panel_orders_list_view(request):
+    # Filtros básicos
+    status_id = request.GET.get('status')
+    orders = Order.objects.all().select_related('status', 'user').order_by('-created_at')
+    
+    if status_id:
+        orders = orders.filter(status_id=status_id)
+        
+    statuses = OrderStatus.objects.all()
+    
+    return render(request, 'dashboard/orders/list.html', {
+        'orders': orders, 
+        'statuses': statuses,
+        'current_status': int(status_id) if status_id else None
+    })
+
+@login_required
+@user_passes_test(is_staff)
+def panel_order_detail_view(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    statuses = OrderStatus.objects.all()
+    
+    if request.method == 'POST':
+        new_status_id = request.POST.get('status_id')
+        if new_status_id:
+            order.status_id = new_status_id
+            order.save()
+            messages.success(request, f"Estado actualizado a {order.status.name}")
+            return redirect('panel_order_detail', order_id=order.id)
+            
+    return render(request, 'dashboard/orders/detail.html', {'order': order, 'statuses': statuses})
+
+# --- FIN NUEVAS VISTAS ---
 
 # --- API PARA EL CARRITO (AJAX) ---
 @login_required

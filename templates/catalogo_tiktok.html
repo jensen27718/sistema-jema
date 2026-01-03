@@ -20,6 +20,19 @@
             --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
         }
 
+        /* --- SCROLL HINT ANIMATION --- */
+        .category-nav::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%;
+            width: 40px;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.9));
+            pointer-events: none;
+            z-index: 10;
+        }
+
         * {
             box-sizing: border-box;
         }
@@ -82,8 +95,8 @@
             scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
-            padding-top: 60px;
-            /* Espacio para el nav */
+            padding-top: 80px;
+            /* Espacio MAYOR para el nav para evitar corte */
             display: flex;
             flex-wrap: wrap;
             /* Para el grid en desktop */
@@ -101,7 +114,8 @@
             display: flex;
             flex-direction: column;
             padding: 15px;
-            /* padding-top movido al container global */
+            padding-top: 20px;
+            /* Ajuste visual */
             background: linear-gradient(135deg, #f8f5fa 0%, #f0f7f7 100%);
         }
 
@@ -634,6 +648,12 @@
                 setTimeout(() => swipeHint.style.display = 'none', 300);
             }
         }, { once: true, passive: true });
+
+        // Scroll Hint Logic for Category Nav
+        const catNav = document.querySelector('.category-nav');
+        catNav.addEventListener('scroll', () => {
+            catNav.classList.add('scrolled'); // Optional: could toggle classes to hide gradient
+        }, { passive: true });
 
         // Inicializar Modal de Bootstrap
         let loginModal;

@@ -1,0 +1,86 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Pedidos - JEMA{% endblock %}
+{% block page_title %}Gestión de Pedidos{% endblock %}
+
+{% block content %}
+<!-- Filtros y Stats -->
+<div class="row mb-4 g-3">
+    <div class="col-12">
+        <div class="d-flex gap-2 overflow-auto pb-2" style="white-space: nowrap;">
+            <a href="{% url 'panel_pedidos' %}"
+                class="btn {% if not current_status %}btn-dark{% else %}btn-light{% endif %} rounded-pill px-4">
+                Todos
+            </a>
+            {% for status in statuses %}
+            <a href="?status={{ status.id }}"
+                class="btn {% if current_status == status.id %}btn-dark{% else %}btn-light{% endif %} rounded-pill px-3 d-flex align-items-center gap-2">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background-color: {{ status.color }};"></span>
+                {{ status.name }}
+            </a>
+            {% endfor %}
+
+            <div class="ms-auto border-start ps-3 d-flex align-items-center gap-2">
+                <a href="{% url 'panel_status_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill">
+                    <i class="bi bi-gear-fill me-1"></i> Configurar Estados
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="jema-card p-0 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Pedido #</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Total</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td class="ps-4 fw-bold text-muted">#{{ order.id }}</td>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <span class="fw-medium">{{ order.user.get_full_name|default:order.user.username }}</span>
+                            <span class="small text-muted">{{ order.items.count }} items</span>
+                        </div>
+                    </td>
+                    <td class="small text-muted">{{ order.created_at|date:"d M Y, h:i a" }}</td>
+                    <td>
+                        {% if order.status %}
+                        <span class="badge rounded-pill"
+                            style="background-color: {{ order.status.color }}; color: white; padding: 6px 12px; font-weight: 500;">
+                            {{ order.status.name }}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary rounded-pill">Sin Estado</span>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold">${{ order.total|intcomma }}</td>
+                    <td>
+                        <a href="{% url 'panel_order_detail' order.id %}" class="btn btn-sm btn-light text-primary">
+                            Ver Detalle <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-search fs-1 d-block mb-3 opacity-25"></i>
+                        No se encontraron pedidos con este filtro.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
