@@ -1,14 +1,16 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Catálogo JEMA</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <style>
         :root {
             --jema-purple: #6B2D7B;
@@ -17,14 +19,60 @@
             --jema-magenta: #E91E8C;
             --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
         }
-        
-        * { box-sizing: border-box; }
-        
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             background: #000;
             font-family: 'Poppins', sans-serif;
             overflow: hidden;
+        }
+
+        /* --- CATEGORIES NAV --- */
+        .category-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 90;
+            /* Debajo de los botones flotantes pero encima del contenido */
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            overflow-x: auto;
+            white-space: nowrap;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .category-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .cat-link {
+            display: inline-block;
+            margin-right: 15px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: #666;
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: #f0f0f0;
+            transition: all 0.2s ease;
+        }
+
+        .cat-link.active {
+            background: var(--jema-purple);
+            color: white;
+            box-shadow: 0 4px 10px rgba(107, 45, 123, 0.3);
         }
 
         .feed-container {
@@ -34,10 +82,18 @@
             scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
+            padding-top: 60px;
+            /* Espacio para el nav */
+            display: flex;
+            flex-wrap: wrap;
+            /* Para el grid en desktop */
         }
 
         .product-slide {
-            height: 100dvh;
+            height: 100%;
+            /* Ajuste para desktop grid */
+            min-height: calc(100dvh - 60px);
+            /* Restar nav */
             width: 100%;
             scroll-snap-align: start;
             scroll-snap-stop: always;
@@ -45,8 +101,24 @@
             display: flex;
             flex-direction: column;
             padding: 15px;
-            padding-top: 60px;
+            /* padding-top movido al container global */
             background: linear-gradient(135deg, #f8f5fa 0%, #f0f7f7 100%);
+        }
+
+        /* --- DESKTOP GRID FIX --- */
+        @media (min-width: 768px) {
+            .product-slide {
+                width: 50%;
+                /* 2 columnas */
+                height: calc(100dvh - 60px);
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .product-slide {
+                width: 33.333%;
+                /* 3 columnas en pantallas muy grandes opcional, o dejar en 50% */
+            }
         }
 
         .product-card-unified {
@@ -57,11 +129,11 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            max-height: 100%; 
+            max-height: 100%;
         }
 
         .slide-image {
-            height: 45%; 
+            height: 45%;
             width: 100%;
             position: relative;
             background: #fff;
@@ -69,14 +141,16 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            padding: 10px;
+            /* Padding para evitar bordes cortados */
         }
-        
+
         .slide-image img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            /* FIX: Imagen completa sin cortar */
             object-position: center;
-            padding: 0;
         }
 
         .slide-details {
@@ -88,7 +162,7 @@
             border-top: 1px solid rgba(107, 45, 123, 0.08);
             overflow-y: auto;
         }
-        
+
         .product-name {
             font-size: 1.2rem;
             font-weight: 700;
@@ -96,7 +170,7 @@
             margin-bottom: 4px;
             line-height: 1.2;
         }
-        
+
         .product-description {
             font-size: 0.85rem;
             color: #6c757d;
@@ -107,7 +181,7 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        
+
         .option-label {
             font-size: 0.7rem;
             font-weight: 600;
@@ -123,7 +197,7 @@
             gap: 8px;
             min-height: 35px;
         }
-        
+
         .option-btn {
             border: 1px solid #e9ecef;
             background: white;
@@ -136,13 +210,13 @@
             cursor: pointer;
             white-space: nowrap;
         }
-        
+
         .option-btn:hover {
             border-color: var(--jema-teal);
             color: var(--jema-teal);
             background: rgba(26, 154, 154, 0.05);
         }
-        
+
         .option-btn.active {
             border-color: var(--jema-purple);
             background: var(--jema-purple-light);
@@ -156,14 +230,14 @@
             border-top: 1px solid #f0f0f0;
             margin-top: auto;
         }
-        
+
         .price-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
         }
-        
+
         .price-value {
             font-size: 1.5rem;
             font-weight: 700;
@@ -173,7 +247,7 @@
             background-clip: text;
             line-height: 1;
         }
-        
+
         .qty-selector {
             display: flex;
             align-items: center;
@@ -183,7 +257,7 @@
             border: 1px solid #e9ecef;
             height: 40px;
         }
-        
+
         .qty-btn {
             width: 40px;
             height: 100%;
@@ -196,7 +270,7 @@
             align-items: center;
             justify-content: center;
         }
-        
+
         .qty-value {
             width: 40px;
             text-align: center;
@@ -225,8 +299,10 @@
             justify-content: center;
             gap: 10px;
         }
-        
-        .btn-add-cart:active { transform: scale(0.98); }
+
+        .btn-add-cart:active {
+            transform: scale(0.98);
+        }
 
         .swipe-hint {
             position: fixed;
@@ -242,45 +318,67 @@
             pointer-events: none;
             font-size: 0.85rem;
             font-weight: 500;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             transition: opacity 0.3s ease;
         }
-        
+
         @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
-            40% {transform: translateX(-50%) translateY(-10px);}
-            60% {transform: translateX(-50%) translateY(-5px);}
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
         }
-        
+
+        /* Ajuste de posición botón back para no tapar categorías */
         .btn-back {
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 65px;
+            /* Bajamos un poco por el nav */
+            left: 10px;
             z-index: 100;
-            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
             border: none;
             border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 35px;
+            height: 35px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
             text-decoration: none;
         }
-        .btn-back i { font-size: 1.2rem; color: var(--jema-purple); }
+
+        .btn-back i {
+            font-size: 1rem;
+            color: var(--jema-purple);
+        }
 
         .btn-cart-float {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 65px;
+            /* Bajamos un poco */
+            right: 10px;
             z-index: 100;
-            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
             border: none;
             border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 35px;
+            height: 35px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -288,7 +386,7 @@
             color: var(--jema-purple);
             transition: transform 0.2s ease;
         }
-        
+
         .cart-badge {
             position: absolute;
             top: -5px;
@@ -303,18 +401,35 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
         @keyframes pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
-        .pop-anim { animation: pop 0.3s ease; }
+            0% {
+                transform: scale(1);
+            }
 
-        .feed-container::-webkit-scrollbar { display: none; }
-        .feed-container { -ms-overflow-style: none; scrollbar-width: none; }
+            50% {
+                transform: scale(1.3);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .pop-anim {
+            animation: pop 0.3s ease;
+        }
+
+        .feed-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .feed-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
 
         /* NUEVOS ESTILOS PARA EL MODAL DE LOGIN */
         .jema-modal-content {
@@ -323,6 +438,7 @@
             padding: 20px 10px;
             text-align: center;
         }
+
         .jema-modal-icon {
             font-size: 3.5rem;
             margin-bottom: 10px;
@@ -331,16 +447,19 @@
             -webkit-text-fill-color: transparent;
             display: inline-block;
         }
+
         .jema-modal-title {
             font-weight: 700;
             color: #1a1a2e;
             margin-bottom: 8px;
         }
+
         .jema-modal-text {
             color: #6c757d;
             font-size: 0.9rem;
             margin-bottom: 25px;
         }
+
         .btn-jema-primary {
             background: var(--jema-gradient);
             color: white;
@@ -353,7 +472,12 @@
             text-decoration: none;
             display: block;
         }
-        .btn-jema-primary:hover { color: white; opacity: 0.95; }
+
+        .btn-jema-primary:hover {
+            color: white;
+            opacity: 0.95;
+        }
+
         .btn-jema-secondary {
             color: #999;
             background: transparent;
@@ -366,7 +490,19 @@
         }
     </style>
 </head>
+
 <body>
+
+    <!-- CATEGORY NAV BAR -->
+    <div class="category-nav">
+        <a href="{% url 'catalogo' %}" class="cat-link {% if not current_category %}active{% endif %}">Todo</a>
+        {% for cat in categories %}
+        <a href="{% url 'catalogo_category' category_slug=cat.slug %}"
+            class="cat-link {% if current_category.id == cat.id %}active{% endif %}">
+            {{ cat.name }}
+        </a>
+        {% endfor %}
+    </div>
 
     <div class="swipe-hint" id="swipeHint">
         <i class="bi bi-chevron-up me-2"></i> Desliza para ver más
@@ -379,9 +515,9 @@
     <a href="{% url 'cart_view' %}" class="btn-cart-float" id="cartBtn">
         <i class="bi bi-cart3 fs-5"></i>
         {% if user.is_authenticated and user.cart.items.count > 0 %}
-            <span class="cart-badge" id="cartBadge">{{ user.cart.items.count }}</span>
+        <span class="cart-badge" id="cartBadge">{{ user.cart.items.count }}</span>
         {% else %}
-            <span class="cart-badge" id="cartBadge" style="display:none;">0</span>
+        <span class="cart-badge" id="cartBadge" style="display:none;">0</span>
         {% endif %}
     </a>
 
@@ -391,11 +527,11 @@
             <div class="product-card-unified">
                 <div class="slide-image">
                     {% if product.image %}
-                        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}">
                     {% else %}
-                        <div class="d-flex align-items-center justify-content-center w-100 h-100 bg-light">
-                            <i class="bi bi-image display-1 text-muted opacity-25"></i>
-                        </div>
+                    <div class="d-flex align-items-center justify-content-center w-100 h-100 bg-light">
+                        <i class="bi bi-image display-1 text-muted opacity-25"></i>
+                    </div>
                     {% endif %}
                 </div>
 
@@ -403,14 +539,14 @@
                     <div class="details-content">
                         <h2 class="product-name">Referencia {{ product.name }}</h2>
                         <p class="product-description">{{ product.description|default:"" }}</p>
-                        
+
                         <div class="options-section">
                             <p class="option-label">Tamaño</p>
                             <div class="options-wrapper" id="size-options-{{ product.id }}">
                                 <span class="text-muted small">Cargando opciones...</span>
                             </div>
                         </div>
-                        
+
                         <div class="options-section" id="color-section-{{ product.id }}" style="display:none;">
                             <p class="option-label">Color / Material</p>
                             <div class="options-wrapper" id="color-options-{{ product.id }}"></div>
@@ -423,11 +559,13 @@
                                 <span class="price-label">Precio Total</span>
                                 <div class="price-value" id="price-{{ product.id }}">$0.00</div>
                             </div>
-                            
+
                             <div class="qty-selector">
-                                <button class="qty-btn" onclick="changeQty({{ product.id }}, -1)"><i class="bi bi-dash"></i></button>
+                                <button class="qty-btn" onclick="changeQty({{ product.id }}, -1)"><i
+                                        class="bi bi-dash"></i></button>
                                 <input type="number" class="qty-value" id="qty-{{ product.id }}" value="1" readonly>
-                                <button class="qty-btn" onclick="changeQty({{ product.id }}, 1)"><i class="bi bi-plus"></i></button>
+                                <button class="qty-btn" onclick="changeQty({{ product.id }}, 1)"><i
+                                        class="bi bi-plus"></i></button>
                             </div>
                         </div>
 
@@ -439,6 +577,13 @@
                 </div>
             </div>
         </div>
+        {% empty %}
+        <div class="d-flex flex-column align-items-center justify-content-center w-100 h-100 text-white">
+            <i class="bi bi-bag-x display-1 mb-3"></i>
+            <h3>No hay productos aquí</h3>
+            <p>Intenta con otra categoría</p>
+            <a href="{% url 'catalogo' %}" class="btn btn-light mt-3">Ver Todo</a>
+        </div>
         {% endfor %}
     </div>
 
@@ -449,8 +594,9 @@
                 <div class="modal-body p-2">
                     <i class="bi bi-shield-lock-fill jema-modal-icon"></i>
                     <h4 class="jema-modal-title">Inicia Sesión</h4>
-                    <p class="jema-modal-text">Para agregar productos a tu carrito y guardar tu selección, necesitas ingresar a tu cuenta.</p>
-                    
+                    <p class="jema-modal-text">Para agregar productos a tu carrito y guardar tu selección, necesitas
+                        ingresar a tu cuenta.</p>
+
                     <a href="{% url 'account_login' %}?next={% url 'catalogo' %}" class="btn btn-jema-primary mb-2">
                         Ingresar ahora
                     </a>
@@ -478,31 +624,34 @@
             console.error("Error crítico parseando variantes:", e);
         }
 
-        const productState = {}; 
+        const productState = {};
 
         const feedContainer = document.getElementById('feedContainer');
         const swipeHint = document.getElementById('swipeHint');
         feedContainer.addEventListener('scroll', () => {
-            swipeHint.style.opacity = '0';
-            setTimeout(() => swipeHint.style.display = 'none', 300);
+            if (swipeHint) {
+                swipeHint.style.opacity = '0';
+                setTimeout(() => swipeHint.style.display = 'none', 300);
+            }
         }, { once: true, passive: true });
 
         // Inicializar Modal de Bootstrap
         let loginModal;
         document.addEventListener("DOMContentLoaded", () => {
             const modalEl = document.getElementById('loginPromptModal');
-            if(modalEl) {
+            if (modalEl) {
                 loginModal = new bootstrap.Modal(modalEl);
             }
 
             document.querySelectorAll('.product-slide').forEach(slide => {
-                const pid = String(slide.dataset.productId); 
+                const pid = String(slide.dataset.productId);
                 const variants = variantsData[pid];
                 const sizeContainer = document.getElementById(`size-options-${pid}`);
-                
+
                 if (!variants || variants.length === 0) {
-                    document.getElementById(`price-${pid}`).textContent = "Agotado";
-                    sizeContainer.innerHTML = '<span class="text-danger small">No disponible</span>';
+                    const priceEl = document.getElementById(`price-${pid}`);
+                    if (priceEl) priceEl.textContent = "Agotado";
+                    if (sizeContainer) sizeContainer.innerHTML = '<span class="text-danger small">No disponible</span>';
                     return;
                 }
 
@@ -514,7 +663,7 @@
                     }
                 });
 
-                sizeContainer.innerHTML = ''; 
+                sizeContainer.innerHTML = '';
                 let firstSizeId = null;
 
                 sizesMap.forEach((sizeName, sizeId) => {
@@ -539,7 +688,7 @@
             sizeId = String(sizeId);
             const container = document.getElementById(`size-options-${pid}`);
             container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
-            if(btnElement) btnElement.classList.add('active');
+            if (btnElement) btnElement.classList.add('active');
 
             productState[pid].selectedSizeId = sizeId;
             updateColors(pid);
@@ -558,27 +707,25 @@
                 let showSection = true;
                 if (availableVariants.length === 1) {
                     const v = availableVariants[0];
-                    if (v.color_name === "Full Color" || v.color_name === "Estándar") {
-                        showSection = false;
-                        firstVariant = v;
+                    if ((v.color_name === "Full Color" || v.color_name === "Estándar") && (!v.material_name || !v.material_name.includes("Mailan"))) {
+                        // Ocultar si es estándar y no es especial
+                        // Depende de la lógica de negocio exacta, pero mantengamos simple por ahora
+                        // showSection = false; 
                     }
                 }
 
-                if (showSection) {
-                    colorSection.style.display = 'block';
-                    availableVariants.forEach((v, idx) => {
-                        const btn = document.createElement('button');
-                        let name = v.color_name || "Estándar";
-                        if (v.material_name && v.material_name.includes("Mailan")) name += " (Metalizado)";
-                        btn.textContent = name;
-                        btn.className = 'option-btn';
-                        btn.onclick = () => selectVariant(pid, v, btn);
-                        colorContainer.appendChild(btn);
-                        if (idx === 0) firstVariant = v;
-                    });
-                } else {
-                    colorSection.style.display = 'none';
-                }
+                // Siempre mostramos si hay opciones, para feedback visual
+                colorSection.style.display = 'block';
+                availableVariants.forEach((v, idx) => {
+                    const btn = document.createElement('button');
+                    let name = v.color_name || "Estándar";
+                    if (v.material_name && v.material_name.includes("Mailan")) name += " (Metalizado)";
+                    btn.textContent = name;
+                    btn.className = 'option-btn';
+                    btn.onclick = () => selectVariant(pid, v, btn);
+                    colorContainer.appendChild(btn);
+                    if (idx === 0) firstVariant = v;
+                });
             }
             if (firstVariant) {
                 const firstBtn = colorContainer.querySelector('button');
@@ -593,7 +740,8 @@
                 btnElement.classList.add('active');
             }
             productState[pid].selectedVariant = variant;
-            const qty = parseInt(document.getElementById(`qty-${pid}`).value) || 1;
+            const qtyInput = document.getElementById(`qty-${pid}`);
+            const qty = parseInt(qtyInput ? qtyInput.value : 1) || 1;
             const priceEl = document.getElementById(`price-${pid}`);
             const total = variant.price * qty;
             priceEl.textContent = `$${total.toLocaleString('es-CO')}`;
@@ -611,13 +759,28 @@
             }
         }
 
+        // --- FUNCIÓN DE RESTABLECER ESTADO ---
+        function resetProductState(pid) {
+            // 1. Resetear Cantidad
+            const qtyInput = document.getElementById(`qty-${pid}`);
+            if (qtyInput) qtyInput.value = 1;
+
+            // 2. Re-seleccionar la primera opción (tamaño y color)
+            // Esto es lo más fácil para volver al estado "inicial" válido
+            const sizeContainer = document.getElementById(`size-options-${pid}`);
+            const firstSizeBtn = sizeContainer.querySelector('button');
+            if (firstSizeBtn) {
+                // Simular click para reiniciar todo el flujo de ese producto
+                firstSizeBtn.click();
+            }
+        }
+
         function addToCart(pid) {
             // 1. VERIFICAR LOGUEO CON MODAL PERSONALIZADO
             const isUserLoggedIn = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
 
             if (!isUserLoggedIn) {
-                // Abre el modal de Bootstrap definido arriba
-                if(loginModal) loginModal.show();
+                if (loginModal) loginModal.show();
                 return;
             }
 
@@ -626,9 +789,6 @@
             const qty = document.getElementById(`qty-${pid}`).value;
 
             if (!variant) {
-                // Podemos usar un modal simple para esto también si quisieras, 
-                // pero un alert rápido para validación técnica está "ok", 
-                // aunque lo ideal sería un Toast.
                 alert("⚠️ Por favor selecciona las opciones (Tamaño/Color) primero.");
                 return;
             }
@@ -646,42 +806,45 @@
                 },
                 body: JSON.stringify({ variant_id: variant.id, quantity: qty })
             })
-            .then(r => {
-                if (r.status === 401 || r.status === 403) {
-                    // Si la sesión expiró en segundo plano
-                    window.location.href = "{% url 'account_login' %}";
-                    throw new Error("No autenticado");
-                }
-                return r.json();
-            })
-            .then(data => {
-                if (data.status === 'ok') {
-                    btn.innerHTML = '<i class="bi bi-check-lg"></i> ¡Listo!';
-                    btn.style.background = '#1A9A9A';
-                    
-                    const cartBadge = document.getElementById('cartBadge');
-                    cartBadge.style.display = 'flex';
-                    cartBadge.innerText = data.total_items;
-                    document.getElementById('cartBtn').classList.add('pop-anim');
-                    setTimeout(() => document.getElementById('cartBtn').classList.remove('pop-anim'), 300);
+                .then(r => {
+                    if (r.status === 401 || r.status === 403) {
+                        window.location.href = "{% url 'account_login' %}";
+                        throw new Error("No autenticado");
+                    }
+                    return r.json();
+                })
+                .then(data => {
+                    if (data.status === 'ok') {
+                        btn.innerHTML = '<i class="bi bi-check-lg"></i> ¡Listo!';
+                        btn.style.background = '#1A9A9A';
 
-                    setTimeout(() => {
-                        btn.innerHTML = originalHTML;
-                        btn.style.background = ''; 
+                        const cartBadge = document.getElementById('cartBadge');
+                        cartBadge.style.display = 'flex';
+                        cartBadge.innerText = data.total_items;
+                        document.getElementById('cartBtn').classList.add('pop-anim');
+                        setTimeout(() => document.getElementById('cartBtn').classList.remove('pop-anim'), 300);
+
+                        setTimeout(() => {
+                            // --- FIX: RESTABLECER ESTADO DEL PRODUCTO ---
+                            resetProductState(pid);
+
+                            btn.innerHTML = originalHTML;
+                            btn.style.background = '';
+                            btn.disabled = false;
+                        }, 1500);
+                    } else {
+                        alert("Error al agregar. Intenta de nuevo.");
                         btn.disabled = false;
-                    }, 2000);
-                } else {
-                    alert("Error al agregar. Intenta de nuevo.");
+                        btn.innerHTML = originalHTML;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
                     btn.disabled = false;
                     btn.innerHTML = originalHTML;
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-            });
+                });
         }
     </script>
 </body>
+
 </html>

@@ -14,6 +14,7 @@ urlpatterns = [
     # Rutas Públicas
     path('', views.home_view, name='home'),
     path('catalogo/', views_products.catalogo_publico_view, name='catalogo'),
+    path('catalogo/<slug:category_slug>/', views_products.catalogo_publico_view, name='catalogo_category'),
     
     # Rutas Dashboard General
     path('panel/', views.dashboard_home_view, name='panel_home'),

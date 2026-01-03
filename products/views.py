@@ -193,11 +193,29 @@ def category_delete_view(request, category_id):
     return render(request, 'dashboard/categories/confirm_delete.html', {'object': category})
 
 
-def catalogo_publico_view(request):
-    # 1. Obtener productos
+def catalogo_publico_view(request, category_slug=None):
+    # 1. Obtener productos base
     products = Product.objects.filter(variants__isnull=False).distinct().order_by('-created_at')
     
-    # 2. Construir JSON de variantes para el Frontend (Magia para que sea rápido)
+    # 2. Filtrar por categoría si existe el slug
+    current_category = None
+    if category_slug:
+        current_category = get_object_or_404(Category, slug=category_slug)
+        products = products.filter(category=current_category)
+
+    # 3. Obtener todas las categorías para el menú
+    categories = Category.objects.all()
+    
+    # --- AUTO-FIX: Asegurar que todas las categorías tengan slug ---
+    # Esto corrige el error "NoReverseMatch" si existen categorías antiguas sin slug
+    for cat in categories:
+        if not cat.slug:
+            try:
+                cat.save() # El método save() del modelo genera el slug automáticamente
+            except:
+                pass # Si falla (ej: duplicado), lo ignoramos por ahora para no romper la web
+
+    # 4. Construir JSON de variantes para el Frontend (Magia para que sea rápido)
     variants_data = {}
     for product in products:
         p_variants = product.variants.all()
@@ -209,7 +227,7 @@ def catalogo_publico_view(request):
                 'size_name': v.size.name,
                 'material_id': v.material.id, # Para diferenciar vinilo de mailan
                 'color_name': v.color.name if v.color else "Estándar", # AGREGAR ESTO
-    'material_name': v.material.name,  
+                'material_name': v.material.name,  
                 'color_id': v.color.id if v.color else None,
                 'price': float(v.price),
                 'stock': v.stock
@@ -217,6 +235,8 @@ def catalogo_publico_view(request):
 
     context = {
         'products': products,
+        'categories': categories,
+        'current_category': current_category,
         'variants_json': json.dumps(variants_data, cls=DjangoJSONEncoder)
     }
     return render(request, 'catalogo_tiktok.html', context) # Usaremos una plantilla nueva
