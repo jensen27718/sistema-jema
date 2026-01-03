@@ -20,19 +20,6 @@
             --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
         }
 
-        /* --- SCROLL HINT ANIMATION --- */
-        .category-nav::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            height: 100%;
-            width: 40px;
-            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.9));
-            pointer-events: none;
-            z-index: 10;
-        }
-
         * {
             box-sizing: border-box;
         }
@@ -44,48 +31,30 @@
             overflow: hidden;
         }
 
-        /* --- CATEGORIES NAV --- */
-        .category-nav {
+        /* --- FLOATING CATEGORIES BUTTON --- */
+        .btn-float-categories {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.95);
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
-            z-index: 90;
-            /* Debajo de los botones flotantes pero encima del contenido */
+            border: none;
+            border-radius: 50%;
+            /* Circle for top-left style */
+            width: 45px;
+            height: 45px;
+            font-weight: 600;
+            color: var(--jema-purple);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
-            padding: 0 15px;
-            overflow-x: auto;
-            white-space: nowrap;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+            justify-content: center;
+            transition: transform 0.2s;
         }
 
-        .category-nav::-webkit-scrollbar {
-            display: none;
-        }
-
-        .cat-link {
-            display: inline-block;
-            margin-right: 15px;
-            padding: 6px 16px;
-            border-radius: 20px;
-            text-decoration: none;
-            color: #666;
-            font-size: 0.9rem;
-            font-weight: 500;
-            background: #f0f0f0;
-            transition: all 0.2s ease;
-        }
-
-        .cat-link.active {
-            background: var(--jema-purple);
-            color: white;
-            box-shadow: 0 4px 10px rgba(107, 45, 123, 0.3);
+        .btn-float-categories:active {
+            transform: scale(0.95);
         }
 
         .feed-container {
@@ -95,18 +64,16 @@
             scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
-            padding-top: 80px;
-            /* Espacio MAYOR para el nav para evitar corte */
+            padding-top: 0;
+            /* Full screen layout */
             display: flex;
             flex-wrap: wrap;
-            /* Para el grid en desktop */
         }
 
         .product-slide {
             height: 100%;
-            /* Ajuste para desktop grid */
-            min-height: calc(100dvh - 60px);
-            /* Restar nav */
+            min-height: 100dvh;
+            /* Full viewport height */
             width: 100%;
             scroll-snap-align: start;
             scroll-snap-stop: always;
@@ -115,7 +82,6 @@
             flex-direction: column;
             padding: 15px;
             padding-top: 20px;
-            /* Ajuste visual */
             background: linear-gradient(135deg, #f8f5fa 0%, #f0f7f7 100%);
         }
 
@@ -124,14 +90,15 @@
             .product-slide {
                 width: 50%;
                 /* 2 columnas */
-                height: calc(100dvh - 60px);
+                height: 100dvh;
+                min-height: 100dvh;
             }
         }
 
         @media (min-width: 1200px) {
             .product-slide {
                 width: 33.333%;
-                /* 3 columnas en pantallas muy grandes opcional, o dejar en 50% */
+                /* 3 columnas */
             }
         }
 
@@ -156,14 +123,12 @@
             justify-content: center;
             overflow: hidden;
             padding: 10px;
-            /* Padding para evitar bordes cortados */
         }
 
         .slide-image img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            /* FIX: Imagen completa sin cortar */
             object-position: center;
         }
 
@@ -318,56 +283,18 @@
             transform: scale(0.98);
         }
 
-        .swipe-hint {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            color: white;
-            background: rgba(107, 45, 123, 0.9);
-            padding: 10px 20px;
-            border-radius: 30px;
-            animation: bounce 2s infinite;
-            pointer-events: none;
-            font-size: 0.85rem;
-            font-weight: 500;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: opacity 0.3s ease;
-        }
-
-        @keyframes bounce {
-
-            0%,
-            20%,
-            50%,
-            80%,
-            100% {
-                transform: translateX(-50%) translateY(0);
-            }
-
-            40% {
-                transform: translateX(-50%) translateY(-10px);
-            }
-
-            60% {
-                transform: translateX(-50%) translateY(-5px);
-            }
-        }
-
-        /* Ajuste de posición botón back para no tapar categorías */
+        /* Ajuste de posición botón back */
         .btn-back {
             position: fixed;
-            top: 65px;
-            /* Bajamos un poco por el nav */
-            left: 10px;
+            top: 20px;
+            left: 20px;
             z-index: 100;
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(5px);
             border: none;
             border-radius: 50%;
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
@@ -376,22 +303,21 @@
         }
 
         .btn-back i {
-            font-size: 1rem;
+            font-size: 1.2rem;
             color: var(--jema-purple);
         }
 
         .btn-cart-float {
             position: fixed;
-            top: 65px;
-            /* Bajamos un poco */
-            right: 10px;
+            top: 20px;
+            right: 20px;
             z-index: 100;
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(5px);
             border: none;
             border-radius: 50%;
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
@@ -507,24 +433,41 @@
 
 <body>
 
-    <!-- CATEGORY NAV BAR -->
-    <div class="category-nav">
-        <a href="{% url 'catalogo' %}" class="cat-link {% if not current_category %}active{% endif %}">Todo</a>
-        {% for cat in categories %}
-        <a href="{% url 'catalogo_category' category_slug=cat.slug %}"
-            class="cat-link {% if current_category.id == cat.id %}active{% endif %}">
-            {{ cat.name }}
-        </a>
-        {% endfor %}
-    </div>
+    <!-- OFF CANVAS CATEGORIES TRIGGER (Floating Top-Left Button) -->
+    <button class="btn-float-categories" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasCategories">
+        <i class="bi bi-list fs-4"></i>
+    </button>
 
-    <div class="swipe-hint" id="swipeHint">
-        <i class="bi bi-chevron-up me-2"></i> Desliza para ver más
-    </div>
+    <!-- OFFCANVAS MENU -->
+    <div class="offcanvas offcanvas-start rounded-end-4" tabindex="-1" id="offcanvasCategories"
+        style="width: 80%; max-width: 300px;">
+        <div class="offcanvas-header pb-0 border-bottom-0">
+            <h5 class="offcanvas-title fw-bold" style="color: #6B2D7B;">Menú</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body small pt-2">
+            <div class="d-grid gap-2">
+                <!-- Back to Home Link inside Menu -->
+                <a href="{% url 'home' %}" class="btn btn-light text-start py-3 fw-bold mb-3"
+                    style="color: var(--jema-purple);">
+                    <i class="bi bi-arrow-left me-2"></i> Volver al Inicio
+                </a>
 
-    <a href="{% url 'home' %}" class="btn-back">
-        <i class="bi bi-arrow-left"></i>
-    </a>
+                <div class="text-muted text-uppercase small fw-bold mb-2 ps-2">Categorías</div>
+
+                <a href="{% url 'catalogo' %}"
+                    class="btn btn-outline-light text-dark text-start py-2 border-0 {% if not current_category %}active fw-bold bg-light{% endif %}">
+                    <i class="bi bi-stars me-2 text-warning"></i> Ver Todo
+                </a>
+                {% for cat in categories %}
+                <a href="{% url 'catalogo_category' category_slug=cat.slug %}"
+                    class="btn btn-outline-light text-dark text-start py-2 border-0 {% if current_category.id == cat.id %}active fw-bold bg-light{% endif %}">
+                    <i class="bi bi-tag-fill me-2" style="color: #E91E8C;"></i> {{ cat.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 
     <a href="{% url 'cart_view' %}" class="btn-cart-float" id="cartBtn">
         <i class="bi bi-cart3 fs-5"></i>
@@ -639,21 +582,6 @@
         }
 
         const productState = {};
-
-        const feedContainer = document.getElementById('feedContainer');
-        const swipeHint = document.getElementById('swipeHint');
-        feedContainer.addEventListener('scroll', () => {
-            if (swipeHint) {
-                swipeHint.style.opacity = '0';
-                setTimeout(() => swipeHint.style.display = 'none', 300);
-            }
-        }, { once: true, passive: true });
-
-        // Scroll Hint Logic for Category Nav
-        const catNav = document.querySelector('.category-nav');
-        catNav.addEventListener('scroll', () => {
-            catNav.classList.add('scrolled'); // Optional: could toggle classes to hide gradient
-        }, { passive: true });
 
         // Inicializar Modal de Bootstrap
         let loginModal;
