@@ -194,17 +194,17 @@
 
         /* === IMAGE SECTION === */
         .slide-image {
-            height: 45%;
-            min-height: 200px;
+            height: auto;
+            /* ALTURA ADAPTABLE */
+            min-height: 150px;
             width: 100%;
             position: relative;
-            background: #f8f9fa;
+            background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             padding: 0;
-            /* IMAGEN AL 100% */
         }
 
         @media (min-width: 768px) {
@@ -215,8 +215,10 @@
 
         .slide-image img {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
+            /* OCUPA TODO EL ANCHO HORIZONTAL */
+            height: auto;
+            /* NO RECORTA EL DISEÑO */
+            display: block;
             transition: transform 0.4s ease;
         }
 
