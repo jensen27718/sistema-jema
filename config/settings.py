@@ -14,7 +14,7 @@ load_dotenv(BASE_DIR / '.env')
 # --- 2. SEGURIDAD ---
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'www.jemastickers.shop, jemastickers.shop,127.0.0.1,localhost').split(',')
 
 # --- 3. CONFIGURACIÓN AWS S3 (OHIO us-east-2) ---
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
