@@ -194,29 +194,29 @@
 
         /* === IMAGE SECTION === */
         .slide-image {
-            height: 35%;
-            /* Reduced height */
-            min-height: 180px;
+            height: 45%;
+            min-height: 200px;
             width: 100%;
             position: relative;
-            background: #fafafa;
+            background: #f8f9fa;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            padding: 12px;
+            padding: 0;
+            /* IMAGEN AL 100% */
         }
 
         @media (min-width: 768px) {
             .slide-image {
-                height: 300px;
+                height: 320px;
             }
         }
 
         .slide-image img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
             transition: transform 0.4s ease;
         }
 
@@ -782,71 +782,212 @@
         </div>
     </div>
 
-    {{ variants_json|json_script:"variants-data" }}
+    {{ variants_json|json_script:"variants-data-initial" }}
+
+    <script id="pagination-config" type="application/json">
+        {
+            "hasNext": {{ has_next|yesno:"true,false" }},
+            "nextPage": {{ next_page|default:"null" }}
+        }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Parseo seguro del JSON
-        let rawData = document.getElementById('variants-data').textContent;
+        // Variables de estado global
         let variantsData = {};
+        const productState = {};
+        let currentPage = 1;
+
+        // Extraer configuración de paginación de forma segura
+        const pagConfig = JSON.parse(document.getElementById('pagination-config').textContent);
+        let hasNextPage = pagConfig.hasNext;
+        let nextPageNumber = pagConfig.nextPage;
+
+        let isLoading = false;
+
+        // Cargar datos iniciales
         try {
+            const rawData = document.getElementById('variants-data-initial').textContent;
             let parsed = JSON.parse(rawData);
             if (typeof parsed === 'string') parsed = JSON.parse(parsed);
             variantsData = parsed;
         } catch (e) {
-            console.error("Error crítico parseando variantes:", e);
+            console.error("Error cargando variantes iniciales:", e);
         }
 
-        const productState = {};
+        const feedContainer = document.getElementById('feedContainer');
+        const loginPromptModalEl = document.getElementById('loginPromptModal');
+        const loginModal = loginPromptModalEl ? new bootstrap.Modal(loginPromptModalEl) : null;
 
-        // Inicializar Modal de Bootstrap
-        let loginModal;
         document.addEventListener("DOMContentLoaded", () => {
-            const modalEl = document.getElementById('loginPromptModal');
-            if (modalEl) {
-                loginModal = new bootstrap.Modal(modalEl);
-            }
-
+            // Inicializar productos que ya están en el DOM
             document.querySelectorAll('.product-slide').forEach(slide => {
-                const pid = String(slide.dataset.productId);
-                const variants = variantsData[pid];
-                const sizeContainer = document.getElementById(`size-options-${pid}`);
+                initProduct(slide.dataset.productId);
+            });
 
-                if (!variants || variants.length === 0) {
-                    const priceEl = document.getElementById(`price-${pid}`);
-                    if (priceEl) priceEl.textContent = "Agotado";
-                    if (sizeContainer) sizeContainer.innerHTML = '<span class="text-danger small">No disponible</span>';
-                    return;
-                }
+            // Configurar IntersectionObserver para el scroll infinito
+            setupIntersectionObserver();
+        });
 
-                const sizesMap = new Map();
-                variants.forEach(v => {
-                    const sId = String(v.size_id);
-                    if (!sizesMap.has(sId)) {
-                        sizesMap.set(sId, v.size_name);
+        function setupIntersectionObserver() {
+            const options = {
+                root: null,
+                rootMargin: '200px',
+                threshold: 0
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                const lastSlide = feedContainer.lastElementChild;
+                if (!lastSlide) return;
+
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && hasNextPage && !isLoading) {
+                        loadMoreProducts();
                     }
                 });
+            }, options);
 
-                sizeContainer.innerHTML = '';
-                let firstSizeId = null;
+            // Observamos siempre el último elemento del contenedor
+            if (feedContainer.lastElementChild) {
+                observer.observe(feedContainer.lastElementChild);
+            }
 
-                sizesMap.forEach((sizeName, sizeId) => {
-                    if (!firstSizeId) firstSizeId = sizeId;
-                    const btn = document.createElement('button');
-                    btn.className = `option-btn`;
-                    btn.textContent = sizeName;
-                    btn.onclick = () => selectSize(pid, sizeId, btn);
-                    sizeContainer.appendChild(btn);
+            // Guardamos el observer para re-adjuntarlo
+            window.productObserver = observer;
+        }
+
+        async function loadMoreProducts() {
+            if (isLoading || !hasNextPage) return;
+            isLoading = true;
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('page', nextPageNumber);
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'x-requested-with': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+
+                // 1. Unir nuevas variantes
+                Object.assign(variantsData, data.variants);
+
+                // 2. Renderizar nuevos productos
+                data.products.forEach(p => {
+                    const slideHTML = createProductSlideHTML(p);
+                    feedContainer.insertAdjacentHTML('beforeend', slideHTML);
+                    initProduct(p.id);
                 });
 
-                productState[pid] = { selectedSizeId: null, selectedVariant: null };
+                // 3. Actualizar estado de paginación
+                hasNextPage = data.has_next;
+                nextPageNumber = data.next_page;
+                currentPage++;
 
-                if (firstSizeId) {
-                    const firstBtn = sizeContainer.querySelector('button');
-                    selectSize(pid, firstSizeId, firstBtn);
+                // 4. Reposicionar el observer al nuevo último elemento
+                if (window.productObserver) {
+                    window.productObserver.disconnect();
+                    if (feedContainer.lastElementChild) {
+                        window.productObserver.observe(feedContainer.lastElementChild);
+                    }
+                }
+
+            } catch (err) {
+                console.error("Error cargando más productos:", err);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        function createProductSlideHTML(p) {
+            return `
+            <div class="product-slide" data-product-id="${p.id}">
+                <div class="product-card-unified">
+                    <div class="slide-image">
+                        ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}" loading="lazy">` : `
+                        <div class="placeholder-image">
+                            <i class="bi bi-image"></i>
+                        </div>`}
+                    </div>
+                    <div class="slide-details">
+                        <div class="product-header">
+                            <h2 class="product-name">${p.name}</h2>
+                            <p class="product-description">${p.description}</p>
+                        </div>
+                        <div class="options-section">
+                            <div class="option-group">
+                                <div class="option-label"><i class="bi bi-rulers"></i> Tamaño</div>
+                                <div class="options-wrapper" id="size-options-${p.id}">
+                                    <span class="loading-text">Cargando opciones...</span>
+                                </div>
+                            </div>
+                            <div class="option-group" id="color-section-${p.id}">
+                                <div class="option-label"><i class="bi bi-palette"></i> Color / Material</div>
+                                <div class="options-wrapper" id="color-options-${p.id}"></div>
+                            </div>
+                        </div>
+                        <div class="purchase-footer">
+                            <div class="price-row">
+                                <div class="price-info">
+                                    <span class="price-value" id="price-${p.id}">$0</span>
+                                </div>
+                                <div class="qty-selector">
+                                    <button class="qty-btn" type="button" onclick="changeQty('${p.id}', -1)"><i class="bi bi-dash"></i></button>
+                                    <input type="text" class="qty-value" id="qty-${p.id}" value="1" readonly>
+                                    <button class="qty-btn" type="button" onclick="changeQty('${p.id}', 1)"><i class="bi bi-plus"></i></button>
+                                </div>
+                            </div>
+                            <button class="btn-add-cart" onclick="addToCart('${p.id}')">
+                                <i class="bi bi-bag-plus"></i> Agregar al Carrito
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function initProduct(pid) {
+            pid = String(pid);
+            const slide = document.querySelector(`.product-slide[data-product-id="${pid}"]`);
+            if (!slide) return;
+
+            const variants = variantsData[pid];
+            const sizeContainer = document.getElementById(`size-options-${pid}`);
+
+            if (!variants || variants.length === 0) {
+                const priceEl = document.getElementById(`price-${pid}`);
+                if (priceEl) priceEl.textContent = "Agotado";
+                if (sizeContainer) sizeContainer.innerHTML = '<span class="text-danger small">No disponible</span>';
+                return;
+            }
+
+            const sizesMap = new Map();
+            variants.forEach(v => {
+                const sId = String(v.size_id);
+                if (!sizesMap.has(sId)) {
+                    sizesMap.set(sId, v.size_name);
                 }
             });
-        });
+
+            sizeContainer.innerHTML = '';
+            let firstSizeId = null;
+
+            sizesMap.forEach((sizeName, sizeId) => {
+                if (!firstSizeId) firstSizeId = sizeId;
+                const btn = document.createElement('button');
+                btn.className = `option-btn`;
+                btn.textContent = sizeName;
+                btn.onclick = () => selectSize(pid, sizeId, btn);
+                sizeContainer.appendChild(btn);
+            });
+
+            productState[pid] = { selectedSizeId: null, selectedVariant: null };
+
+            if (firstSizeId) {
+                const firstBtn = sizeContainer.querySelector('button');
+                selectSize(pid, firstSizeId, firstBtn);
+            }
+        }
 
         function selectSize(pid, sizeId, btnElement) {
             sizeId = String(sizeId);

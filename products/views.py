@@ -197,31 +197,39 @@ def category_delete_view(request, category_id):
     return render(request, 'dashboard/categories/confirm_delete.html', {'object': category})
 
 
+from django.core.paginator import Paginator
+
 def catalogo_publico_view(request, category_slug=None):
     # 1. Obtener productos base
-    products = Product.objects.filter(variants__isnull=False).distinct().order_by('-created_at')
+    products_query = Product.objects.filter(variants__isnull=False).distinct().order_by('-created_at')
     
     # 2. Filtrar por categoría si existe el slug
     current_category = None
     if category_slug:
         current_category = get_object_or_404(Category, slug=category_slug)
-        products = products.filter(category=current_category)
+        products_query = products_query.filter(category=current_category)
 
-    # 3. Obtener todas las categorías para el menú
-    categories = Category.objects.all()
-    
-    # --- AUTO-FIX: Asegurar que todas las categorías tengan slug ---
-    # Esto corrige el error "NoReverseMatch" si existen categorías antiguas sin slug
-    for cat in categories:
-        if not cat.slug:
-            try:
-                cat.save() # El método save() del modelo genera el slug automáticamente
-            except:
-                pass # Si falla (ej: duplicado), lo ignoramos por ahora para no romper la web
+    # 3. Paginación (12 productos por página para velocidad)
+    paginator = Paginator(products_query, 12)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
 
-    # 4. Construir JSON de variantes para el Frontend (Magia para que sea rápido)
+    # 4. Obtener todas las categorías para el menú (solo en carga inicial)
+    categories = []
+    if not request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        categories = Category.objects.all()
+        # --- AUTO-FIX: Asegurar que todas las categorías tengan slug ---
+        for cat in categories:
+            if not cat.slug:
+                try:
+                    cat.save()
+                except:
+                    pass
+
+    # 5. Construir JSON de variantes para los productos de ESTA página
     variants_data = {}
-    for product in products:
+    products_list = []
+    for product in page_obj:
         p_variants = product.variants.all()
         variants_data[product.id] = []
         for v in p_variants:
@@ -229,21 +237,40 @@ def catalogo_publico_view(request, category_slug=None):
                 'id': v.id,
                 'size_id': v.size.id,
                 'size_name': v.size.name,
-                'material_id': v.material.id, # Para diferenciar vinilo de mailan
-                'color_name': v.color.name if v.color else "Estándar", # AGREGAR ESTO
-                'material_name': v.material.name,  
+                'material_id': v.material.id,
+                'color_name': v.color.name if v.color else "Estándar",
+                'material_name': v.material.name,
                 'color_id': v.color.id if v.color else None,
                 'price': float(v.price),
                 'stock': v.stock
             })
+        
+        # Preparar datos básicos para el renderizado dinámico (si es AJAX)
+        products_list.append({
+            'id': product.id,
+            'name': product.name,
+            'description': product.description or "",
+            'image_url': product.image.url if product.image else None,
+        })
+
+    # 6. Manejar respuesta AJAX para Scroll Infinito
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'products': products_list,
+            'variants': variants_data,
+            'has_next': page_obj.has_next(),
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else None
+        })
 
     context = {
-        'products': products,
+        'products': page_obj,
         'categories': categories,
         'current_category': current_category,
-        'variants_json': json.dumps(variants_data, cls=DjangoJSONEncoder)
+        'variants_json': json.dumps(variants_data, cls=DjangoJSONEncoder),
+        'has_next': page_obj.has_next(),
+        'next_page': page_obj.next_page_number() if page_obj.has_next() else None
     }
-    return render(request, 'catalogo_tiktok.html', context) # Usaremos una plantilla nueva
+    return render(request, 'catalogo_tiktok.html', context)
 
 # --- 3. VISTAS DE ESTADOS DE PEDIDO (CRUD) ---
 @login_required
