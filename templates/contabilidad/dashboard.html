@@ -1,0 +1,639 @@
+{% extends 'base_admin.html' %}
+
+{% load humanize %}
+
+{% block title %}Contabilidad - JEMA Admin{% endblock %}
+
+{% block page_title %}
+<div class="d-flex justify-content-between align-items-center w-100">
+    <span class="fw-bold">Contabilidad y Finanzas</span>
+    <a href="{% url 'accounting_category_list' %}" class="btn-categories-jema">
+        <i class="bi bi-tags-fill me-2"></i> Categorías
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --jema-purple: #6B2D7B;
+        --jema-purple-light: rgba(107, 45, 123, 0.08);
+        --jema-teal: #1A9A9A;
+        --jema-teal-light: rgba(26, 154, 154, 0.1);
+        --jema-magenta: #E91E8C;
+        --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+        --jema-gradient-teal: linear-gradient(135deg, #1A9A9A 0%, #2dd4bf 100%);
+    }
+
+    .btn-categories-jema {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--jema-purple);
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+
+    .btn-categories-jema:hover {
+        background: var(--jema-purple-light);
+        border-color: var(--jema-purple);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 45, 123, 0.15);
+    }
+
+    /* Hero Card - Saldo Total */
+    .hero-balance-card {
+        background: var(--jema-gradient);
+        border-radius: 24px;
+        padding: 2.5rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 40px rgba(107, 45, 123, 0.3);
+    }
+
+    .hero-balance-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 60%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .hero-balance-card::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -10%;
+        width: 50%;
+        height: 150%;
+        background: radial-gradient(circle, rgba(233, 30, 140, 0.2) 0%, transparent 60%);
+        pointer-events: none;
+    }
+
+    .hero-balance-card .label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.75);
+        margin-bottom: 0.5rem;
+    }
+
+    .hero-balance-card .amount {
+        font-size: 3.5rem;
+        font-weight: 800;
+        color: white;
+        line-height: 1;
+        position: relative;
+        z-index: 1;
+    }
+
+    @media (max-width: 768px) {
+        .hero-balance-card .amount {
+            font-size: 2.5rem;
+        }
+    }
+
+    /* Section Title */
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-title::before {
+        content: '';
+        width: 4px;
+        height: 20px;
+        background: var(--jema-gradient);
+        border-radius: 2px;
+    }
+
+    /* Account Cards */
+    .account-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.75rem;
+        border: 2px solid #f0f0f0;
+        transition: all 0.3s ease;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .account-card:hover {
+        border-color: var(--jema-purple);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(107, 45, 123, 0.12);
+    }
+
+    .account-card .account-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .account-card .account-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--jema-purple);
+        margin: 0;
+    }
+
+    .account-card .account-icon {
+        width: 42px;
+        height: 42px;
+        background: var(--jema-purple-light);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--jema-purple);
+        font-size: 1.2rem;
+    }
+
+    .account-card .account-balance {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #222;
+        margin-bottom: 1.25rem;
+    }
+
+    .account-card .progress-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: #888;
+        margin-bottom: 0.5rem;
+    }
+
+    .account-card .progress-bar-wrapper {
+        height: 8px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .account-card .progress-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+
+    .account-card .progress-fill.low {
+        background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+    }
+
+    .account-card .progress-fill.mid {
+        background: var(--jema-gradient);
+    }
+
+    .account-card .progress-fill.high {
+        background: var(--jema-gradient-teal);
+    }
+
+    .account-card .no-goal {
+        font-size: 0.85rem;
+        color: #aaa;
+        font-style: italic;
+    }
+
+    /* New Account Card */
+    .new-account-card {
+        background: linear-gradient(135deg, rgba(107, 45, 123, 0.03) 0%, rgba(26, 154, 154, 0.03) 100%);
+        border: 3px dashed #e0e0e0;
+        border-radius: 20px;
+        height: 100%;
+        min-height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .new-account-card:hover {
+        border-color: var(--jema-purple);
+        background: var(--jema-purple-light);
+    }
+
+    .new-account-card a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: #999;
+        transition: all 0.3s ease;
+    }
+
+    .new-account-card:hover a {
+        color: var(--jema-purple);
+    }
+
+    .new-account-card .icon-wrapper {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+        border: 2px dashed #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .new-account-card:hover .icon-wrapper {
+        border-color: var(--jema-purple);
+        border-style: solid;
+        background: var(--jema-purple);
+        color: white;
+    }
+
+    .new-account-card span {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    /* Transactions Card */
+    .transactions-card {
+        background: white;
+        border-radius: 20px;
+        border: 2px solid #f0f0f0;
+        overflow: hidden;
+    }
+
+    .transactions-card .card-header-jema {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 2px solid #f5f5f5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .transactions-card .card-header-jema h5 {
+        font-weight: 700;
+        margin: 0;
+        color: #333;
+    }
+
+    .transactions-card .badge-count {
+        background: var(--jema-purple-light);
+        color: var(--jema-purple);
+        font-weight: 600;
+        padding: 0.4rem 0.85rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+
+    .transactions-card table {
+        margin: 0;
+    }
+
+    .transactions-card thead {
+        background: #fafafa;
+    }
+
+    .transactions-card th {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #999;
+        padding: 1rem 1.5rem !important;
+        border: none !important;
+    }
+
+    .transactions-card td {
+        padding: 1rem 1.5rem !important;
+        vertical-align: middle;
+        border-bottom: 1px solid #f5f5f5 !important;
+    }
+
+    .transactions-card tbody tr {
+        transition: background 0.2s ease;
+    }
+
+    .transactions-card tbody tr:hover {
+        background: rgba(107, 45, 123, 0.02);
+    }
+
+    .transactions-card .date-cell {
+        font-weight: 600;
+        color: #555;
+    }
+
+    .transactions-card .desc-main {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .transactions-card .desc-sub {
+        font-size: 0.8rem;
+        color: #999;
+    }
+
+    .transactions-card .account-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.35rem 0.75rem;
+        background: #f5f5f5;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #666;
+    }
+
+    .transactions-card .amount-positive {
+        color: var(--jema-teal);
+        font-weight: 700;
+    }
+
+    .transactions-card .amount-negative {
+        color: #dc3545;
+        font-weight: 700;
+    }
+
+    /* Sidebar Actions */
+    .sidebar-actions {
+        position: sticky;
+        top: 20px;
+    }
+
+    .btn-main-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 1.1rem 1.5rem;
+        background: var(--jema-gradient);
+        border: none;
+        border-radius: 16px;
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(107, 45, 123, 0.35);
+    }
+
+    .btn-main-action:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(107, 45, 123, 0.45);
+        color: white;
+    }
+
+    .btn-main-action i {
+        font-size: 1.2rem;
+    }
+
+    .btn-secondary-action {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.9rem 1.25rem;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 14px;
+        color: #555;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+
+    .btn-secondary-action:hover {
+        border-color: var(--jema-purple);
+        background: var(--jema-purple-light);
+        color: var(--jema-purple);
+        transform: translateX(5px);
+    }
+
+    .btn-secondary-action i {
+        font-size: 1.1rem;
+        color: #999;
+        transition: color 0.25s ease;
+    }
+
+    .btn-secondary-action:hover i {
+        color: var(--jema-purple);
+    }
+
+    /* Summary Card */
+    .summary-card {
+        background: white;
+        border: 2px solid #f0f0f0;
+        border-radius: 18px;
+        padding: 1.5rem;
+    }
+
+    .summary-card .summary-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #999;
+        margin-bottom: 1.25rem;
+    }
+
+    .summary-card .summary-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 0;
+    }
+
+    .summary-card .summary-item:not(:last-child) {
+        border-bottom: 1px solid #f5f5f5;
+    }
+
+    .summary-card .summary-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .summary-card .summary-icon.income {
+        background: rgba(26, 154, 154, 0.12);
+        color: var(--jema-teal);
+    }
+
+    .summary-card .summary-icon.expense {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+
+    .summary-card .summary-label {
+        font-size: 0.85rem;
+        color: #888;
+    }
+
+    .summary-card .summary-value {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #333;
+    }
+</style>
+
+<!-- Hero Card - Saldo Total -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="hero-balance-card">
+            <div class="label">Saldo Total Disponible</div>
+            <div class="amount">${{ total_balance|intcomma }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas de Cuentas -->
+<div class="section-title">Mis Cuentas</div>
+<div class="row g-4 mb-5">
+    {% for account in accounts %}
+    <div class="col-md-6 col-xl-4">
+        <div class="account-card">
+            <div class="account-header">
+                <h5 class="account-name">{{ account.name }}</h5>
+                <div class="account-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+            </div>
+
+            <div class="account-balance">${{ account.current_balance|intcomma }}</div>
+
+            {% if account.limit_amount > 0 %}
+            {% widthratio account.monthly_income account.limit_amount 100 as pct %}
+            <div class="progress-info">
+                <span>Ingresos: ${{ account.monthly_income|intcomma }}</span>
+                <span>Meta: ${{ account.limit_amount|intcomma }} ({{ pct }}%)</span>
+            </div>
+            <div class="progress-bar-wrapper">
+                <div class="progress-fill {% if pct|add:0 > 90 %}high{% elif pct|add:0 > 50 %}mid{% else %}low{% endif %}"
+                    style="width: {{ pct }}%"></div>
+            </div>
+            {% else %}
+            <div class="no-goal">Sin meta mensual establecida</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="col-md-6 col-xl-4">
+        <div class="new-account-card">
+            <a href="{% url 'accounting_account_create' %}">
+                <div class="icon-wrapper">
+                    <i class="bi bi-plus"></i>
+                </div>
+                <span>Nueva Cuenta</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Movimientos y Acciones -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="transactions-card">
+            <div class="card-header-jema">
+                <h5>Movimientos Recientes</h5>
+                <span class="badge-count">Últimos 10</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Cuenta</th>
+                            <th class="text-end">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in recent_transactions %}
+                        <tr>
+                            <td class="date-cell">{{ t.date|date:"d M" }}</td>
+                            <td>
+                                <div class="desc-main">{{ t.description }}</div>
+                                <div class="desc-sub">{{ t.detail }}</div>
+                            </td>
+                            <td>
+                                <span class="account-badge">{{ t.account_name }}</span>
+                            </td>
+                            <td class="text-end">
+                                <span
+                                    class="{% if t.amount_sign == '+' %}amount-positive{% else %}amount-negative{% endif %}">
+                                    {{ t.amount_sign }}${{ t.amount|intcomma }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+                                No hay movimientos registrados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="sidebar-actions d-grid gap-3">
+            <a href="{% url 'accounting_transaction_create' %}" class="btn-main-action">
+                <i class="bi bi-plus-circle-fill"></i> REGISTRAR MOVIMIENTO
+            </a>
+
+            <a href="{% url 'accounting_category_list' %}" class="btn-secondary-action">
+                <i class="bi bi-tags-fill"></i> Gestionar Categorías
+            </a>
+
+            <a href="{% url 'accounting_provider_list' %}" class="btn-secondary-action">
+                <i class="bi bi-truck"></i> Gestionar Proveedores
+            </a>
+
+            <div class="summary-card">
+                <div class="summary-title">Resumen del Mes</div>
+                <div class="summary-item">
+                    <div class="summary-icon income">
+                        <i class="bi bi-arrow-down-left"></i>
+                    </div>
+                    <div>
+                        <div class="summary-label">Ingresos</div>
+                        <div class="summary-value">${{ monthly_income|intcomma }}</div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon expense">
+                        <i class="bi bi-arrow-up-right"></i>
+                    </div>
+                    <div>
+                        <div class="summary-label">Gastos</div>
+                        <div class="summary-value">${{ monthly_expenses|intcomma }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

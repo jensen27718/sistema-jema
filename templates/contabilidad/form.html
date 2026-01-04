@@ -1,0 +1,464 @@
+{% extends 'base_admin.html' %}
+
+{% load humanize %}
+
+{% block title %}Nuevo Movimiento - JEMA Admin{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'accounting_dashboard' %}" class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Registrar Movimiento</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --jema-purple: #6B2D7B;
+        --jema-purple-light: rgba(107, 45, 123, 0.1);
+        --jema-teal: #1A9A9A;
+        --jema-teal-light: rgba(26, 154, 154, 0.1);
+        --jema-magenta: #E91E8C;
+        --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+    }
+
+    .btn-back-jema {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        color: var(--jema-purple);
+        font-size: 1.1rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-back-jema:hover {
+        background: var(--jema-purple-light);
+        border-color: var(--jema-purple);
+        transform: translateX(-3px);
+    }
+
+    .form-card-jema {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(107, 45, 123, 0.08);
+        border: 1px solid rgba(107, 45, 123, 0.08);
+        padding: 2rem;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #999;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Monto Input Grande */
+    .amount-input-wrapper {
+        background: linear-gradient(135deg, rgba(107, 45, 123, 0.03) 0%, rgba(26, 154, 154, 0.03) 100%);
+        border: 2px solid #f0f0f0;
+        border-radius: 16px;
+        padding: 1rem 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .amount-input-wrapper:focus-within {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 4px var(--jema-purple-light);
+    }
+
+    .amount-input-wrapper .input-group-text {
+        background: transparent;
+        border: none;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--jema-purple);
+        padding-left: 0;
+    }
+
+    .amount-input-wrapper input {
+        background: transparent !important;
+        border: none !important;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #333;
+        box-shadow: none !important;
+    }
+
+    .amount-input-wrapper input::placeholder {
+        color: #ccc;
+    }
+
+    /* Form Controls */
+    .form-control-jema,
+    .form-select-jema {
+        border: 2px solid #eee;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background-color: #fafafa;
+    }
+
+    .form-control-jema:focus,
+    .form-select-jema:focus {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 4px var(--jema-purple-light);
+        background-color: white;
+    }
+
+    /* Transaction Type Buttons */
+    .type-btn-group {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .type-btn-group .btn-check+label {
+        flex: 1;
+        padding: 1rem;
+        border-radius: 14px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border: 2px solid #eee;
+        background: #fafafa;
+        color: #666;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .type-btn-group .btn-check+label i {
+        font-size: 1.1rem;
+    }
+
+    .type-btn-group .btn-check+label:hover {
+        border-color: #ccc;
+        background: #f5f5f5;
+    }
+
+    /* Ingreso Selected */
+    .type-btn-group #type-ingreso:checked+label {
+        background: linear-gradient(135deg, var(--jema-teal), #2eb8b8);
+        border-color: var(--jema-teal);
+        color: white;
+        box-shadow: 0 6px 20px rgba(26, 154, 154, 0.35);
+        transform: translateY(-2px);
+    }
+
+    /* Egreso Selected */
+    .type-btn-group #type-egreso:checked+label {
+        background: linear-gradient(135deg, #dc3545, #e74c5c);
+        border-color: #dc3545;
+        color: white;
+        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.35);
+        transform: translateY(-2px);
+    }
+
+    /* Transferencia Selected */
+    .type-btn-group #type-transfer:checked+label {
+        background: var(--jema-gradient);
+        border-color: var(--jema-purple);
+        color: white;
+        box-shadow: 0 6px 20px rgba(107, 45, 123, 0.35);
+        transform: translateY(-2px);
+    }
+
+    /* Section Cards */
+    .section-card {
+        background: linear-gradient(135deg, rgba(107, 45, 123, 0.02) 0%, rgba(26, 154, 154, 0.02) 100%);
+        border: 2px solid #f0f0f0;
+        border-radius: 16px;
+        padding: 1.25rem;
+        transition: all 0.3s ease;
+    }
+
+    .section-card:hover {
+        border-color: #e0e0e0;
+    }
+
+    /* Radio Options */
+    .radio-option-jema {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-right: 0.5rem;
+    }
+
+    .radio-option-jema:hover {
+        background: var(--jema-purple-light);
+    }
+
+    .radio-option-jema input[type="radio"] {
+        accent-color: var(--jema-purple);
+        width: 18px;
+        height: 18px;
+    }
+
+    .radio-option-jema span {
+        font-weight: 500;
+        color: #444;
+    }
+
+    /* Link Styling */
+    .link-jema {
+        color: var(--jema-teal);
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .link-jema:hover {
+        color: var(--jema-purple);
+        text-decoration: underline;
+    }
+
+    /* Submit Button */
+    .btn-submit-jema {
+        background: var(--jema-gradient);
+        border: none;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 1.1rem 2rem;
+        border-radius: 14px;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .btn-submit-jema:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(107, 45, 123, 0.4);
+        color: white;
+    }
+
+    .btn-submit-jema:active {
+        transform: translateY(-1px);
+    }
+
+    .btn-submit-jema i {
+        font-size: 1.2rem;
+    }
+
+    /* Divider */
+    .divider-jema {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+        margin: 1.5rem 0;
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="form-card-jema">
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <!-- Monto (Grande) -->
+                <div class="mb-4">
+                    <label class="section-label">MONTO</label>
+                    <div class="amount-input-wrapper">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" name="amount" class="form-control" placeholder="0" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cuenta y Fecha -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <label class="section-label">CUENTA ORIGEN</label>
+                        <select name="account_id" class="form-select form-select-jema" required>
+                            {% for acc in accounts %}
+                            <option value="{{ acc.id }}">{{ acc.name }} (${{ acc.current_balance|intcomma }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="section-label">FECHA</label>
+                        <input type="date" name="date" class="form-control form-control-jema" value="{% now 'Y-m-d' %}"
+                            required>
+                    </div>
+                </div>
+
+                <!-- Tipo de Movimiento -->
+                <div class="mb-4">
+                    <label class="section-label">TIPO DE MOVIMIENTO</label>
+                    <div class="type-btn-group">
+                        <input type="radio" class="btn-check" name="transaction_type" id="type-ingreso" value="ingreso"
+                            checked onclick="toggleCategories('ingreso')">
+                        <label for="type-ingreso">
+                            <i class="bi bi-arrow-down-left-circle-fill"></i> INGRESO
+                        </label>
+
+                        <input type="radio" class="btn-check" name="transaction_type" id="type-egreso" value="egreso"
+                            onclick="toggleCategories('egreso')">
+                        <label for="type-egreso">
+                            <i class="bi bi-arrow-up-right-circle-fill"></i> GASTO
+                        </label>
+
+                        <input type="radio" class="btn-check" name="transaction_type" id="type-transfer"
+                            value="transferencia" onclick="toggleCategories('transferencia')">
+                        <label for="type-transfer">
+                            <i class="bi bi-arrow-left-right"></i> TRANSFERIR
+                        </label>
+                    </div>
+                </div>
+
+                <div class="divider-jema"></div>
+
+                <!-- Categoría -->
+                <div class="mb-4" id="section-category">
+                    <label class="section-label">CATEGORÍA</label>
+                    <select name="category_id" class="form-select form-select-jema" id="cat-ingreso">
+                        {% for cat in categories_income %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="category_id" class="form-select form-select-jema d-none" id="cat-egreso" disabled>
+                        {% for cat in categories_expense %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <div class="text-end mt-2">
+                        <a href="{% url 'accounting_category_list' %}" class="link-jema small">
+                            <i class="bi bi-gear me-1"></i>Gestionar Categorías
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Sección de Cuenta Destino (Para Transferencias) -->
+                <div id="section-transfer" class="section-card mb-4 d-none">
+                    <label class="section-label">CUENTA DE DESTINO</label>
+                    <select name="dest_account_id" class="form-select form-select-jema" id="select-dest-account"
+                        disabled>
+                        <option value="">-- Seleccionar Destino --</option>
+                        {% for acc in accounts %}
+                        <option value="{{ acc.id }}">{{ acc.name }} (${{ acc.current_balance|intcomma }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sección de Cliente (Para Ingresos) -->
+                <div id="section-client" class="section-card mb-4">
+                    <label class="section-label">CLIENTE / TERCERO (INGRESOS)</label>
+                    <div id="client-select-container">
+                        <select name="client_id" class="form-select form-select-jema">
+                            <option value="">-- Seleccionar Cliente --</option>
+                            {% for u in users_list %}
+                            <option value="{{ u.id }}">{{ u.first_name|default:u.username }} ({{ u.phone_number }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mt-2">
+                        <a href="{% url 'quick_client_create' %}?next={{ request.path }}" class="link-jema small">
+                            <i class="bi bi-plus-circle me-1"></i>Crear nuevo cliente
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Sección de Proveedor (Para Egresos) -->
+                <div id="section-provider" class="section-card mb-4 d-none">
+                    <label class="section-label">PROVEEDOR (GASTOS)</label>
+                    <select name="provider_id" class="form-select form-select-jema">
+                        <option value="">-- Seleccionar Proveedor --</option>
+                        {% for prov in providers_list %}
+                        <option value="{{ prov.id }}">{{ prov.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="mt-2">
+                        <a href="{% url 'accounting_provider_create' %}" target="_blank" class="link-jema small">
+                            <i class="bi bi-plus-circle me-1"></i>Crear nuevo proveedor
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Detalles -->
+                <div class="mb-4">
+                    <label class="section-label">DESCRIPCIÓN / CONCEPTO</label>
+                    <input type="text" name="description" class="form-control form-control-jema"
+                        placeholder="Ej: Pago de nómina, Venta mostrador..." required>
+                </div>
+
+                <!-- Botón -->
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-submit-jema">
+                        <i class="bi bi-check-circle-fill"></i> GUARDAR MOVIMIENTO
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCategories(type) {
+        const catIncome = document.getElementById('cat-ingreso');
+        const catExpense = document.getElementById('cat-egreso');
+        const secClient = document.getElementById('section-client');
+        const secProvider = document.getElementById('section-provider');
+        const secCategory = document.getElementById('section-category');
+        const secTransfer = document.getElementById('section-transfer');
+        const selectDest = document.getElementById('select-dest-account');
+
+        // Reset all
+        catIncome.classList.add('d-none'); catIncome.disabled = true;
+        catExpense.classList.add('d-none'); catExpense.disabled = true;
+        secCategory.classList.remove('d-none');
+        secClient.classList.add('d-none');
+        secProvider.classList.add('d-none');
+        secTransfer.classList.add('d-none');
+        selectDest.disabled = true;
+
+        if (type === 'ingreso') {
+            catIncome.classList.remove('d-none'); catIncome.disabled = false;
+            secClient.classList.remove('d-none');
+        } else if (type === 'egreso') {
+            catExpense.classList.remove('d-none'); catExpense.disabled = false;
+            secProvider.classList.remove('d-none');
+        } else if (type === 'transferencia') {
+            secCategory.classList.add('d-none');
+            secTransfer.classList.remove('d-none');
+            selectDest.disabled = false;
+        }
+    }
+
+    function toggleClientMode() {
+        const optExisting = document.getElementById('opt-existing');
+        const containerSelect = document.getElementById('client-select-container');
+        const containerNew = document.getElementById('client-new-container');
+
+        if (optExisting.checked) {
+            containerSelect.classList.remove('d-none');
+            containerNew.classList.add('d-none');
+        } else {
+            containerSelect.classList.add('d-none');
+            containerNew.classList.remove('d-none');
+        }
+    }
+</script>
+{% endblock %}

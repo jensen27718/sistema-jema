@@ -1,0 +1,45 @@
+{% extends 'base_admin.html' %}
+{% block title %}{% if category %}Editar{% else %}Nueva{% endif %} Categoría - JEMA{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'accounting_category_list' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    {% if category %}Editar Categoría{% else %}Nueva Categoría{% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="jema-card p-4">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">NOMBRE DE CATEGORÍA</label>
+                    <input type="text" name="name" class="form-control" placeholder="Ej: Ventas, Nómina, Publicidad"
+                        value="{{ category.name|default:'' }}" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">TIPO DE MOVIMIENTO</label>
+                    <select name="transaction_type" class="form-select" required>
+                        <option value="ingreso" {% if category.transaction_type == 'ingreso' %}selected{% endif %}>Ingreso
+                        </option>
+                        <option value="egreso" {% if category.transaction_type == 'egreso' %}selected{% endif %}>Gasto /
+                            Egreso</option>
+                    </select>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-jema-primary py-2 fw-bold rounded-3">
+                        <i class="bi bi-save me-2"></i> GUARDAR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Detalle de Deuda - Contabilidad{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'accounting_debt_list' %}" class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Detalle de Deuda</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --jema-purple: #6B2D7B;
+        --jema-success: #198754;
+        --jema-danger: #dc3545;
+        --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+    }
+
+    .btn-back-jema {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        color: var(--jema-purple);
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .hero-card {
+        background: var(--jema-gradient);
+        border-radius: 20px;
+        padding: 2rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 40px rgba(107, 45, 123, 0.3);
+    }
+
+    .provider-name {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    .debt-desc {
+        opacity: 0.9;
+        margin-bottom: 1.5rem;
+    }
+
+    .amount-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+
+    .amount-item {
+        text-align: center;
+    }
+
+    .amount-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+    }
+
+    .amount-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+    }
+
+    .progress-section {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .progress-bar-debt {
+        height: 14px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill-debt {
+        height: 100%;
+        background: white;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+
+    .progress-percent {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-top: 0.5rem;
+        text-align: center;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 2rem 0 1rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-title::before {
+        content: '';
+        width: 4px;
+        height: 20px;
+        background: var(--jema-gradient);
+        border-radius: 2px;
+    }
+
+    .payment-form-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 2px solid #f0f0f0;
+    }
+
+    .form-control-jema {
+        border: 2px solid #eee;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+    }
+
+    .form-control-jema:focus {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 4px rgba(107, 45, 123, 0.1);
+    }
+
+    .btn-add-payment {
+        background: var(--jema-success);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .btn-add-payment:hover {
+        background: #157347;
+        transform: translateY(-2px);
+    }
+
+    .payment-card {
+        background: white;
+        border-radius: 14px;
+        padding: 1.25rem;
+        border: 2px solid #f0f0f0;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+    .payment-card:hover {
+        border-color: var(--jema-purple);
+    }
+
+    .payment-date {
+        font-weight: 700;
+        color: var(--jema-purple);
+    }
+
+    .payment-amount {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--jema-success);
+    }
+
+    .payment-notes {
+        font-size: 0.9rem;
+        color: #888;
+        margin-top: 0.5rem;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="hero-card">
+            <div class="provider-name">{{ debt.provider.name }}</div>
+            <div class="debt-desc">{{ debt.description }}</div>
+
+            <div class="amount-grid">
+                <div class="amount-item">
+                    <div class="amount-label">Total Deuda</div>
+                    <div class="amount-value">${{ debt.total_amount|intcomma }}</div>
+                </div>
+                <div class="amount-item">
+                    <div class="amount-label">Abonado</div>
+                    <div class="amount-value">${{ total_paid|intcomma }}</div>
+                </div>
+                <div class="amount-item">
+                    <div class="amount-label">Pendiente</div>
+                    <div class="amount-value">${{ remaining|intcomma }}</div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-bar-debt">
+                    <div class="progress-fill-debt" style="width: {{ progress }}%"></div>
+                </div>
+                <div class="progress-percent">{{ progress }}% Pagado</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="section-title">
+            <i class="bi bi-cash-coin"></i> Registrar Nuevo Abono
+        </div>
+
+        <div class="payment-form-card">
+            <form method="POST" action="{% url 'accounting_payment_create' debt.id %}">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Monto a Abonar</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="amount" class="form-control form-control-jema" placeholder="0"
+                            step="0.01" max="{{ remaining }}" required>
+                    </div>
+                    <small class="text-muted">Máximo: ${{ remaining|intcomma }}</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Fecha del Abono</label>
+                    <input type="date" name="payment_date" class="form-control form-control-jema"
+                        value="{% now 'Y-m-d' %}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Notas (opcional)</label>
+                    <textarea name="notes" class="form-control form-control-jema" rows="2"
+                        placeholder="Ej: Pago parcial, efectivo..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-add-payment w-100">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Agregar Abono
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="section-title">
+            <i class="bi bi-list-ul"></i> Historial de Abonos ({{ payments.count }})
+        </div>
+
+        {% for payment in payments %}
+        <div class="payment-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="payment-date">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        {{ payment.payment_date|date:"d/m/Y" }}
+                    </div>
+                    {% if payment.notes %}
+                    <div class="payment-notes">{{ payment.notes }}</div>
+                    {% endif %}
+                </div>
+                <div class="payment-amount">+${{ payment.amount|intcomma }}</div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-2" style="opacity: 0.2;"></i>
+            <p>No hay abonos registrados aún</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

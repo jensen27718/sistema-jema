@@ -1,0 +1,47 @@
+{% extends 'base_admin.html' %}
+{% block title %}{% if provider %}Editar{% else %}Nuevo{% endif %} Proveedor - JEMA{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'accounting_provider_list' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    {% if provider %}Editar Proveedor{% else %}Nuevo Proveedor{% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="jema-card p-4">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">NOMBRE EMPRESA / PROVEEDOR</label>
+                    <input type="text" name="name" class="form-control" placeholder="Ej: Distribuidora XYZ"
+                        value="{{ provider.name|default:'' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">TELÉFONO</label>
+                    <input type="tel" name="phone" class="form-control" placeholder="Opcional"
+                        value="{{ provider.phone|default:'' }}">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">EMAIL</label>
+                    <input type="email" name="email" class="form-control" placeholder="Opcional"
+                        value="{{ provider.email|default:'' }}">
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-jema-primary py-2 fw-bold rounded-3">
+                        <i class="bi bi-save me-2"></i> GUARDAR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

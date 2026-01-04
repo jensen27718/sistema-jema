@@ -372,6 +372,20 @@
                     <i class="bi bi-list-check"></i>
                     <span>Tareas</span>
                 </a>
+
+                <!-- CONTABILIDAD -->
+                <a href="{% url 'accounting_dashboard' %}"
+                    class="sidebar-link {% if 'contabilidad' in request.path and 'deudas' not in request.path %}active{% endif %}">
+                    <i class="bi bi-wallet2"></i>
+                    <span>Contabilidad</span>
+                </a>
+
+                <a href="{% url 'accounting_debt_list' %}"
+                    class="sidebar-link {% if 'deudas' in request.path %}active{% endif %}">
+                    <i class="bi bi-receipt"></i>
+                    <span>Deudas</span>
+                </a>
+
                 <a href="#" class="sidebar-link">
                     <i class="bi bi-bar-chart"></i>
                     <span>Reportes</span>

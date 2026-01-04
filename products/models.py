@@ -33,7 +33,9 @@ class CartItem(models.Model):
 class Category(models.Model):
     name = models.CharField("Categoría", max_length=100)
     slug = models.SlugField(unique=True, blank=True) # Agregamos blank=True por si acaso
+    slug = models.SlugField(unique=True, blank=True) # Agregamos blank=True por si acaso
     icon = models.CharField(max_length=50, default='bi-tag', help_text="Clase de icono Bootstrap (ej: bi-star)")
+    image = models.ImageField("Icono/Imagen", upload_to='categories/', blank=True, null=True, help_text="Imagen cuadrada para el menú (PNG/JPG)")
     # --- 2. AGREGA ESTE MÉTODO SAVE ---
     def save(self, *args, **kwargs):
         if not self.slug:  # Si no tiene slug...
@@ -181,6 +183,7 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True) # Enlace al producto original
     product_name = models.CharField(max_length=200)
     variant_text = models.CharField(max_length=200) # Ej: "Grande - Dorado"
     quantity = models.IntegerField()

@@ -1,0 +1,64 @@
+{% extends 'base_admin.html' %}
+{% block title %}{% if account %}Editar{% else %}Nueva{% endif %} Cuenta - JEMA Admin{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'accounting_dashboard' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    {% if account %}Editar Cuenta: {{ account.name }}{% else %}Nueva Cuenta{% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="jema-card p-4">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">NOMBRE DE LA CUENTA</label>
+                    <input type="text" name="name" class="form-control" placeholder="Ej: Bancolombia, Nequi, Caja Menor"
+                        value="{{ account.name|default:'' }}" required>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label text-muted small fw-bold">SALDO ACTUAL</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-0 bg-light">$</span>
+                            <input type="number" step="0.01" name="current_balance"
+                                class="form-control bg-light fw-bold"
+                                value="{{ account.current_balance|default:'0'|stringformat:'f' }}">
+                        </div>
+                        <div class="form-text small">Cambiar esto ajustará el saldo manualmente.</div>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label text-muted small fw-bold">LÍMITE MENSUAL</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-0 bg-light">$</span>
+                            <input type="number" step="0.01" name="limit_amount" class="form-control"
+                                value="{{ account.limit_amount|default:'0'|stringformat:'f' }}">
+                        </div>
+                        <div class="form-text small">Para la barra de progreso (0 = sin límite).</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">DESCRIPCIÓN (Opcional)</label>
+                    <textarea name="description" class="form-control"
+                        rows="3">{{ account.description|default:'' }}</textarea>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-jema-primary py-2 fw-bold rounded-3">
+                        <i class="bi bi-save me-2"></i> GUARDAR CUENTA
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'users',
     'products',
     'storages',
+    'contabilidad', # <--- Nueva App de Contabilidad
 ]
 
 MIDDLEWARE = [

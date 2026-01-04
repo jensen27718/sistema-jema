@@ -51,6 +51,7 @@ def checkout_process_view(request):
         
         OrderItem.objects.create(
             order=order,
+            product=item.variant.product, # <--- GUARDAMOS LA REFERENCIA
             product_name=item.variant.product.name,
             variant_text=variant_desc,
             quantity=item.quantity,

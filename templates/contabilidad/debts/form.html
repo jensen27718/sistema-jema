@@ -1,0 +1,131 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Nueva Deuda - Contabilidad{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'accounting_debt_list' %}" class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Registrar Nueva Deuda</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --jema-purple: #6B2D7B;
+        --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+    }
+
+    .btn-back-jema {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        color: var(--jema-purple);
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .form-card {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        border: 2px solid #f0f0f0;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #999;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control-jema {
+        border: 2px solid #eee;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-control-jema:focus {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 4px rgba(107, 45, 123, 0.1);
+    }
+
+    .btn-submit {
+        background: var(--jema-gradient);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 14px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(107, 45, 123, 0.4);
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="form-card">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="section-label">Proveedor</label>
+                    <select name="provider_id" class="form-control form-control-jema" required>
+                        <option value="">-- Seleccionar Proveedor --</option>
+                        {% for prov in providers %}
+                        <option value="{{ prov.id }}">{{ prov.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted mt-1 d-block">
+                        <a href="{% url 'accounting_provider_create' %}" target="_blank" class="text-decoration-none">
+                            <i class="bi bi-plus-circle me-1"></i>Crear nuevo proveedor
+                        </a>
+                    </small>
+                </div>
+
+                <div class="mb-4">
+                    <label class="section-label">Monto Total de la Deuda</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="total_amount" class="form-control form-control-jema" placeholder="0"
+                            step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="section-label">Fecha de la Deuda</label>
+                    <input type="date" name="date_created" class="form-control form-control-jema"
+                        value="{% now 'Y-m-d' %}" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="section-label">Descripción / Concepto</label>
+                    <textarea name="description" class="form-control form-control-jema" rows="3"
+                        placeholder="Ej: Mercancía, Servicios, etc..." required></textarea>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-submit">
+                        <i class="bi bi-check-circle-fill me-2"></i> REGISTRAR DEUDA
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

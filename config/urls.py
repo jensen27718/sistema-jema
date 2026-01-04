@@ -20,6 +20,9 @@ urlpatterns = [
     path('panel/', views.dashboard_home_view, name='panel_home'),
     path('panel/pedidos/', views.dashboard_pedidos_view, name='panel_pedidos'),
     path('panel/tareas/', views.dashboard_tareas_view, name='panel_tareas'),
+    path('panel/clientes/nuevo-rapido/', views.quick_client_create_view, name='quick_client_create'),
+    # --- RUTA DE CONTABILIDAD ---
+    path('panel/contabilidad/', include('contabilidad.urls')),
 
     # --- RUTAS DE PRODUCTOS (CORREGIDAS) ---
     # Quitamos los dos puntos ':' y usamos guión bajo '_'

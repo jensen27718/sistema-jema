@@ -1,4 +1,5 @@
 {% extends 'base_admin.html' %}
+{% load humanize %}
 
 {% block title %}Dashboard - JEMA Admin{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
@@ -14,10 +15,10 @@
                     <i class="bi bi-currency-dollar fs-5 text-jema-purple"></i>
                 </div>
                 <span class="jema-badge jema-badge-success">
-                    <i class="bi bi-arrow-up me-1"></i>+12%
+                    <i class="bi bi-calendar-event me-1"></i> Este mes
                 </span>
             </div>
-            <h3 class="fw-bold mb-1">$45,230</h3>
+            <h3 class="fw-bold mb-1">${{ total_sales_month|intcomma }}</h3>
             <p class="text-muted mb-0">Ventas del Mes</p>
         </div>
     </div>
@@ -30,10 +31,10 @@
                     <i class="bi bi-bag-check fs-5 text-jema-teal"></i>
                 </div>
                 <span class="jema-badge jema-badge-success">
-                    <i class="bi bi-arrow-up me-1"></i>+8%
+                    <i class="bi bi-calendar-event me-1"></i> Este mes
                 </span>
             </div>
-            <h3 class="fw-bold mb-1">328</h3>
+            <h3 class="fw-bold mb-1">{{ orders_count_month }}</h3>
             <p class="text-muted mb-0">Pedidos del Mes</p>
         </div>
     </div>
@@ -46,11 +47,11 @@
                     <i class="bi bi-people fs-5 text-jema-magenta"></i>
                 </div>
                 <span class="jema-badge jema-badge-success">
-                    <i class="bi bi-arrow-up me-1"></i>+23%
+                    <i class="bi bi-check-lg me-1"></i> Total
                 </span>
             </div>
-            <h3 class="fw-bold mb-1">1,245</h3>
-            <p class="text-muted mb-0">Clientes Activos</p>
+            <h3 class="fw-bold mb-1">{{ active_clients }}</h3>
+            <p class="text-muted mb-0">Clientes Estiman</p>
         </div>
     </div>
 
@@ -61,11 +62,11 @@
                     style="width: 48px; height: 48px; background-color: rgba(107, 45, 123, 0.1);">
                     <i class="bi bi-box-seam fs-5 text-jema-purple"></i>
                 </div>
-                <span class="jema-badge jema-badge-warning">
-                    <i class="bi bi-arrow-down me-1"></i>-3%
+                <span class="jema-badge jema-badge-purple">
+                    <i class="bi bi-box me-1"></i> Total
                 </span>
             </div>
-            <h3 class="fw-bold mb-1">89</h3>
+            <h3 class="fw-bold mb-1">{{ active_products }}</h3>
             <p class="text-muted mb-0">Productos Activos</p>
         </div>
     </div>
@@ -96,106 +97,41 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% for order in recent_orders %}
                         <tr>
                             <td class="px-4 py-3">
-                                <span class="fw-semibold text-jema-purple">#ORD-001</span>
+                                <a href="{% url 'panel_order_detail' order.id %}"
+                                    class="fw-semibold text-jema-purple text-decoration-none">
+                                    #{{ order.id }}
+                                </a>
                             </td>
                             <td class="py-3">
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
                                         style="width: 36px; height: 36px;">
-                                        <span class="text-white small fw-bold">MG</span>
+                                        <span class="text-white small fw-bold">{{ order.initials }}</span>
                                     </div>
-                                    <span>María García</span>
+                                    <span>{{ order.client_name }}</span>
                                 </div>
                             </td>
-                            <td class="py-3">3 productos</td>
-                            <td class="py-3 fw-semibold">$125.00</td>
+                            <td class="py-3">{{ order.items_count }} productos</td>
+                            <td class="py-3 fw-semibold">${{ order.total|intcomma }}</td>
                             <td class="py-3">
-                                <span class="jema-badge jema-badge-warning">Pendiente</span>
+                                <span class="badge rounded-pill" style="background-color: {{ order.status_color }};">
+                                    {{ order.status_name }}
+                                </span>
                             </td>
                             <td class="px-4 py-3">
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-light"><i class="bi bi-eye"></i></button>
-                                    <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
-                                </div>
+                                <a href="{% url 'panel_order_detail' order.id %}" class="btn btn-sm btn-light">
+                                    <i class="bi bi-eye"></i>
+                                </a>
                             </td>
                         </tr>
+                        {% empty %}
                         <tr>
-                            <td class="px-4 py-3">
-                                <span class="fw-semibold text-jema-purple">#ORD-002</span>
-                            </td>
-                            <td class="py-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center"
-                                        style="width: 36px; height: 36px; background-color: var(--jema-teal);">
-                                        <span class="text-white small fw-bold">JL</span>
-                                    </div>
-                                    <span>Juan López</span>
-                                </div>
-                            </td>
-                            <td class="py-3">1 producto</td>
-                            <td class="py-3 fw-semibold">$89.99</td>
-                            <td class="py-3">
-                                <span class="jema-badge jema-badge-teal">En Proceso</span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-light"><i class="bi bi-eye"></i></button>
-                                    <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
-                                </div>
-                            </td>
+                            <td colspan="6" class="text-center py-4 text-muted">No hay pedidos recientes.</td>
                         </tr>
-                        <tr>
-                            <td class="px-4 py-3">
-                                <span class="fw-semibold text-jema-purple">#ORD-003</span>
-                            </td>
-                            <td class="py-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center"
-                                        style="width: 36px; height: 36px; background-color: var(--jema-magenta);">
-                                        <span class="text-white small fw-bold">AR</span>
-                                    </div>
-                                    <span>Ana Rodríguez</span>
-                                </div>
-                            </td>
-                            <td class="py-3">5 productos</td>
-                            <td class="py-3 fw-semibold">$342.50</td>
-                            <td class="py-3">
-                                <span class="jema-badge jema-badge-success">Entregado</span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-light"><i class="bi bi-eye"></i></button>
-                                    <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="px-4 py-3">
-                                <span class="fw-semibold text-jema-purple">#ORD-004</span>
-                            </td>
-                            <td class="py-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
-                                        style="width: 36px; height: 36px;">
-                                        <span class="text-white small fw-bold">CM</span>
-                                    </div>
-                                    <span>Carlos Martínez</span>
-                                </div>
-                            </td>
-                            <td class="py-3">2 productos</td>
-                            <td class="py-3 fw-semibold">$199.00</td>
-                            <td class="py-3">
-                                <span class="jema-badge jema-badge-purple">Enviado</span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-light"><i class="bi bi-eye"></i></button>
-                                    <button class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></button>
-                                </div>
-                            </td>
-                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -208,14 +144,16 @@
         <div class="jema-card p-4 mb-4">
             <h5 class="fw-bold mb-4">Acciones Rápidas</h5>
             <div class="d-grid gap-3">
-                <button class="btn btn-jema-primary text-start d-flex align-items-center gap-3">
+                <a href="{% url 'panel_product_create' %}"
+                    class="btn btn-jema-primary text-start d-flex align-items-center gap-3">
                     <i class="bi bi-plus-circle fs-5"></i>
                     <span>Nuevo Producto</span>
-                </button>
-                <button class="btn btn-jema-secondary text-start d-flex align-items-center gap-3">
+                </a>
+                <a href="{% url 'panel_pedidos' %}"
+                    class="btn btn-jema-secondary text-start d-flex align-items-center gap-3">
                     <i class="bi bi-bag-plus fs-5"></i>
-                    <span>Nuevo Pedido</span>
-                </button>
+                    <span>Ver Pedidos</span>
+                </a>
                 <button class="btn btn-jema-outline text-start d-flex align-items-center gap-3">
                     <i class="bi bi-bar-chart fs-5"></i>
                     <span>Ver Reportes</span>

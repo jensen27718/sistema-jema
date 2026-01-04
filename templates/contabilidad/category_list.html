@@ -1,0 +1,68 @@
+{% extends 'base_admin.html' %}
+{% block title %}Categorías - Contabilidad{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'accounting_dashboard' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    Categorías de Movimientos
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="d-flex justify-content-end mb-3">
+            <a href="{% url 'accounting_category_create' %}" class="btn btn-jema-primary fw-bold">
+                <i class="bi bi-plus-lg me-2"></i> Nueva Categoría
+            </a>
+        </div>
+
+        <div class="jema-card overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 py-3 border-0">Nombre</th>
+                            <th class="py-3 border-0">Tipo</th>
+                            <th class="pe-4 py-3 border-0 text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in categories %}
+                        <tr>
+                            <td class="ps-4 fw-medium">{{ cat.name }}</td>
+                            <td>
+                                {% if cat.transaction_type == 'ingreso' %}
+                                <span
+                                    class="badge bg-success-subtle text-success border border-success-subtle">Ingreso</span>
+                                {% else %}
+                                <span
+                                    class="badge bg-danger-subtle text-danger border border-danger-subtle">Gasto/Egreso</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-end">
+                                <a href="{% url 'accounting_category_update' cat.id %}"
+                                    class="btn btn-sm btn-light text-primary">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                                <a href="{% url 'accounting_category_delete' cat.id %}"
+                                    class="btn btn-sm btn-light text-danger"
+                                    onclick="return confirm('¿Eliminar esta categoría? Esto podría fallar si tiene movimientos asociados.')">
+                                    <i class="bi bi-trash-fill"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">No hay categorías registradas.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

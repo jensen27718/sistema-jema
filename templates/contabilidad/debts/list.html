@@ -1,0 +1,296 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Deudas - Contabilidad{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'accounting_dashboard' %}" class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Control de Deudas</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --jema-purple: #6B2D7B;
+        --jema-purple-light: rgba(107, 45, 123, 0.08);
+        --jema-teal: #1A9A9A;
+        --jema-danger: #dc3545;
+        --jema-warning: #ffc107;
+        --jema-success: #198754;
+    }
+
+    .btn-back-jema {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        color: var(--jema-purple);
+        font-size: 1.1rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-back-jema:hover {
+        background: var(--jema-purple-light);
+        border-color: var(--jema-purple);
+        transform: translateX(-3px);
+    }
+
+    .debt-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.75rem;
+        border: 2px solid #f0f0f0;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .debt-card:hover {
+        border-color: var(--jema-purple);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(107, 45, 123, 0.12);
+    }
+
+    .debt-provider {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--jema-purple);
+        margin-bottom: 0.5rem;
+    }
+
+    .debt-description {
+        font-size: 0.9rem;
+        color: #888;
+        margin-bottom: 1rem;
+    }
+
+    .debt-amount {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #222;
+    }
+
+    .debt-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 0.75rem;
+        background: #fafafa;
+        border-radius: 10px;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #999;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .stat-value.paid {
+        color: var(--jema-success);
+    }
+
+    .stat-value.pending {
+        color: var(--jema-danger);
+    }
+
+    .progress-wrapper {
+        margin: 1.25rem 0;
+    }
+
+    .progress-bar-jema {
+        height: 12px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill-jema {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+
+    .progress-fill-jema.low {
+        background: linear-gradient(90deg, #dc3545, #ff6b7a);
+    }
+
+    .progress-fill-jema.mid {
+        background: linear-gradient(90deg, #ffc107, #ffda6a);
+    }
+
+    .progress-fill-jema.high {
+        background: linear-gradient(90deg, #198754, #36d186);
+    }
+
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 0.5rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.4rem 0.9rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-badge.open {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--jema-danger);
+    }
+
+    .status-badge.partial {
+        background: rgba(255, 193, 7, 0.15);
+        color: #d97706;
+    }
+
+    .status-badge.paid {
+        background: rgba(25, 135, 84, 0.1);
+        color: var(--jema-success);
+    }
+
+    .card-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .btn-view {
+        flex: 1;
+        padding: 0.7rem;
+        background: var(--jema-purple);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+
+    .btn-view:hover {
+        background: #5a2469;
+        transform: translateY(-2px);
+        color: white;
+    }
+
+    .btn-add {
+        background: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .btn-add:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(107, 45, 123, 0.4);
+        color: white;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Mis Deudas</h5>
+            <a href="{% url 'accounting_debt_create' %}" class="btn-add">
+                <i class="bi bi-plus-circle-fill"></i> Nueva Deuda
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for debt in debts %}
+    <div class="col-md-6 col-xl-4">
+        <div class="debt-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="debt-provider">{{ debt.provider.name }}</div>
+                <span class="status-badge {{ debt.status }}">{{ debt.status_display }}</span>
+            </div>
+
+            <div class="debt-description">{{ debt.description|truncatewords:10 }}</div>
+
+            <div class="debt-amount">${{ debt.total_amount|intcomma }}</div>
+
+            <div class="debt-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Abonado</div>
+                    <div class="stat-value paid">${{ debt.total_paid|intcomma }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Pendiente</div>
+                    <div class="stat-value pending">${{ debt.remaining|intcomma }}</div>
+                </div>
+            </div>
+
+            <div class="progress-wrapper">
+                <div class="progress-label">
+                    <span>Progreso</span>
+                    <span class="fw-bold">{{ debt.progress }}%</span>
+                </div>
+                <div class="progress-bar-jema">
+                    <div class="progress-fill-jema {% if debt.progress > 75 %}high{% elif debt.progress > 30 %}mid{% else %}low{% endif %}"
+                        style="width: {{ debt.progress }}%"></div>
+                </div>
+            </div>
+
+            <div class="text-muted small mb-3">
+                <i class="bi bi-calendar3 me-1"></i> {{ debt.date_created|date:"d/m/Y" }}
+                <span class="ms-3"><i class="bi bi-receipt me-1"></i> {{ debt.payment_count }} {{ debt.payment_text
+                    }}</span>
+            </div>
+
+            <div class="card-actions">
+                <a href="{% url 'accounting_debt_detail' debt.id %}" class="btn-view">
+                    <i class="bi bi-eye me-2"></i> Ver Detalle
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted d-block mb-3" style="opacity: 0.3;"></i>
+            <h5 class="text-muted">No hay deudas registradas</h5>
+            <p class="text-muted">Comienza agregando una nueva deuda</p>
+            <a href="{% url 'accounting_debt_create' %}" class="btn-add mt-3">
+                <i class="bi bi-plus-circle-fill"></i> Nueva Deuda
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

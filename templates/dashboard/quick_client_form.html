@@ -1,0 +1,153 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Nuevo Cliente Rápido - JEMA Admin{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'accounting_dashboard' %}{% endif %}"
+        class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Nuevo Cliente Rápido</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --jema-purple: #6B2D7B;
+        --jema-purple-light: rgba(107, 45, 123, 0.1);
+        --jema-teal: #1A9A9A;
+        --jema-teal-light: rgba(26, 154, 154, 0.1);
+        --jema-magenta: #E91E8C;
+        --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+    }
+
+    .btn-back-jema {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        color: var(--jema-purple);
+        font-size: 1.1rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-back-jema:hover {
+        background: var(--jema-purple-light);
+        border-color: var(--jema-purple);
+        transform: translateX(-3px);
+    }
+
+    .form-card-jema {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(107, 45, 123, 0.08);
+        border: 1px solid rgba(107, 45, 123, 0.08);
+        padding: 2.5rem;
+    }
+
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #999;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+        display: block;
+    }
+
+    .form-control-jema {
+        border: 2px solid #eee;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background-color: #fafafa;
+    }
+
+    .form-control-jema:focus {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 4px var(--jema-purple-light);
+        background-color: white;
+        outline: none;
+    }
+
+    .btn-submit-jema {
+        background: var(--jema-gradient);
+        border: none;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 1.1rem 2rem;
+        border-radius: 14px;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .btn-submit-jema:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(107, 45, 123, 0.4);
+        color: white;
+    }
+
+    .info-card {
+        background: var(--jema-teal-light);
+        border-left: 4px solid var(--jema-teal);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        color: #0c5460;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+        <div class="form-card-jema">
+            <div class="info-card">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                Este formulario crea un cliente en el sistema para que puedas asociarlo a ventas o movimientos
+                contables.
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="section-label">NOMBRE COMPLETO</label>
+                    <input type="text" name="name" class="form-control-jema w-100" placeholder="Ej: Juan Pérez"
+                        required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="section-label">TELÉFONO / CELULAR</label>
+                    <input type="tel" name="phone" class="form-control-jema w-100" placeholder="Ej: 3001234567"
+                        required>
+                    <small class="text-muted mt-1 d-block">Se usará como nombre de usuario para el inicio de
+                        sesión.</small>
+                </div>
+
+                <div class="mb-5">
+                    <label class="section-label">CORREO ELECTRÓNICO (OPCIONAL)</label>
+                    <input type="email" name="email" class="form-control-jema w-100" placeholder="cliente@ejemplo.com">
+                </div>
+
+                <button type="submit" class="btn btn-submit-jema">
+                    <i class="bi bi-person-plus-fill"></i> CREAR CLIENTE
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

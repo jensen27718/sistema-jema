@@ -7,12 +7,18 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="jema-card p-4">
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
                 <div class="mb-4">
                     <label class="form-label fw-medium">Nombre de la Categoría</label>
                     {{ form.name }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Imagen del Menú (Cuadrada)</label>
+                    {{ form.image }}
+                    <div class="form-text small">Reemplaza al icono si se sube (PNG/JPG).</div>
                 </div>
 
                 <div class="mb-4">
