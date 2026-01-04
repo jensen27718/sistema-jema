@@ -650,7 +650,7 @@
             </a>
 
             {% for cat in categories %}
-            <a href="{% url 'catalogo' %}?category={{ cat.slug }}" class="category-link">
+            <a href="{% url 'catalogo_category' cat.slug %}" class="category-link">
                 {% if cat.image %}
                 <img src="{{ cat.image.url }}" alt="{{ cat.name }}" class="category-icon">
                 {% else %}
