@@ -75,6 +75,7 @@
         .admin-sidebar {
             width: 280px;
             height: 100vh;
+            height: 100dvh;
             background-color: var(--sidebar-bg);
             position: fixed;
             left: 0;
@@ -83,6 +84,7 @@
             transition: transform 0.3s ease;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .admin-sidebar.collapsed {
@@ -98,6 +100,15 @@
             flex: 1;
             overflow-y: auto;
             padding: 16px;
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* IE and Edge */
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari and Opera */
         }
 
         .sidebar-section {
@@ -143,9 +154,11 @@
         }
 
         .sidebar-footer {
-            padding: 16px 24px;
+            padding: 12px 24px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             background-color: var(--sidebar-bg);
+            flex-shrink: 0;
         }
 
         /* Main Content */
@@ -439,7 +452,7 @@
                 <span>Configuración</span>
             </a>
             <div class="border-top border-white border-opacity-10 my-2"></div>
-            <a href="{% url 'home' %}" class="sidebar-link text-white-50">
+            <a href="{% url 'home' %}" class="sidebar-link text-white-50 py-2">
                 <i class="bi bi-arrow-left"></i>
                 <span>Volver a la tienda</span>
             </a>

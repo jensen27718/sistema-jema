@@ -194,9 +194,8 @@
 
         /* === IMAGE SECTION === */
         .slide-image {
-            height: auto;
-            /* ALTURA ADAPTABLE */
-            min-height: 150px;
+            height: 45vh;
+            /* Proporción balanceada para móvil */
             width: 100%;
             position: relative;
             background: #ffffff;
@@ -205,21 +204,38 @@
             justify-content: center;
             overflow: hidden;
             padding: 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         @media (min-width: 768px) {
             .slide-image {
-                height: 320px;
+                height: 350px;
             }
         }
 
-        .slide-image img {
+        .image-bg-blur {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            /* OCUPA TODO EL ANCHO HORIZONTAL */
-            height: auto;
-            /* NO RECORTA EL DISEÑO */
-            display: block;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(25px) brightness(1.1);
+            opacity: 0.4;
+            transform: scale(1.1);
+            z-index: 1;
+        }
+
+        .slide-image img:not(.image-bg-blur) {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* NUNCA RECORTA */
+            position: relative;
+            z-index: 2;
             transition: transform 0.4s ease;
+            padding: 10px;
+            /* Margen para que no toque bordes */
         }
 
         /* === DETAILS SECTION === */
@@ -686,6 +702,7 @@
                 <!-- IMAGE -->
                 <div class="slide-image">
                     {% if product.image %}
+                    <img src="{{ product.image.url }}" class="image-bg-blur" alt="">
                     <img src="{{ product.image.url }}" alt="{{ product.name }}">
                     {% else %}
                     <div class="placeholder-image">
@@ -906,7 +923,10 @@
             <div class="product-slide" data-product-id="${p.id}">
                 <div class="product-card-unified">
                     <div class="slide-image">
-                        ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}" loading="lazy">` : `
+                        ${p.image_url ? `
+                            <img src="${p.image_url}" class="image-bg-blur" alt="">
+                            <img src="${p.image_url}" alt="${p.name}" loading="lazy">
+                        ` : `
                         <div class="placeholder-image">
                             <i class="bi bi-image"></i>
                         </div>`}
