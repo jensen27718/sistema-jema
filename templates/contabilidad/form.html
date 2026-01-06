@@ -119,12 +119,14 @@
     /* Transaction Type Buttons */
     .type-btn-group {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.75rem;
     }
 
     .type-btn-group .btn-check+label {
-        flex: 1;
-        padding: 1rem;
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 1rem 0.5rem;
         border-radius: 14px;
         font-weight: 600;
         font-size: 0.85rem;
@@ -136,6 +138,13 @@
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
+    }
+
+    @media (max-width: 576px) {
+        .type-btn-group .btn-check+label {
+            flex: 1 1 100%;
+            padding: 1.1rem;
+        }
     }
 
     .type-btn-group .btn-check+label i {
@@ -273,34 +282,6 @@
             <form method="POST">
                 {% csrf_token %}
 
-                <!-- Monto (Grande) -->
-                <div class="mb-4">
-                    <label class="section-label">MONTO</label>
-                    <div class="amount-input-wrapper">
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" name="amount" class="form-control" placeholder="0" required>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cuenta y Fecha -->
-                <div class="row g-3 mb-4">
-                    <div class="col-6">
-                        <label class="section-label">CUENTA ORIGEN</label>
-                        <select name="account_id" class="form-select form-select-jema" required>
-                            {% for acc in accounts %}
-                            <option value="{{ acc.id }}">{{ acc.name }} (${{ acc.current_balance|intcomma }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label class="section-label">FECHA</label>
-                        <input type="date" name="date" class="form-control form-control-jema" value="{% now 'Y-m-d' %}"
-                            required>
-                    </div>
-                </div>
-
                 <!-- Tipo de Movimiento -->
                 <div class="mb-4">
                     <label class="section-label">TIPO DE MOVIMIENTO</label>
@@ -322,6 +303,34 @@
                         <label for="type-transfer">
                             <i class="bi bi-arrow-left-right"></i> TRANSFERIR
                         </label>
+                    </div>
+                </div>
+
+                <!-- Monto (Grande) -->
+                <div class="mb-4">
+                    <label class="section-label">MONTO</label>
+                    <div class="amount-input-wrapper">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" name="amount" class="form-control" placeholder="0" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cuenta y Fecha -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="section-label">CUENTA ORIGEN</label>
+                        <select name="account_id" class="form-select form-select-jema" required>
+                            {% for acc in accounts %}
+                            <option value="{{ acc.id }}">{{ acc.name }} (${{ acc.current_balance|intcomma }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="section-label">FECHA</label>
+                        <input type="date" name="date" class="form-control form-control-jema" value="{% now 'Y-m-d' %}"
+                            required>
                     </div>
                 </div>
 

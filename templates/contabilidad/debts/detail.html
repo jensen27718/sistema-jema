@@ -62,6 +62,31 @@
         gap: 1.5rem;
     }
 
+    @media (max-width: 768px) {
+        .amount-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            text-align: left;
+        }
+
+        .amount-item {
+            text-align: left !important;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        .amount-item:last-child {
+            border-bottom: none;
+        }
+
+        .amount-label {
+            margin-bottom: 0 !important;
+        }
+    }
+
     .amount-item {
         text-align: center;
     }
@@ -76,6 +101,12 @@
     .amount-value {
         font-size: 1.75rem;
         font-weight: 800;
+    }
+
+    @media (max-width: 576px) {
+        .amount-value {
+            font-size: 1.25rem;
+        }
     }
 
     .progress-section {

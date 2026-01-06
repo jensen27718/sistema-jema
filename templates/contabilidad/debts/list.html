@@ -269,8 +269,7 @@
 
             <div class="text-muted small mb-3">
                 <i class="bi bi-calendar3 me-1"></i> {{ debt.date_created|date:"d/m/Y" }}
-                <span class="ms-3"><i class="bi bi-receipt me-1"></i> {{ debt.payment_count }} {{ debt.payment_text
-                    }}</span>
+                <span class="ms-3"><i class="bi bi-receipt me-1"></i> {{ debt.payment_count }} abono{{debt.payment_count|pluralize }}</span>
             </div>
 
             <div class="card-actions">

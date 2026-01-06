@@ -4,12 +4,8 @@
 {% block page_title %}Gestión de Productos{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div class="input-group" style="width: 300px;">
-        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-        <input type="text" class="form-control border-start-0" placeholder="Buscar referencia...">
-    </div>
-    <a href="{% url 'panel_product_create' %}" class="btn btn-jema-primary">
+<div class="d-flex justify-content-md-end mb-4">
+    <a href="{% url 'panel_product_create' %}" class="btn btn-jema-primary w-100 w-md-auto">
         <i class="bi bi-plus-circle me-2"></i> Nuevo Producto
     </a>
 </div>
