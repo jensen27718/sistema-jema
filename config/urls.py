@@ -60,6 +60,11 @@ urlpatterns = [
     path('panel/carritos/', views_products.panel_cart_list_view, name='panel_cart_list'),
     path('panel/carritos/<int:cart_id>/', views_products.panel_cart_detail_view, name='panel_cart_detail'),
 
+    # --- RUTAS DE CLIENTES (CRUD) ---
+    path('panel/clientes/', views.client_list_view, name='client_list'),
+    path('panel/clientes/editar/<int:user_id>/', views.client_update_view, name='client_update'),
+    path('panel/clientes/eliminar/<int:user_id>/', views.client_delete_view, name='client_delete'),
+
     # --- RUTAS DE CATÁLOGOS PDF (NUEVAS) ---
     path('panel/catalogos/', views_catalogs.catalog_selection_view, name='catalog_selection'),
     path('panel/catalogos/generar/', views_catalogs.generate_catalog_pdf_view, name='generate_catalog_pdf'),

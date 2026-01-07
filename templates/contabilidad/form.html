@@ -92,7 +92,8 @@
         box-shadow: none !important;
     }
 
-    .form-control-jema, .form-select-jema {
+    .form-control-jema,
+    .form-select-jema {
         border: 2px solid #eee;
         border-radius: 12px;
         padding: 0.85rem 1rem;
@@ -120,9 +121,23 @@
         gap: 0.5rem;
     }
 
-    .type-btn-group #type-ingreso:checked+label { background: linear-gradient(135deg, var(--jema-teal), #2eb8b8); border-color: var(--jema-teal); color: white; }
-    .type-btn-group #type-egreso:checked+label { background: linear-gradient(135deg, #dc3545, #e74c5c); border-color: #dc3545; color: white; }
-    .type-btn-group #type-transfer:checked+label { background: var(--jema-gradient); border-color: var(--jema-purple); color: white; }
+    .type-btn-group #type-ingreso:checked+label {
+        background: linear-gradient(135deg, var(--jema-teal), #2eb8b8);
+        border-color: var(--jema-teal);
+        color: white;
+    }
+
+    .type-btn-group #type-egreso:checked+label {
+        background: linear-gradient(135deg, #dc3545, #e74c5c);
+        border-color: #dc3545;
+        color: white;
+    }
+
+    .type-btn-group #type-transfer:checked+label {
+        background: var(--jema-gradient);
+        border-color: var(--jema-purple);
+        color: white;
+    }
 
     .section-card {
         background: linear-gradient(135deg, rgba(107, 45, 123, 0.02) 0%, rgba(26, 154, 154, 0.02) 100%);
@@ -140,6 +155,24 @@
         border-radius: 14px;
         box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
     }
+
+    /* Modal Styles */
+    .modal-content {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+    }
+    .modal-header {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 1.5rem;
+    }
+    .modal-body {
+        padding: 2rem;
+    }
+    .modal-footer {
+        border-top: 1px solid #f0f0f0;
+        padding: 1.5rem;
+    }
 </style>
 
 <div class="row justify-content-center">
@@ -149,13 +182,16 @@
                 {% csrf_token %}
 
                 <!-- Tipo de Movimiento -->
-                <div class="mb-4" {% if is_edit %}style="pointer-events: none; opacity: 0.7;"{% endif %}>
+                <div class="mb-4" {% if is_edit %}style="pointer-events: none; opacity: 0.7;" {% endif %}>
                     <label class="section-label">TIPO DE MOVIMIENTO</label>
                     <div class="type-btn-group">
-                        <input type="radio" class="btn-check" name="transaction_type" id="type-ingreso" value="ingreso" {% if not is_edit or transaction.category.transaction_type == 'ingreso' %}checked{% endif %} onclick="toggleCategories('ingreso')">
+                        <input type="radio" class="btn-check" name="transaction_type" id="type-ingreso" value="ingreso"
+                            {% if not is_edit or transaction.category.transaction_type == 'ingreso' %}checked{% endif %}
+                            onclick="toggleCategories('ingreso')">
                         <label for="type-ingreso"><i class="bi bi-arrow-down-left-circle-fill"></i> INGRESO</label>
 
-                        <input type="radio" class="btn-check" name="transaction_type" id="type-egreso" value="egreso" {% if transaction.category.transaction_type == 'egreso' %}checked{% endif %} onclick="toggleCategories('egreso')">
+                        <input type="radio" class="btn-check" name="transaction_type" id="type-egreso" value="egreso" {% if transaction.category.transaction_type == 'egreso' %}checked{% endif %}
+                            onclick="toggleCategories('egreso')">
                         <label for="type-egreso"><i class="bi bi-arrow-up-right-circle-fill"></i> GASTO</label>
 
                         <input type="radio" class="btn-check" name="transaction_type" id="type-transfer" value="transferencia" {% if not transaction.category and is_edit %}checked{% endif %} onclick="toggleCategories('transferencia')">
@@ -169,7 +205,8 @@
                     <div class="amount-input-wrapper">
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" name="amount" class="form-control" step="0.01" value="{{ transaction.amount|stringformat:'.2f'|default:'' }}" required>
+                            <input type="number" name="amount" class="form-control" step="0.01"
+                                value="{{ transaction.amount|stringformat:'.2f'|default:'' }}" required>
                         </div>
                     </div>
                 </div>
@@ -186,7 +223,9 @@
                     </div>
                     <div class="col-md-6">
                         <label class="section-label">FECHA</label>
-                        <input type="date" name="date" class="form-control form-control-jema" value="{{ transaction.date|date:'Y-m-d'|default:'' }}{% if not is_edit %}{% now 'Y-m-d' %}{% endif %}" required>
+                        <input type="date" name="date" class="form-control form-control-jema"
+                            value="{{ transaction.date|date:'Y-m-d'|default:'' }}{% if not is_edit %}{% now 'Y-m-d' %}{% endif %}"
+                            required>
                     </div>
                 </div>
 
@@ -195,12 +234,16 @@
                 <!-- Categoría -->
                 <div class="mb-4" id="section-category">
                     <label class="section-label">CATEGORÍA</label>
-                    <select name="category_id" class="form-select form-select-jema {% if is_edit and transaction.category.transaction_type != 'ingreso' %}d-none{% endif %}" id="cat-ingreso" {% if is_edit and transaction.category.transaction_type != 'ingreso' %}disabled{% endif %}>
+                    <select name="category_id"
+                        class="form-select form-select-jema {% if is_edit and transaction.category.transaction_type != 'ingreso' %}d-none{% endif %}"
+                        id="cat-ingreso" {% if is_edit and transaction.category.transaction_type != 'ingreso' %}disabled{% endif %}>
                         {% for cat in categories_income %}
                         <option value="{{ cat.id }}" {% if transaction.category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
                         {% endfor %}
                     </select>
-                    <select name="category_id" class="form-select form-select-jema {% if not is_edit or transaction.category.transaction_type != 'egreso' %}d-none{% endif %}" id="cat-egreso" {% if not is_edit or transaction.category.transaction_type != 'egreso' %}disabled{% endif %}>
+                    <select name="category_id"
+                        class="form-select form-select-jema {% if not is_edit or transaction.category.transaction_type != 'egreso' %}d-none{% endif %}"
+                        id="cat-egreso" {% if not is_edit or transaction.category.transaction_type != 'egreso' %}disabled{% endif %}>
                         {% for cat in categories_expense %}
                         <option value="{{ cat.id }}" {% if transaction.category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
                         {% endfor %}
@@ -208,7 +251,8 @@
                 </div>
 
                 <!-- Sección Cliente -->
-                <div id="section-client" class="section-card mb-4 {% if is_edit and transaction.category.transaction_type != 'ingreso' %}d-none{% endif %}">
+                <div id="section-client"
+                    class="section-card mb-4 {% if is_edit and transaction.category.transaction_type != 'ingreso' %}d-none{% endif %}">
                     <label class="section-label">CLIENTE (INGRESOS)</label>
                     <select name="client_id" class="form-select form-select-jema">
                         <option value="">-- Seleccionar --</option>
@@ -216,10 +260,16 @@
                         <option value="{{ u.id }}" {% if transaction.client.id == u.id %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
                         {% endfor %}
                     </select>
+                    <div class="mt-2 text-end">
+                        <button type="button" class="btn btn-link p-0 small" style="color: var(--jema-teal); text-decoration: none; font-weight: 600;" data-bs-toggle="modal" data-bs-target="#modalCreateClient">
+                            <i class="bi bi-person-plus-fill me-1"></i> Crear nuevo cliente
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Sección Proveedor -->
-                <div id="section-provider" class="section-card mb-4 {% if not is_edit or transaction.category.transaction_type != 'egreso' %}d-none{% endif %}">
+                <div id="section-provider"
+                    class="section-card mb-4 {% if not is_edit or transaction.category.transaction_type != 'egreso' %}d-none{% endif %}">
                     <label class="section-label">PROVEEDOR (GASTOS)</label>
                     <select name="provider_id" class="form-select form-select-jema">
                         <option value="">-- Seleccionar --</option>
@@ -227,11 +277,17 @@
                         <option value="{{ prov.id }}" {% if transaction.provider.id == prov.id %}selected{% endif %}>{{ prov.name }}</option>
                         {% endfor %}
                     </select>
+                    <div class="mt-2 text-end">
+                        <button type="button" class="btn btn-link p-0 small" style="color: var(--jema-teal); text-decoration: none; font-weight: 600;" data-bs-toggle="modal" data-bs-target="#modalCreateProvider">
+                            <i class="bi bi-building-fill-add me-1"></i> Crear nuevo proveedor
+                        </button>
+                    </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="section-label">DESCRIPCIÓN</label>
-                    <input type="text" name="description" class="form-control form-control-jema" value="{{ transaction.description|default:'' }}" required>
+                    <input type="text" name="description" class="form-control form-control-jema"
+                        value="{{ transaction.description|default:'' }}" required>
                 </div>
 
                 <div class="d-grid">
@@ -240,6 +296,71 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modals para AJAX -->
+<!-- Modal Cliente -->
+<div class="modal fade" id="modalCreateClient" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Crear Nuevo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAjaxClient">
+                    <div class="mb-3">
+                        <label class="section-label">Nombre Completo</label>
+                        <input type="text" name="name" class="form-control form-control-jema" required placeholder="Ej: Juan Pérez">
+                    </div>
+                    <div class="mb-3">
+                        <label class="section-label">Teléfono / Celular</label>
+                        <input type="tel" name="phone" class="form-control form-control-jema" required placeholder="Ej: 3001234567">
+                    </div>
+                    <div class="mb-0">
+                        <label class="section-label">Email (Opcional)</label>
+                        <input type="email" name="email" class="form-control form-control-jema" placeholder="cliente@ejemplo.com">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-jema-primary" id="btnSaveClientAjax">Guardar Cliente</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Proveedor -->
+<div class="modal fade" id="modalCreateProvider" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Crear Nuevo Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAjaxProvider">
+                    <div class="mb-3">
+                        <label class="section-label">Nombre del Proveedor</label>
+                        <input type="text" name="name" class="form-control form-control-jema" required placeholder="Ej: Insumos Textiles S.A.">
+                    </div>
+                    <div class="mb-3">
+                        <label class="section-label">Teléfono</label>
+                        <input type="tel" name="phone" class="form-control form-control-jema" placeholder="Ej: 601234567">
+                    </div>
+                    <div class="mb-0">
+                        <label class="section-label">Email</label>
+                        <input type="email" name="email" class="form-control form-control-jema" placeholder="proveedor@ejemplo.com">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-jema-primary" id="btnSaveProviderAjax">Guardar Proveedor</button>
+            </div>
         </div>
     </div>
 </div>
@@ -268,15 +389,119 @@
     }
 
     {% if is_edit %}
-    window.onload = function() {
+    window.onload = function () {
         {% if not transaction.category %}
-            toggleCategories('transferencia');
+        toggleCategories('transferencia');
         {% elif transaction.category.transaction_type == 'egreso' %}
-            toggleCategories('egreso');
+        toggleCategories('egreso');
         {% else %}
-            toggleCategories('ingreso');
+        toggleCategories('ingreso');
         {% endif %}
     };
     {% endif %}
+
+    // --- LÓGICA AJAX ---
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Guardar Cliente AJAX
+    document.getElementById('btnSaveClientAjax').addEventListener('click', function() {
+        const form = document.getElementById('formAjaxClient');
+        const formData = new FormData(form);
+        const btn = this;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+        fetch("{% url 'quick_client_create' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Añadir al select y seleccionar
+                const select = document.querySelector('select[name="client_id"]');
+                const option = new Option(data.client.name, data.client.id, true, true);
+                select.add(option);
+                
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalCreateClient'));
+                modal.hide();
+                form.reset();
+                alert('✅ Cliente creado correctamente.');
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Ocurrió un error al procesar la solicitud.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = 'Guardar Cliente';
+        });
+    });
+
+    // Guardar Proveedor AJAX
+    document.getElementById('btnSaveProviderAjax').addEventListener('click', function() {
+        const form = document.getElementById('formAjaxProvider');
+        const formData = new FormData(form);
+        const btn = this;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+        fetch("{% url 'accounting_provider_create' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Añadir al select y seleccionar
+                const select = document.querySelector('select[name="provider_id"]');
+                const option = new Option(data.provider.name, data.provider.id, true, true);
+                select.add(option);
+                
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalCreateProvider'));
+                modal.hide();
+                form.reset();
+                alert('✅ Proveedor creado correctamente.');
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Ocurrió un error al procesar la solicitud.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = 'Guardar Proveedor';
+        });
+    });
 </script>
 {% endblock %}

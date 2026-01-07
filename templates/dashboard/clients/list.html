@@ -1,0 +1,87 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Gestión de Clientes - JEMA Admin{% endblock %}
+{% block page_title %}Gestión de Clientes{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="jema-card">
+            <div class="p-4 border-bottom d-flex align-items-center justify-content-between"
+                style="border-color: var(--border) !important;">
+                <h5 class="fw-bold mb-0">Listado de Clientes</h5>
+                <a href="{% url 'quick_client_create' %}?next={{ request.path }}" class="btn btn-jema-primary">
+                    <i class="bi bi-person-plus me-1"></i> Nuevo Cliente
+                </a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background-color: var(--muted);">
+                        <tr>
+                            <th class="border-0 py-3 px-4">Cliente</th>
+                            <th class="border-0 py-3">Contacto</th>
+                            <th class="border-0 py-3">Fecha Registro</th>
+                            <th class="border-0 py-3 px-4 text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in clients %}
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 40px; height: 40px;">
+                                        <span class="text-white fw-bold">
+                                            {{ client.first_name|slice:":1"|upper|default:client.username|slice:":1"|upper }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span class="fw-semibold d-block">
+                                            {{ client.get_full_name|default:client.username }}
+                                        </span>
+                                        <small class="text-muted">ID: #{{ client.id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3">
+                                <span class="d-block small text-muted">{{ client.email }}</span>
+                                <span class="d-block small fw-medium">{{ client.phone_number }}</span>
+                            </td>
+                            <td class="py-3">
+                                <span class="text-muted small">{{ client.date_joined|date:"d M, Y" }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{% url 'client_update' client.id %}"
+                                        class="btn btn-sm btn-outline-primary rounded-3">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="{% url 'client_delete' client.id %}" method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-3"
+                                            onclick="return confirm('¿Estás seguro de eliminar a este cliente?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <div class="text-muted opacity-50 mb-3">
+                                    <i class="bi bi-people fs-1"></i>
+                                </div>
+                                <p class="mb-0">No hay clientes registrados actualmente.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from products.models import Product
@@ -92,18 +92,26 @@ def quick_client_create_view(request):
         from .models import User
         from django.contrib import messages
         from django.utils.crypto import get_random_string
+        from django.http import JsonResponse
         
         name = request.POST.get('name', '').strip()
         phone = request.POST.get('phone', '').strip()
         email = request.POST.get('email', '').strip()
         
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+        
         if not name or not phone:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'El nombre y el teléfono son obligatorios.'}, status=400)
             messages.error(request, "El nombre y el teléfono son obligatorios.")
         else:
             # Verificar si ya existe un usuario con ese teléfono
             existing = User.objects.filter(phone_number=phone).first()
             if existing:
-                messages.warning(request, f"Ya existe un cliente con el teléfono {phone}: {existing.get_full_name()}")
+                msg = f"Ya existe un cliente con el teléfono {phone}: {existing.get_full_name()}"
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': msg}, status=400)
+                messages.warning(request, msg)
             else:
                 # Si no hay email, generar uno dummy
                 if not email:
@@ -119,6 +127,17 @@ def quick_client_create_view(request):
                     phone_number=phone,
                     role=User.Role.CUSTOMER
                 )
+                
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True, 
+                        'client': {
+                            'id': new_user.id, 
+                            'name': name,
+                            'phone': phone
+                        }
+                    })
+                
                 messages.success(request, f"✅ Cliente {name} creado exitosamente.")
                 
                 # Si tiene un parámetro 'next', redirigir allí
@@ -128,3 +147,51 @@ def quick_client_create_view(request):
                 return redirect('accounting_transaction_create')
                 
     return render(request, 'dashboard/quick_client_form.html')
+@login_required
+def client_list_view(request):
+    """
+    Lista todos los usuarios con el rol CUSTOMER.
+    """
+    from .models import User
+    clients = User.objects.filter(role=User.Role.CUSTOMER).order_by('-date_joined')
+    return render(request, 'dashboard/clients/list.html', {'clients': clients})
+
+@login_required
+def client_update_view(request, user_id):
+    """
+    Permite editar la información de un cliente.
+    """
+    from .models import User
+    from django.contrib import messages
+    client = get_object_or_404(User, id=user_id, role=User.Role.CUSTOMER)
+    
+    if request.method == 'POST':
+        client.first_name = request.POST.get('name', '').strip()
+        client.phone_number = request.POST.get('phone', '').strip()
+        client.email = request.POST.get('email', '').strip()
+        
+        if not client.first_name or not client.phone_number:
+            messages.error(request, "El nombre y el teléfono son obligatorios.")
+        else:
+            client.save()
+            messages.success(request, f"✅ Cliente {client.first_name} actualizado correctamente.")
+            return redirect('client_list')
+            
+    return render(request, 'dashboard/clients/form.html', {'client': client, 'is_edit': True})
+
+@login_required
+def client_delete_view(request, user_id):
+    """
+    Elimina un cliente tras confirmación.
+    """
+    from .models import User
+    from django.contrib import messages
+    client = get_object_or_404(User, id=user_id, role=User.Role.CUSTOMER)
+    
+    if request.method == 'POST':
+        name = client.get_full_name() or client.username
+        client.delete()
+        messages.success(request, f"🗑️ Cliente {name} eliminado.")
+        return redirect('client_list')
+        
+    return render(request, 'dashboard/categories/confirm_delete.html', {'object': client})

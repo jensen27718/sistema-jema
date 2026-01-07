@@ -443,13 +443,29 @@ def provider_list_view(request):
 @user_passes_test(is_staff)
 def provider_create_view(request):
     if request.method == 'POST':
+        from django.http import JsonResponse
         name = request.POST.get('name')
         phone = request.POST.get('phone')
         email = request.POST.get('email')
         
-        Provider.objects.create(name=name, phone=phone, email=email)
-        messages.success(request, f"Proveedor '{name}' creado.")
-        return redirect('accounting_provider_list')
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+        
+        if not name:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'El nombre es obligatorio.'}, status=400)
+            messages.error(request, 'El nombre es obligatorio.')
+        else:
+            provider = Provider.objects.create(name=name, phone=phone, email=email)
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'provider': {
+                        'id': provider.id,
+                        'name': provider.name
+                    }
+                })
+            messages.success(request, f"Proveedor '{name}' creado.")
+            return redirect('accounting_provider_list')
 
     return render(request, 'contabilidad/provider_form.html')
 

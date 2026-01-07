@@ -1,0 +1,52 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}{% if is_edit %}Editar Cliente{% else %}Nuevo Cliente{% endif %} - JEMA Admin{% endblock %}
+{% block page_title %}{% if is_edit %}Editar Cliente{% else %}Nuevo Cliente{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="jema-card p-4">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <a href="{% url 'client_list' %}" class="btn btn-light rounded-circle"
+                    style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h5 class="fw-bold mb-0">Información del Cliente</h5>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">NOMBRE COMPLETO</label>
+                    <input type="text" name="name" class="form-control" value="{{ client.first_name|default:'' }}"
+                        required placeholder="Ej: Juan Pérez">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">TELÉFONO</label>
+                    <input type="text" name="phone" class="form-control" value="{{ client.phone_number|default:'' }}"
+                        required placeholder="Ej: 3001234567">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">CORREO ELECTRÓNICO (OPCIONAL)</label>
+                    <input type="email" name="email" class="form-control" value="{{ client.email|default:'' }}"
+                        placeholder="cliente@ejemplo.com">
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-jema-primary py-3">
+                        <i class="bi bi-check-circle me-2"></i> {% if is_edit %}Guardar Cambios{% else %}Crear Cliente{% endif %}
+                    </button>
+                    <a href="{% url 'client_list' %}"
+                        class="btn btn-link text-muted mt-2 text-decoration-none small text-center">
+                        Cancelar y volver
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
