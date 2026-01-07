@@ -1,0 +1,88 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Administración de Carritos - JEMA Admin{% endblock %}
+{% block page_title %}Administración de Carritos{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="jema-card">
+            <div class="p-4 border-bottom d-flex align-items-center justify-content-between"
+                style="border-color: var(--border) !important;">
+                <h5 class="fw-bold mb-0">Carritos Activos</h5>
+                <span class="jema-badge jema-badge-purple">
+                    <i class="bi bi-cart me-1"></i> {{ carts.count }} carritos con productos
+                </span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background-color: var(--muted);">
+                        <tr>
+                            <th class="border-0 py-3 px-4">Cliente</th>
+                            <th class="border-0 py-3">Email / Tel</th>
+                            <th class="border-0 py-3">Última Actividad</th>
+                            <th class="border-0 py-3">Total Estimado</th>
+                            <th class="border-0 py-3 px-4 text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cart in carts %}
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 40px; height: 40px;">
+                                        <span class="text-white fw-bold">
+                                            {% if cart.user %}{{ cart.user.email|slice:":1"|upper }}{%else %}?{% endif%}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span class="fw-semibold d-block">
+                                            {% if cart.user %}
+                                            {{ cart.user.get_full_name|default:cart.user.email }}
+                                            {% else %}
+                                            <span class="text-muted italic">Anónimo</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3">
+                                {% if cart.user %}
+                                <span class="d-block small text-muted">{{cart.user.email }}</span>
+                                <span class="d-block small fw-medium">{{cart.user.phone_number }}</span>
+                                {% else %}
+                                <span class="text-muted small">Sin datos de contacto</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3">
+                                <span class="text-muted small">{{cart.created_at|naturaltime }}</span>
+                            </td>
+                            <td class="py-3">
+                                <span class="fw-bold text-jema-purple">${{cart.get_total|intcomma }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-end">
+                                <a href="{% url 'panel_cart_detail' cart.id %}" class="btn btn-sm btn-jema-outline">
+                                    <i class="bi bi-eye me-1"></i> Ver Detalle
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted opacity-50 mb-3">
+                                    <i class="bi bi-cart-x fs-1"></i>
+                                </div>
+                                <p class="mb-0">No hay carritos activos con productos actualmente.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

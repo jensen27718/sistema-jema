@@ -47,7 +47,8 @@ def accounting_dashboard_view(request):
             'account_name': t.account.name,
             'amount': t.amount,
             'amount_class': amount_class,
-            'amount_sign': amount_sign
+            'amount_sign': amount_sign,
+            'id': t.id
         })
     
     # Calcular totales para la vista rápida
@@ -230,6 +231,119 @@ def transaction_create_view(request):
         'providers_list': providers_list
     }
     return render(request, 'contabilidad/form.html', context)
+
+@login_required
+@user_passes_test(is_staff)
+def transaction_update_view(request, transaction_id):
+    transaction = get_object_or_404(Transaction, id=transaction_id)
+    account = transaction.account
+    
+    if request.method == 'POST':
+        try:
+            from decimal import Decimal
+            from django.db import transaction as db_transaction
+            
+            old_amount = transaction.amount
+            old_type = transaction.category.transaction_type if transaction.category else 'transferencia'
+            
+            new_amount = Decimal(request.POST.get('amount'))
+            new_description = request.POST.get('description')
+            new_date = request.POST.get('date')
+            new_category_id = request.POST.get('category_id')
+            
+            # Por ahora no permitimos cambiar de cuenta o de transferencia a transacción normal vía edición simple
+            # para evitar complejidad extrema en esta fase, pero sí permitimos cambiar categoría (del mismo tipo idealmente)
+            new_category = get_object_or_404(TransactionCategory, id=new_category_id)
+            new_type = new_category.transaction_type
+            
+            with db_transaction.atomic():
+                # Revertir impacto anterior
+                if old_type == 'ingreso':
+                    account.current_balance -= old_amount
+                elif old_type == 'egreso':
+                    account.current_balance += old_amount
+                
+                # Aplicar nuevo impacto
+                if new_type == 'ingreso':
+                    account.current_balance += new_amount
+                elif new_type == 'egreso':
+                    account.current_balance -= new_amount
+                
+                account.save()
+                
+                # Actualizar transacción
+                transaction.amount = new_amount
+                transaction.description = new_description
+                transaction.date = new_date
+                transaction.category = new_category
+                
+                # Cliente/Proveedor
+                client_id = request.POST.get('client_id')
+                if client_id:
+                    from users.models import User
+                    transaction.client = User.objects.filter(id=client_id).first()
+                
+                provider_id = request.POST.get('provider_id')
+                if provider_id:
+                    transaction.provider = Provider.objects.filter(id=provider_id).first()
+                
+                transaction.save()
+            
+            messages.success(request, "Movimiento actualizado correctamente.")
+            return redirect('accounting_dashboard')
+            
+        except Exception as e:
+            messages.error(request, f"Error al actualizar: {str(e)}")
+            
+    # Contexto similar al create pero con la instancia
+    from users.models import User
+    users_list = User.objects.all().order_by('email')
+    providers_list = Provider.objects.all().order_by('name')
+    accounts = Account.objects.all()
+    categories_income = TransactionCategory.objects.filter(transaction_type='ingreso')
+    categories_expense = TransactionCategory.objects.filter(transaction_type='egreso')
+    
+    context = {
+        'transaction': transaction,
+        'accounts': accounts,
+        'categories_income': categories_income,
+        'categories_expense': categories_expense,
+        'users_list': users_list,
+        'providers_list': providers_list,
+        'is_edit': True
+    }
+    return render(request, 'contabilidad/form.html', context)
+
+@login_required
+@user_passes_test(is_staff)
+def transaction_delete_view(request, transaction_id):
+    transaction = get_object_or_404(Transaction, id=transaction_id)
+    account = transaction.account
+    
+    if request.method == 'POST':
+        try:
+            from django.db import transaction as db_transaction
+            
+            trans_type = transaction.category.transaction_type if transaction.category else 'transferencia'
+            amount = transaction.amount
+            
+            with db_transaction.atomic():
+                # Revertir impacto en el saldo
+                if trans_type == 'ingreso':
+                    account.current_balance -= amount
+                elif trans_type == 'egreso':
+                    account.current_balance += amount
+                # Nota: Si es transferencia, requeriría revertir ambas cuentas (pendiente si se necesita)
+                
+                account.save()
+                transaction.delete()
+                
+            messages.success(request, "Movimiento eliminado correctamente.")
+            return redirect('accounting_dashboard')
+        except Exception as e:
+            messages.error(request, f"Error al eliminar: {str(e)}")
+            
+    return render(request, 'dashboard/categories/confirm_delete.html', {'object': transaction})
 
 @login_required
 @user_passes_test(is_staff)

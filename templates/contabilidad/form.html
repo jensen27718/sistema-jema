@@ -1,15 +1,14 @@
 {% extends 'base_admin.html' %}
-
 {% load humanize %}
 
-{% block title %}Nuevo Movimiento - JEMA Admin{% endblock %}
+{% block title %}{% if is_edit %}Editar Movimiento{% else %}Nuevo Movimiento{% endif %} - JEMA Admin{% endblock %}
 
 {% block page_title %}
 <div class="d-flex align-items-center gap-3">
     <a href="{% url 'accounting_dashboard' %}" class="btn-back-jema">
         <i class="bi bi-arrow-left"></i>
     </a>
-    <span class="fw-bold">Registrar Movimiento</span>
+    <span class="fw-bold">{% if is_edit %}Editar Movimiento #{{ transaction.id }}{% else %}Registrar Movimiento{% endif %}</span>
 </div>
 {% endblock %}
 
@@ -62,7 +61,6 @@
         margin-bottom: 0.5rem;
     }
 
-    /* Monto Input Grande */
     .amount-input-wrapper {
         background: linear-gradient(135deg, rgba(107, 45, 123, 0.03) 0%, rgba(26, 154, 154, 0.03) 100%);
         border: 2px solid #f0f0f0;
@@ -94,13 +92,7 @@
         box-shadow: none !important;
     }
 
-    .amount-input-wrapper input::placeholder {
-        color: #ccc;
-    }
-
-    /* Form Controls */
-    .form-control-jema,
-    .form-select-jema {
+    .form-control-jema, .form-select-jema {
         border: 2px solid #eee;
         border-radius: 12px;
         padding: 0.85rem 1rem;
@@ -109,14 +101,6 @@
         background-color: #fafafa;
     }
 
-    .form-control-jema:focus,
-    .form-select-jema:focus {
-        border-color: var(--jema-purple);
-        box-shadow: 0 0 0 4px var(--jema-purple-light);
-        background-color: white;
-    }
-
-    /* Transaction Type Buttons */
     .type-btn-group {
         display: flex;
         flex-wrap: wrap;
@@ -125,194 +109,67 @@
 
     .type-btn-group .btn-check+label {
         flex: 1 1 0;
-        min-width: 0;
         padding: 1rem 0.5rem;
         border-radius: 14px;
         font-weight: 600;
-        font-size: 0.85rem;
         border: 2px solid #eee;
         background: #fafafa;
-        color: #666;
-        transition: all 0.25s ease;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
     }
 
-    @media (max-width: 576px) {
-        .type-btn-group .btn-check+label {
-            flex: 1 1 100%;
-            padding: 1.1rem;
-        }
-    }
+    .type-btn-group #type-ingreso:checked+label { background: linear-gradient(135deg, var(--jema-teal), #2eb8b8); border-color: var(--jema-teal); color: white; }
+    .type-btn-group #type-egreso:checked+label { background: linear-gradient(135deg, #dc3545, #e74c5c); border-color: #dc3545; color: white; }
+    .type-btn-group #type-transfer:checked+label { background: var(--jema-gradient); border-color: var(--jema-purple); color: white; }
 
-    .type-btn-group .btn-check+label i {
-        font-size: 1.1rem;
-    }
-
-    .type-btn-group .btn-check+label:hover {
-        border-color: #ccc;
-        background: #f5f5f5;
-    }
-
-    /* Ingreso Selected */
-    .type-btn-group #type-ingreso:checked+label {
-        background: linear-gradient(135deg, var(--jema-teal), #2eb8b8);
-        border-color: var(--jema-teal);
-        color: white;
-        box-shadow: 0 6px 20px rgba(26, 154, 154, 0.35);
-        transform: translateY(-2px);
-    }
-
-    /* Egreso Selected */
-    .type-btn-group #type-egreso:checked+label {
-        background: linear-gradient(135deg, #dc3545, #e74c5c);
-        border-color: #dc3545;
-        color: white;
-        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.35);
-        transform: translateY(-2px);
-    }
-
-    /* Transferencia Selected */
-    .type-btn-group #type-transfer:checked+label {
-        background: var(--jema-gradient);
-        border-color: var(--jema-purple);
-        color: white;
-        box-shadow: 0 6px 20px rgba(107, 45, 123, 0.35);
-        transform: translateY(-2px);
-    }
-
-    /* Section Cards */
     .section-card {
         background: linear-gradient(135deg, rgba(107, 45, 123, 0.02) 0%, rgba(26, 154, 154, 0.02) 100%);
         border: 2px solid #f0f0f0;
         border-radius: 16px;
         padding: 1.25rem;
-        transition: all 0.3s ease;
     }
 
-    .section-card:hover {
-        border-color: #e0e0e0;
-    }
-
-    /* Radio Options */
-    .radio-option-jema {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        margin-right: 0.5rem;
-    }
-
-    .radio-option-jema:hover {
-        background: var(--jema-purple-light);
-    }
-
-    .radio-option-jema input[type="radio"] {
-        accent-color: var(--jema-purple);
-        width: 18px;
-        height: 18px;
-    }
-
-    .radio-option-jema span {
-        font-weight: 500;
-        color: #444;
-    }
-
-    /* Link Styling */
-    .link-jema {
-        color: var(--jema-teal);
-        font-weight: 500;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    .link-jema:hover {
-        color: var(--jema-purple);
-        text-decoration: underline;
-    }
-
-    /* Submit Button */
     .btn-submit-jema {
         background: var(--jema-gradient);
         border: none;
         color: white;
         font-weight: 700;
-        font-size: 1.1rem;
-        padding: 1.1rem 2rem;
+        padding: 1.1rem;
         border-radius: 14px;
-        transition: all 0.3s ease;
         box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-    }
-
-    .btn-submit-jema:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 35px rgba(107, 45, 123, 0.4);
-        color: white;
-    }
-
-    .btn-submit-jema:active {
-        transform: translateY(-1px);
-    }
-
-    .btn-submit-jema i {
-        font-size: 1.2rem;
-    }
-
-    /* Divider */
-    .divider-jema {
-        height: 1px;
-        background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
-        margin: 1.5rem 0;
     }
 </style>
 
 <div class="row justify-content-center">
     <div class="col-lg-6 col-md-8">
         <div class="form-card-jema">
-
             <form method="POST">
                 {% csrf_token %}
 
                 <!-- Tipo de Movimiento -->
-                <div class="mb-4">
+                <div class="mb-4" {% if is_edit %}style="pointer-events: none; opacity: 0.7;"{% endif %}>
                     <label class="section-label">TIPO DE MOVIMIENTO</label>
                     <div class="type-btn-group">
-                        <input type="radio" class="btn-check" name="transaction_type" id="type-ingreso" value="ingreso"
-                            checked onclick="toggleCategories('ingreso')">
-                        <label for="type-ingreso">
-                            <i class="bi bi-arrow-down-left-circle-fill"></i> INGRESO
-                        </label>
+                        <input type="radio" class="btn-check" name="transaction_type" id="type-ingreso" value="ingreso" {% if not is_edit or transaction.category.transaction_type == 'ingreso' %}checked{% endif %} onclick="toggleCategories('ingreso')">
+                        <label for="type-ingreso"><i class="bi bi-arrow-down-left-circle-fill"></i> INGRESO</label>
 
-                        <input type="radio" class="btn-check" name="transaction_type" id="type-egreso" value="egreso"
-                            onclick="toggleCategories('egreso')">
-                        <label for="type-egreso">
-                            <i class="bi bi-arrow-up-right-circle-fill"></i> GASTO
-                        </label>
+                        <input type="radio" class="btn-check" name="transaction_type" id="type-egreso" value="egreso" {% if transaction.category.transaction_type == 'egreso' %}checked{% endif %} onclick="toggleCategories('egreso')">
+                        <label for="type-egreso"><i class="bi bi-arrow-up-right-circle-fill"></i> GASTO</label>
 
-                        <input type="radio" class="btn-check" name="transaction_type" id="type-transfer"
-                            value="transferencia" onclick="toggleCategories('transferencia')">
-                        <label for="type-transfer">
-                            <i class="bi bi-arrow-left-right"></i> TRANSFERIR
-                        </label>
+                        <input type="radio" class="btn-check" name="transaction_type" id="type-transfer" value="transferencia" {% if not transaction.category and is_edit %}checked{% endif %} onclick="toggleCategories('transferencia')">
+                        <label for="type-transfer"><i class="bi bi-arrow-left-right"></i> TRANSFERIR</label>
                     </div>
                 </div>
 
-                <!-- Monto (Grande) -->
+                <!-- Monto -->
                 <div class="mb-4">
                     <label class="section-label">MONTO</label>
                     <div class="amount-input-wrapper">
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" name="amount" class="form-control" placeholder="0" required>
+                            <input type="number" name="amount" class="form-control" step="0.01" value="{{ transaction.amount|stringformat:'.2f'|default:'' }}" required>
                         </div>
                     </div>
                 </div>
@@ -320,17 +177,16 @@
                 <!-- Cuenta y Fecha -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <label class="section-label">CUENTA ORIGEN</label>
-                        <select name="account_id" class="form-select form-select-jema" required>
+                        <label class="section-label">CUENTA {% if transaction.transfer_destination_account %}ORIGEN{% endif %}</label>
+                        <select name="account_id" class="form-select form-select-jema" required {% if is_edit %}readonly style="pointer-events: none; opacity: 0.7;"{% endif %}>
                             {% for acc in accounts %}
-                            <option value="{{ acc.id }}">{{ acc.name }} (${{ acc.current_balance|intcomma }})</option>
+                            <option value="{{ acc.id }}" {% if transaction.account.id == acc.id %}selected{% endif %}>{{ acc.name }} (${{ acc.current_balance|intcomma }})</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-6">
                         <label class="section-label">FECHA</label>
-                        <input type="date" name="date" class="form-control form-control-jema" value="{% now 'Y-m-d' %}"
-                            required>
+                        <input type="date" name="date" class="form-control form-control-jema" value="{{ transaction.date|date:'Y-m-d'|default:'' }}{% if not is_edit %}{% now 'Y-m-d' %}{% endif %}" required>
                     </div>
                 </div>
 
@@ -339,86 +195,50 @@
                 <!-- Categoría -->
                 <div class="mb-4" id="section-category">
                     <label class="section-label">CATEGORÍA</label>
-                    <select name="category_id" class="form-select form-select-jema" id="cat-ingreso">
+                    <select name="category_id" class="form-select form-select-jema {% if is_edit and transaction.category.transaction_type != 'ingreso' %}d-none{% endif %}" id="cat-ingreso" {% if is_edit and transaction.category.transaction_type != 'ingreso' %}disabled{% endif %}>
                         {% for cat in categories_income %}
-                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        <option value="{{ cat.id }}" {% if transaction.category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
                         {% endfor %}
                     </select>
-
-                    <select name="category_id" class="form-select form-select-jema d-none" id="cat-egreso" disabled>
+                    <select name="category_id" class="form-select form-select-jema {% if not is_edit or transaction.category.transaction_type != 'egreso' %}d-none{% endif %}" id="cat-egreso" {% if not is_edit or transaction.category.transaction_type != 'egreso' %}disabled{% endif %}>
                         {% for cat in categories_expense %}
-                        <option value="{{ cat.id }}">{{ cat.name }}</option>
-                        {% endfor %}
-                    </select>
-
-                    <div class="text-end mt-2">
-                        <a href="{% url 'accounting_category_list' %}" class="link-jema small">
-                            <i class="bi bi-gear me-1"></i>Gestionar Categorías
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Sección de Cuenta Destino (Para Transferencias) -->
-                <div id="section-transfer" class="section-card mb-4 d-none">
-                    <label class="section-label">CUENTA DE DESTINO</label>
-                    <select name="dest_account_id" class="form-select form-select-jema" id="select-dest-account"
-                        disabled>
-                        <option value="">-- Seleccionar Destino --</option>
-                        {% for acc in accounts %}
-                        <option value="{{ acc.id }}">{{ acc.name }} (${{ acc.current_balance|intcomma }})</option>
+                        <option value="{{ cat.id }}" {% if transaction.category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <!-- Sección de Cliente (Para Ingresos) -->
-                <div id="section-client" class="section-card mb-4">
-                    <label class="section-label">CLIENTE / TERCERO (INGRESOS)</label>
-                    <div id="client-select-container">
-                        <select name="client_id" class="form-select form-select-jema">
-                            <option value="">-- Seleccionar Cliente --</option>
-                            {% for u in users_list %}
-                            <option value="{{ u.id }}">{{ u.first_name|default:u.username }} ({{ u.phone_number }})
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mt-2">
-                        <a href="{% url 'quick_client_create' %}?next={{ request.path }}" class="link-jema small">
-                            <i class="bi bi-plus-circle me-1"></i>Crear nuevo cliente
-                        </a>
-                    </div>
+                <!-- Sección Cliente -->
+                <div id="section-client" class="section-card mb-4 {% if is_edit and transaction.category.transaction_type != 'ingreso' %}d-none{% endif %}">
+                    <label class="section-label">CLIENTE (INGRESOS)</label>
+                    <select name="client_id" class="form-select form-select-jema">
+                        <option value="">-- Seleccionar --</option>
+                        {% for u in users_list %}
+                        <option value="{{ u.id }}" {% if transaction.client.id == u.id %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
-                <!-- Sección de Proveedor (Para Egresos) -->
-                <div id="section-provider" class="section-card mb-4 d-none">
+                <!-- Sección Proveedor -->
+                <div id="section-provider" class="section-card mb-4 {% if not is_edit or transaction.category.transaction_type != 'egreso' %}d-none{% endif %}">
                     <label class="section-label">PROVEEDOR (GASTOS)</label>
                     <select name="provider_id" class="form-select form-select-jema">
-                        <option value="">-- Seleccionar Proveedor --</option>
+                        <option value="">-- Seleccionar --</option>
                         {% for prov in providers_list %}
-                        <option value="{{ prov.id }}">{{ prov.name }}</option>
+                        <option value="{{ prov.id }}" {% if transaction.provider.id == prov.id %}selected{% endif %}>{{ prov.name }}</option>
                         {% endfor %}
                     </select>
-                    <div class="mt-2">
-                        <a href="{% url 'accounting_provider_create' %}" target="_blank" class="link-jema small">
-                            <i class="bi bi-plus-circle me-1"></i>Crear nuevo proveedor
-                        </a>
-                    </div>
                 </div>
 
-                <!-- Detalles -->
                 <div class="mb-4">
-                    <label class="section-label">DESCRIPCIÓN / CONCEPTO</label>
-                    <input type="text" name="description" class="form-control form-control-jema"
-                        placeholder="Ej: Pago de nómina, Venta mostrador..." required>
+                    <label class="section-label">DESCRIPCIÓN</label>
+                    <input type="text" name="description" class="form-control form-control-jema" value="{{ transaction.description|default:'' }}" required>
                 </div>
 
-                <!-- Botón -->
                 <div class="d-grid">
                     <button type="submit" class="btn btn-submit-jema">
-                        <i class="bi bi-check-circle-fill"></i> GUARDAR MOVIMIENTO
+                        <i class="bi bi-check-circle-fill me-2"></i> {% if is_edit %}ACTUALIZAR MOVIMIENTO{% else %}GUARDAR MOVIMIENTO{% endif %}
                     </button>
                 </div>
-
             </form>
         </div>
     </div>
@@ -431,17 +251,12 @@
         const secClient = document.getElementById('section-client');
         const secProvider = document.getElementById('section-provider');
         const secCategory = document.getElementById('section-category');
-        const secTransfer = document.getElementById('section-transfer');
-        const selectDest = document.getElementById('select-dest-account');
 
-        // Reset all
         catIncome.classList.add('d-none'); catIncome.disabled = true;
         catExpense.classList.add('d-none'); catExpense.disabled = true;
         secCategory.classList.remove('d-none');
         secClient.classList.add('d-none');
         secProvider.classList.add('d-none');
-        secTransfer.classList.add('d-none');
-        selectDest.disabled = true;
 
         if (type === 'ingreso') {
             catIncome.classList.remove('d-none'); catIncome.disabled = false;
@@ -449,25 +264,19 @@
         } else if (type === 'egreso') {
             catExpense.classList.remove('d-none'); catExpense.disabled = false;
             secProvider.classList.remove('d-none');
-        } else if (type === 'transferencia') {
-            secCategory.classList.add('d-none');
-            secTransfer.classList.remove('d-none');
-            selectDest.disabled = false;
         }
     }
 
-    function toggleClientMode() {
-        const optExisting = document.getElementById('opt-existing');
-        const containerSelect = document.getElementById('client-select-container');
-        const containerNew = document.getElementById('client-new-container');
-
-        if (optExisting.checked) {
-            containerSelect.classList.remove('d-none');
-            containerNew.classList.add('d-none');
-        } else {
-            containerSelect.classList.add('d-none');
-            containerNew.classList.remove('d-none');
-        }
-    }
+    {% if is_edit %}
+    window.onload = function() {
+        {% if not transaction.category %}
+            toggleCategories('transferencia');
+        {% elif transaction.category.transaction_type == 'egreso' %}
+            toggleCategories('egreso');
+        {% else %}
+            toggleCategories('ingreso');
+        {% endif %}
+    };
+    {% endif %}
 </script>
 {% endblock %}

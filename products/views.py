@@ -367,6 +367,32 @@ def panel_order_detail_view(request, order_id):
             
     return render(request, 'dashboard/orders/detail.html', {'order': order, 'statuses': statuses})
 
+
+# --- 5. VISTAS DE GESTIÓN DE CARRITOS (ADMIN) ---
+@login_required
+@user_passes_test(is_staff)
+def panel_cart_list_view(request):
+    """
+    Lista todos los carritos que tienen al menos un producto.
+    Esto permite ver qué clientes tienen intención de compra.
+    """
+    # Filtramos carritos que tengan items
+    carts = Cart.objects.filter(items__isnull=False).distinct().select_related('user').order_by('-created_at')
+    
+    return render(request, 'dashboard/carts/list.html', {
+        'carts': carts
+    })
+
+@login_required
+@user_passes_test(is_staff)
+def panel_cart_detail_view(request, cart_id):
+    """
+    Muestra el detalle de los productos en el carrito de un cliente específico.
+    """
+    cart = get_object_or_404(Cart, id=cart_id)
+    return render(request, 'dashboard/carts/detail.html', {'cart': cart})
+
+
 # --- FIN NUEVAS VISTAS ---
 
 # --- API PARA EL CARRITO (AJAX) ---

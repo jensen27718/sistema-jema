@@ -564,6 +564,7 @@
                             <th>Descripción</th>
                             <th>Cuenta</th>
                             <th class="text-end">Monto</th>
+                            <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -578,10 +579,24 @@
                                 <span class="account-badge">{{ t.account_name }}</span>
                             </td>
                             <td class="text-end">
-                                <span
-                                    class="{% if t.amount_sign == '+' %}amount-positive{% else %}amount-negative{% endif %}">
-                                    {{ t.amount_sign }}${{ t.amount|intcomma }}
+                                {{ t.amount_sign }}${{ t.amount|intcomma }}
                                 </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a href="{% url 'accounting_transaction_update' t.id %}"
+                                        class="btn btn-sm btn-outline-dark border-0 rounded-circle" title="Editar">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <form action="{% url 'accounting_transaction_delete' t.id %}" method="get"
+                                        class="d-inline">
+                                        <button type="submit"
+                                            class="btn btn-sm btn-outline-danger border-0 rounded-circle"
+                                            title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% empty %}

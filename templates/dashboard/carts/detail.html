@@ -1,0 +1,129 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Detalle de Carrito - JEMA Admin{% endblock %}
+{% block page_title %}Detalle de Carrito{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Información del Cliente -->
+    <div class="col-lg-4 mb-4">
+        <div class="jema-card p-4 h-100">
+            <h5 class="fw-bold mb-4">Información del Cliente</h5>
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 60px; height: 60px;">
+                    <span class="text-white fw-bold fs-4">
+                        {% if cart.user %}{{ cart.user.email|slice:":1"|upper }}{% else %}?{% endif %}
+                    </span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0">
+                        {% if cart.user %}
+                        {{ cart.user.get_full_name|default:cart.user.email }}
+                        {% else %}
+                        <span class="text-muted italic">Usuario Anónimo</span>
+                        {% endif %}
+                    </h6>
+                    <small class="text-muted">Carrito #{{ cart.id }}</small>
+                </div>
+            </div>
+
+            {% if cart.user %}
+            <div class="mb-4">
+                <div class="text-muted small mb-1">Correo Electrónico</div>
+                <div class="fw-medium">{{ cart.user.email }}</div>
+            </div>
+            <div class="mb-4">
+                <div class="text-muted small mb-1">Teléfono</div>
+                <div class="fw-medium">{{ cart.user.phone_number }}</div>
+            </div>
+
+            <div class="divider-jema mb-4"></div>
+
+            <a href="https://wa.me/{{ cart.user.phone_number|default:'' }}?text=Hola%20{{ cart.user.first_name }}%20vimos%20que%20tienes%20productos%20en%20tu%20carrito%20en%20JEMA.%20¿Podemos%20ayudarte%20con%20tu%20compra?"
+                target="_blank"
+                class="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2 py-3 shadow-sm rounded-3">
+                <i class="bi bi-whatsapp"></i> Contactar por WhatsApp
+            </a>
+            {% else %}
+            <div class="alert alert-info border-0 rounded-4">
+                Este carrito pertenece a un usuario que aún no ha iniciado sesión o no se ha registrado.
+            </div>
+            {% endif %}
+
+            <div class="mt-4">
+                <a href="{% url 'panel_cart_list' %}" class="btn btn-jema-outline w-100">
+                    <i class="bi bi-arrow-left me-2"></i> Volver a la lista
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Productos en el Carrito -->
+    <div class="col-lg-8 mb-4">
+        <div class="jema-card">
+            <div class="p-4 border-bottom d-flex align-items-center justify-content-between"
+                style="border-color: var(--border) !important;">
+                <h5 class="fw-bold mb-0">Productos Seleccionados</h5>
+                <span class="jema-badge jema-badge-purple">
+                    {{ cart.items.count }} items
+                </span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background-color: var(--muted);">
+                        <tr>
+                            <th class="border-0 py-3 px-4">Producto</th>
+                            <th class="border-0 py-3 text-center">Cantidad</th>
+                            <th class="border-0 py-3">Precio Unit.</th>
+                            <th class="border-0 py-3 px-4 text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in cart.items.all %}
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-3 border overflow-hidden" style="width: 50px; height: 50px;">
+                                        {% if item.variant.product.images.first %}
+                                        <img src="{{ item.variant.product.images.first.image.url }}"
+                                            class="w-100 h-100 object-fit-cover shadow-sm">
+                                        {% else %}
+                                        <div
+                                            class="w-100 h-100 bg-light d-flex align-items-center justify-content-center text-muted">
+                                            <i class="bi bi-image"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <span class="fw-semibold d-block">{{ item.variant.product.name }}</span>
+                                        <small class="text-muted">Var: {{item.variant.name|default:"Única" }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 text-center">
+                                <span class="badge bg-light text-dark px-3 py-2 rounded-3 border fw-bold">{{item.quantity }}</span>
+                            </td>
+                            <td class="py-3 text-muted">${{ item.variant.price|intcomma }}</td>
+                            <td class="px-4 py-3 text-end fw-bold text-jema-purple">
+                                ${{ item.get_cost|intcomma }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot style="background-color: var(--muted);">
+                        <tr>
+                            <td colspan="3" class="px-4 py-3 text-end fw-bold">TOTAL ESTIMADO</td>
+                            <td class="px-4 py-3 text-end fw-bold text-jema-purple fs-5">
+                                ${{ cart.get_total|intcomma }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

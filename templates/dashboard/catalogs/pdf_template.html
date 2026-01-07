@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: 140mm 280mm;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #2D1F3D;
+        }
+
+        /* --- PORTADA --- */
+        .cover {
+            width: 140mm;
+            height: 280mm;
+            position: relative;
+            background-color: #6B2D7B;
+            /* Color base */
+            text-align: center;
+        }
+
+        .cover-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 140mm;
+            height: 280mm;
+            /* xhtml2pdf limited support for gradients, using simple colors if fail */
+            background: linear-gradient(180deg, #6B2D7B 0%, #1A9A9A 100%);
+        }
+
+        .cover-header {
+            padding-top: 30mm;
+            position: relative;
+        }
+
+        .cover-brand {
+            font-size: 50pt;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 12pt;
+        }
+
+        .cover-slogan {
+            font-size: 11pt;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 4mm;
+            letter-spacing: 2pt;
+            text-transform: uppercase;
+        }
+
+        .cover-divider {
+            width: 40mm;
+            height: 1mm;
+            background: #E91E8C;
+            /* El toque magenta */
+            margin: 10mm auto;
+        }
+
+        .cover-content {
+            margin-top: 20mm;
+            position: relative;
+        }
+
+        .cover-catalog-label {
+            font-size: 16pt;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 5pt;
+        }
+
+        .cover-catalog-box {
+            background: white;
+            margin: 10mm 15mm;
+            padding: 10mm 5mm;
+            border-radius: 4mm;
+        }
+
+        .cover-catalog-name {
+            font-size: 30pt;
+            color: #6B2D7B;
+            font-weight: bold;
+        }
+
+        .cover-catalog-type {
+            font-size: 12pt;
+            color: #1A9A9A;
+            margin-top: 4mm;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .cover-footer {
+            position: absolute;
+            bottom: 0;
+            width: 140mm;
+            background: white;
+            padding: 10mm 0;
+            color: #6B2D7B;
+        }
+
+        .cover-phone {
+            font-size: 20pt;
+            font-weight: bold;
+        }
+
+        /* --- PRODUCTOS --- */
+        .page-break {
+            page-break-before: always;
+        }
+
+        .product-page {
+            width: 140mm;
+            height: 280mm;
+            padding: 8mm;
+            background-color: #fcfcfc;
+        }
+
+        .product-card {
+            width: 124mm;
+            height: 126mm;
+            margin-bottom: 8mm;
+            background: white;
+            border: 0.5px solid #dddddd;
+            border-radius: 5mm;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        .product-image-container {
+            width: 124mm;
+            height: 90mm;
+            text-align: center;
+        }
+
+        .product-image {
+            max-width: 114mm;
+            max-height: 80mm;
+            padding-top: 5mm;
+        }
+
+        .product-info-bar {
+            background: #6B2D7B;
+            color: white;
+            padding: 4mm;
+            text-align: center;
+            height: 28mm;
+        }
+
+        .product-category {
+            font-size: 9pt;
+            text-transform: uppercase;
+            color: #1A9A9A;
+            background: white;
+            display: inline-block;
+            padding: 1mm 4mm;
+            border-radius: 2mm;
+            font-weight: bold;
+            margin-bottom: 2mm;
+        }
+
+        .product-ref-text {
+            font-size: 15pt;
+            font-weight: bold;
+            display: block;
+        }
+
+        .product-ref-label {
+            font-size: 9pt;
+            text-transform: uppercase;
+            opacity: 0.8;
+            margin-right: 2mm;
+        }
+
+        .empty-notice {
+            text-align: center;
+            padding: 50mm 0;
+            font-size: 18pt;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- PORTADA -->
+    <div class="cover">
+        <div class="cover-gradient"></div>
+
+        <div class="cover-header">
+            <div class="cover-brand">JEMA</div>
+            <div class="cover-slogan">STICKERS QUE DESTACAN TU NEGOCIO</div>
+            <div class="cover-divider"></div>
+        </div>
+
+        <div class="cover-content">
+            <div class="cover-catalog-label">Catálogo</div>
+
+            <div class="cover-catalog-box">
+                <div class="cover-catalog-name">{{ catalog_name|upper }}</div>
+                <div class="cover-catalog-type">{{ catalog_type }}</div>
+            </div>
+
+            <div style="color: white; font-size: 9pt; margin-top: 5mm; letter-spacing: 2pt;">
+                VENTA EXCLUSIVA PARA MAYORISTAS
+            </div>
+        </div>
+
+        <div class="cover-footer">
+            <div class="cover-phone">
+                ✆ {{ phone }}
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCTOS (2 por página) -->
+    {% for product in products %}
+    {% if forloop.counter0|divisibleby:2 %}
+    <div class="page-break"></div>
+    <div class="product-page">
+        {% endif %}
+
+        <div class="product-card">
+            <div class="product-image-container">
+                <br>
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="product-image" />
+                {% else %}
+                <div style="padding-top: 30mm; color: #ccc;">Sin Imagen</div>
+                {% endif %}
+            </div>
+            <div class="product-info-bar">
+                <div class="product-category">{{ product.category.name }}</div>
+                <div class="product-ref-text">
+                    <span class="product-ref-label">REF:</span>{{ product.name }}
+                </div>
+            </div>
+        </div>
+
+        {% if forloop.counter|divisibleby:2 or forloop.last %}
+    </div>
+    {% endif %}
+    {% empty %}
+    <div class="page-break"></div>
+    <div class="product-page">
+        <div class="empty-notice">No hay productos disponibles</div>
+    </div>
+    {% endfor %}
+</body>
+
+</html>

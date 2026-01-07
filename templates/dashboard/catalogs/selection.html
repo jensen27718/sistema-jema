@@ -1,0 +1,83 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Generar Catálogo PDF - JEMA{% endblock %}
+
+{% block page_title %}Catálogos PDF{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="jema-card p-4">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="jema-gradient rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 48px; height: 48px;">
+                    <i class="bi bi-file-earmark-pdf text-white fs-4"></i>
+                </div>
+                <div>
+                    <h4 class="mb-1 fw-bold">Configurar Nuevo Catálogo</h4>
+                    <p class="text-muted small mb-0">Personaliza el catálogo para tus clientes mayoristas</p>
+                </div>
+            </div>
+
+            <form action="{% url 'generate_catalog_pdf' %}" method="POST" target="_blank">
+                {% csrf_token %}
+
+                <div class="row g-4">
+                    <!-- Nombre del Catálogo -->
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Nombre del Catálogo (Portada)</label>
+                        <input type="text" name="catalog_name" class="form-control form-control-lg"
+                            placeholder="Ej: Catálogo Navidad Unicolor" required>
+                    </div>
+
+                    <!-- Tipo de Producto -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Tipo de Producto</label>
+                        <select name="product_type" class="form-select">
+                            <option value="">Todos los tipos</option>
+                            {% for code, label in product_types %}
+                            <option value="{{ code }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Teléfono -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Teléfono de Contacto</label>
+                        <input type="text" name="phone" class="form-control" value="321 216 5252">
+                    </div>
+
+                    <!-- Categorías -->
+                    <div class="col-12">
+                        <label class="form-label fw-bold mb-3">Filtrar por Categorías (Opcional)</label>
+                        <div class="row g-3">
+                            {% for cat in categories %}
+                            <div class="col-md-4 col-6">
+                                <div class="form-check p-2 rounded-3 border bg-light bg-opacity-50">
+                                    <input class="form-check-input ms-0" type="checkbox" name="categories"
+                                        value="{{ cat.id }}" id="cat_{{ cat.id }}">
+                                    <label class="form-check-label ps-2 w-100" for="cat_{{ cat.id }}">
+                                        {{ cat.name }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-2 text-muted small">Si no marcas ninguna, se incluirán todas las categorías.
+                        </div>
+                    </div>
+
+                    <!-- Botón de Acción -->
+                    <div class="col-12 mt-5">
+                        <button type="submit"
+                            class="btn btn-jema-primary w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-cloud-arrow-down-fill fs-5"></i>
+                            Generar y Descargar Catálogo PDF
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

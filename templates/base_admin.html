@@ -411,9 +411,22 @@
                     <span>Categorías</span>
                 </a>
 
+                <!-- Carritos (NUEVO) -->
+                <a href="{% url 'panel_cart_list' %}"
+                    class="sidebar-link {% if '/carritos/' in request.path %}active{% endif %}">
+                    <i class="bi bi-cart"></i>
+                    <span>Carritos</span>
+                </a>
+
                 <a href="#" class="sidebar-link">
                     <i class="bi bi-people"></i>
                     <span>Clientes</span>
+                </a>
+
+                <a href="{% url 'catalog_selection' %}"
+                    class="sidebar-link {% if 'catalogos' in request.path %}active{% endif %}">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                    <span>Catálogos PDF</span>
                 </a>
             </div>
 

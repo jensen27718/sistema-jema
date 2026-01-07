@@ -4,6 +4,8 @@ from . import views
 urlpatterns = [
     path('', views.accounting_dashboard_view, name='accounting_dashboard'),
     path('nuevo/', views.transaction_create_view, name='accounting_transaction_create'),
+    path('editar/<int:transaction_id>/', views.transaction_update_view, name='accounting_transaction_update'),
+    path('eliminar/<int:transaction_id>/', views.transaction_delete_view, name='accounting_transaction_delete'),
     # Cuentas
     path('cuentas/nueva/', views.account_create_view, name='accounting_account_create'),
     path('cuentas/editar/<int:account_id>/', views.account_update_view, name='accounting_account_update'),

@@ -5,7 +5,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from users import views
-from products import views as views_products # Asegúrate de importar esto
+from products import views as views_products
+from products import catalog_views as views_catalogs # Nueva importación
 
 urlpatterns = [
     path('admin-django/', admin.site.urls),
@@ -54,6 +55,14 @@ urlpatterns = [
     # --- RUTAS DE PEDIDOS (ADMIN) ---
     path('panel/ordenes/', views_products.panel_orders_list_view, name='panel_pedidos'), # Reemplaza el placeholder
     path('panel/ordenes/<int:order_id>/', views_products.panel_order_detail_view, name='panel_order_detail'),
+
+    # --- RUTAS DE CARRITOS (ADMIN) ---
+    path('panel/carritos/', views_products.panel_cart_list_view, name='panel_cart_list'),
+    path('panel/carritos/<int:cart_id>/', views_products.panel_cart_detail_view, name='panel_cart_detail'),
+
+    # --- RUTAS DE CATÁLOGOS PDF (NUEVAS) ---
+    path('panel/catalogos/', views_catalogs.catalog_selection_view, name='catalog_selection'),
+    path('panel/catalogos/generar/', views_catalogs.generate_catalog_pdf_view, name='generate_catalog_pdf'),
 
 
     # ...
