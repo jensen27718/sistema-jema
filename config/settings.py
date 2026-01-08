@@ -136,15 +136,13 @@ LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_ON_GET = True
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 
-ACCOUNT_SIGNUP_FIELDS = ['email', 'password1'] 
+ACCOUNT_SIGNUP_FIELDS = ['email', 'password1']
 ACCOUNT_FORMS = {
     'signup': 'users.forms.CustomSignupForm',
 }
@@ -159,3 +157,32 @@ SOCIALACCOUNT_PROVIDERS = {
 
 # Email Backend (Consola para local, SMTP real vendrá después)
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+
+# =================================================================================
+# GOOGLE GEMINI AI CONFIGURATION - Extracción de contenido con IA (Opcional)
+# =================================================================================
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+
+# =================================================================================
+# CONFIGURACIÓN PARA BULK UPLOAD CON BD DE PRODUCCIÓN
+# Cuando USE_PRODUCTION_DB=True, se conecta a la BD de PythonAnywhere
+# Útil para hacer bulk uploads desde local que se reflejen en producción
+# =================================================================================
+if os.getenv('USE_PRODUCTION_DB', 'False') == 'True':
+    print("=" * 80)
+    print("⚠️  ⚠️  ⚠️   USANDO BASE DE DATOS DE PRODUCCIÓN   ⚠️  ⚠️  ⚠️")
+    print("=" * 80)
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('PROD_DB_NAME'),
+            'USER': os.getenv('PROD_DB_USER'),
+            'PASSWORD': os.getenv('PROD_DB_PASSWORD'),
+            'HOST': os.getenv('PROD_DB_HOST'),
+            'PORT': os.getenv('PROD_DB_PORT', '3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+            }
+        }
+    }

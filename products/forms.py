@@ -20,14 +20,20 @@ class AddressForm(forms.ModelForm):
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'category', 'product_type', 'description', 'source_file', 'image']
+        fields = ['name', 'categories', 'product_type', 'description', 'source_file', 'image']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'category': forms.Select(attrs={'class': 'form-select'}),
+            'categories': forms.CheckboxSelectMultiple(),  # Soporte para múltiples categorías
             'product_type': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'source_file': forms.FileInput(attrs={'class': 'form-control'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'categories': 'Categorías (selecciona una o más)',
+        }
+        help_texts = {
+            'categories': 'El producto aparecerá en todas las categorías seleccionadas',
         }
    
 

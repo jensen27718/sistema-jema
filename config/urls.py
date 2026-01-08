@@ -27,11 +27,21 @@ urlpatterns = [
 
     # --- RUTAS DE PRODUCTOS (CORREGIDAS) ---
     # Quitamos los dos puntos ':' y usamos guión bajo '_'
-    path('panel/productos/', views_products.product_list_view, name='panel_product_list'),
+    path('panel/productos/', views_products.product_list_enhanced_view, name='panel_product_list'),  # Reemplazada con vista mejorada
     path('panel/productos/crear/', views_products.product_create_view, name='panel_product_create'),
     path('panel/productos/editar/<int:product_id>/', views_products.product_update_view, name='panel_product_update'),
     path('panel/productos/eliminar/<int:product_id>/', views_products.product_delete_view, name='panel_product_delete'),
     path('panel/productos/variantes/<int:product_id>/', views_products.product_variants_view, name='panel_product_variants'),
+
+    # --- RUTAS DE CARGA MASIVA ---
+    path('panel/productos/bulk-upload/', views_products.bulk_upload_view, name='bulk_upload'),
+    path('panel/productos/bulk-upload/status/<int:batch_id>/', views_products.bulk_upload_status_view, name='bulk_upload_status'),
+
+    # --- RUTAS DE EDICIÓN MASIVA ---
+    path('panel/productos/mass-edit/', views_products.mass_edit_products_view, name='mass_edit_products'),
+
+    # --- API PARA EDICIÓN INLINE ---
+    path('api/products/inline-edit/', views_products.inline_edit_product_api, name='inline_edit_product'),
 
 
     # --- RUTAS DE CATEGORÍAS (NUEVAS) ---

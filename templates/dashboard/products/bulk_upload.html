@@ -1,0 +1,113 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Carga Masiva - JEMA Admin{% endblock %}
+{% block page_title %}Carga Masiva de Productos{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="jema-card p-4">
+            <h5 class="fw-bold mb-4 text-jema-purple">
+                <i class="bi bi-cloud-upload me-2"></i> Subir Archivos
+            </h5>
+
+            <form method="post" enctype="multipart/form-data" id="bulkUploadForm">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Tipo de Producto</label>
+                    {{ form.product_type }}
+                    <div class="form-text">
+                        Todos los archivos se crearán con este tipo de producto y heredarán sus variantes correspondientes.
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Archivos PDF/PNG</label>
+                    <input type="file" name="files" class="form-control" multiple
+                           accept=".pdf,.png,.jpg,.jpeg" required>
+
+                    <div class="form-text mt-3">
+                        <strong>El sistema automáticamente:</strong>
+                        <ul class="mt-2 mb-0">
+                            <li>Extraerá el nombre del producto desde el nombre del archivo</li>
+                            <li>La descripción se cargará en blanco (puedes editarla en masa después)</li>
+                            <li>Creará variantes de precio según el tipo seleccionado arriba</li>
+                            <li>Los productos se crearán como "Fuera de línea" para tu revisión</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Nota:</strong> El procesamiento puede tardar unos segundos dependiendo de la cantidad de archivos.
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-jema-primary px-4">
+                        <i class="bi bi-upload me-2"></i> Iniciar Carga
+                    </button>
+                    <a href="{% url 'panel_product_list' %}" class="btn btn-outline-secondary px-4">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="jema-card p-4">
+            <h6 class="fw-bold mb-3 text-jema-teal">
+                <i class="bi bi-clock-history me-2"></i> Cargas Recientes
+            </h6>
+
+            {% if recent_batches %}
+            <div class="list-group list-group-flush">
+                {% for batch in recent_batches %}
+                <a href="{% url 'bulk_upload_status' batch.id %}"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-start py-3 px-0">
+                    <div class="flex-grow-1">
+                        <div class="fw-medium">Lote #{{ batch.id }}</div>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            {{ batch.created_at|date:"d/m/Y H:i" }}
+                        </small>
+                        <div class="mt-1">
+                            <small class="text-muted">{{ batch.total_files }} archivo{{ batch.total_files|pluralize }}</small>
+                        </div>
+                    </div>
+                    <span class="badge
+                        {% if batch.status == 'completed' %}bg-success
+                        {% elif batch.status == 'processing' %}bg-warning text-dark
+                        {% elif batch.status == 'failed' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ batch.get_status_display }}
+                    </span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">
+                <i class="bi bi-inbox me-2"></i>
+                No hay cargas previas
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="jema-card p-4 mt-3">
+            <h6 class="fw-bold mb-3">
+                <i class="bi bi-question-circle me-2"></i> Ayuda
+            </h6>
+            <div class="small text-muted">
+                <p class="mb-2"><strong>Formatos permitidos:</strong></p>
+                <ul class="mb-3">
+                    <li>PDF, PNG, JPG, JPEG</li>
+                </ul>
+                <p class="mb-2"><strong>Tamaño máximo:</strong> 10MB por archivo</p>
+                <p class="mb-2"><strong>Límite:</strong> 50 archivos por lote</p>
+                <p class="mb-0"><strong>Tip:</strong> Selecciona primero el tipo de producto, luego sube los archivos de ese tipo.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

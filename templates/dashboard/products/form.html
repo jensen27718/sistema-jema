@@ -17,16 +17,29 @@
                     {{ form.name }}
                 </div>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label fw-medium">Categoría</label>
-                        {{ form.category }}
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Tipo de Producto</label>
+                    {{ form.product_type }}
+                    <div class="form-text">Si eliges "Vinilo de Corte", los precios se generarán solos.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-medium d-block">{{ form.categories.label }}</label>
+                    <div class="row g-2">
+                        {% for checkbox in form.categories %}
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ checkbox.tag }}
+                                <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                    {{ checkbox.choice_label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-medium">Tipo de Producto</label>
-                        {{ form.product_type }}
-                        <div class="form-text">Si eliges "Vinilo de Corte", los precios se generarán solos.</div>
-                    </div>
+                    {% if form.categories.help_text %}
+                    <div class="form-text">{{ form.categories.help_text }}</div>
+                    {% endif %}
                 </div>
 
                 <div class="mb-4">

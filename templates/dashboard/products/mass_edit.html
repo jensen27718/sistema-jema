@@ -1,0 +1,98 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Edición Masiva - JEMA Admin{% endblock %}
+{% block page_title %}Edición Masiva de Productos{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="jema-card p-4">
+            <h5 class="fw-bold mb-4 text-jema-purple">
+                <i class="bi bi-pencil-square me-2"></i>
+                {% if action == 'add_categories' %}
+                    Agregar Categorías
+                {% elif action == 'remove_categories' %}
+                    Quitar Categorías
+                {% elif action == 'replace_categories' %}
+                    Reemplazar Categorías
+                {% else %}
+                    Editar Productos
+                {% endif %}
+            </h5>
+
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>{{ products.count }} producto(s) seleccionado(s)</strong>
+                <ul class="mb-0 mt-2 small">
+                    {% for product in products|slice:":5" %}
+                    <li>{{ product.name }}</li>
+                    {% endfor %}
+                    {% if products.count > 5 %}
+                    <li><em>...y {{ products.count|add:"-5" }} más</em></li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <form method="post" action="{% url 'mass_edit_products' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="{{ action }}">
+
+                {% for product_id in product_ids %}
+                <input type="hidden" name="selected_products" value="{{ product_id }}">
+                {% endfor %}
+
+                {% if action == 'add_categories' or action == 'remove_categories' or action == 'replace_categories' %}
+                <div class="mb-4">
+                    <label class="form-label fw-medium d-block">Selecciona Categorías:</label>
+                    <div class="row g-2">
+                        {% for category in form.categories.field.queryset %}
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="categories" value="{{ category.id }}"
+                                       id="cat{{ category.id }}">
+                                <label class="form-check-label" for="cat{{ category.id }}">
+                                    {{ category.name }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.categories.errors %}
+                        <div class="text-danger small mt-2">{{ form.categories.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if action == 'change_type' %}
+                <div class="mb-4">
+                    <label class="form-label fw-medium">{{ form.product_type.label }}</label>
+                    {{ form.product_type }}
+                    {% if form.product_type.errors %}
+                        <div class="text-danger small mt-2">{{ form.product_type.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if action == 'change_description' %}
+                <div class="mb-4">
+                    <label class="form-label fw-medium">{{ form.description.label }}</label>
+                    {{ form.description }}
+                    <div class="form-text text-muted">{{ form.description.help_text }}</div>
+                    {% if form.description.errors %}
+                        <div class="text-danger small mt-2">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-end gap-3">
+                    <a href="{% url 'panel_product_list' %}" class="btn btn-light px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-jema-primary px-5">
+                        <i class="bi bi-check-circle me-2"></i> Aplicar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,225 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Estado de Carga - JEMA Admin{% endblock %}
+{% block page_title %}Estado de Carga Masiva{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="jema-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-file-earmark-check me-2 text-jema-purple"></i>
+                    Lote #{{ batch.id }}
+                </h5>
+                <a href="{% url 'bulk_upload' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-2"></i> Nueva Carga
+                </a>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <div class="h4 mb-0 text-jema-purple">{{ batch.total_files }}</div>
+                        <small class="text-muted">Total Archivos</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <div class="h4 mb-0 text-success">{{ batch.successful_uploads }}</div>
+                        <small class="text-muted">Exitosos</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <div class="h4 mb-0 text-danger">{{ batch.failed_uploads }}</div>
+                        <small class="text-muted">Fallidos</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <div class="h4 mb-0" id="progressPercent">{{ batch.get_progress_percentage }}%</div>
+                        <small class="text-muted">Progreso</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress mb-3" style="height: 25px;">
+                <div class="progress-bar bg-jema-teal progress-bar-striped {% if batch.status == 'processing' %}progress-bar-animated{% endif %}"
+                     id="progressBar" role="progressbar"
+                     style="width: {{ batch.get_progress_percentage }}%"
+                     aria-valuenow="{{ batch.get_progress_percentage }}"
+                     aria-valuemin="0" aria-valuemax="100">
+                    <span id="progressText">{{ batch.processed_files }} / {{ batch.total_files }}</span>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <span class="badge fs-6
+                    {% if batch.status == 'completed' %}bg-success
+                    {% elif batch.status == 'processing' %}bg-warning text-dark
+                    {% elif batch.status == 'failed' %}bg-danger
+                    {% else %}bg-secondary{% endif %}" id="batchStatus">
+                    <i class="bi
+                        {% if batch.status == 'completed' %}bi-check-circle
+                        {% elif batch.status == 'processing' %}bi-hourglass-split
+                        {% elif batch.status == 'failed' %}bi-x-circle
+                        {% else %}bi-clock{% endif %} me-2"></i>
+                    {{ batch.get_status_display }}
+                </span>
+            </div>
+
+            {% if batch.error_log %}
+            <div class="alert alert-danger mt-3">
+                <strong><i class="bi bi-exclamation-triangle me-2"></i>Errores del lote:</strong>
+                <pre class="mb-0 mt-2 small">{{ batch.error_log }}</pre>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="jema-card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead style="background-color: var(--muted);">
+                        <tr>
+                            <th class="py-3 ps-4">Archivo</th>
+                            <th>Estado</th>
+                            <th>Producto Creado</th>
+                            <th>Descripción IA</th>
+                            <th class="pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi {% if item.original_filename|slice:'-4:' == '.pdf' %}bi-file-earmark-pdf text-danger{% else %}bi-file-earmark-image text-primary{% endif %} me-2 fs-5"></i>
+                                    <div>
+                                        <div class="fw-medium">{{ item.original_filename|truncatechars:40 }}</div>
+                                        <small class="text-muted">{{ item.created_at|date:"H:i:s" }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge
+                                    {% if item.status == 'completed' %}bg-success
+                                    {% elif item.status == 'processing' %}bg-warning text-dark
+                                    {% elif item.status == 'failed' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    <i class="bi
+                                        {% if item.status == 'completed' %}bi-check-circle
+                                        {% elif item.status == 'processing' %}bi-hourglass-split
+                                        {% elif item.status == 'failed' %}bi-x-circle
+                                        {% else %}bi-clock{% endif %} me-1"></i>
+                                    {{ item.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if item.product %}
+                                <a href="{% url 'panel_product_update' item.product.id %}"
+                                   class="text-decoration-none text-jema-purple fw-medium">
+                                    <i class="bi bi-box-seam me-1"></i>
+                                    {{ item.product.name|truncatechars:30 }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.ai_extracted_description %}
+                                <button class="btn btn-sm btn-outline-secondary" type="button"
+                                        data-bs-toggle="modal" data-bs-target="#descModal{{ item.id }}">
+                                    <i class="bi bi-eye me-1"></i> Ver descripción
+                                </button>
+
+                                <!-- Modal para descripción -->
+                                <div class="modal fade" id="descModal{{ item.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">
+                                                    <i class="bi bi-robot me-2 text-jema-teal"></i>
+                                                    Descripción generada por IA
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="small text-muted mb-2">
+                                                    <i class="bi bi-file-text me-1"></i>
+                                                    {{ item.original_filename }}
+                                                </p>
+                                                <p class="mb-0">{{ item.ai_extracted_description }}</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4">
+                                {% if item.error_message %}
+                                <button class="btn btn-sm btn-danger" type="button"
+                                        data-bs-toggle="tooltip" data-bs-placement="left"
+                                        title="{{ item.error_message }}">
+                                    <i class="bi bi-exclamation-circle"></i> Error
+                                </button>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                No hay items en este lote.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh script para lotes en procesamiento -->
+{% if batch.status == 'processing' or batch.status == 'pending' %}
+<script>
+    // Polling cada 3 segundos para actualizar progreso
+    setInterval(function() {
+        fetch(window.location.href, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Actualizar números
+            document.getElementById('progressPercent').textContent = data.progress + '%';
+            document.getElementById('progressBar').style.width = data.progress + '%';
+            document.getElementById('progressBar').setAttribute('aria-valuenow', data.progress);
+            document.getElementById('progressText').textContent = data.processed + ' / ' + data.total;
+
+            // Si completó o falló, recargar página completa
+            if (data.status === 'completed' || data.status === 'failed') {
+                location.reload();
+            }
+        })
+        .catch(error => console.error('Error polling status:', error));
+    }, 3000);
+</script>
+{% endif %}
+
+<!-- Inicializar tooltips de Bootstrap -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

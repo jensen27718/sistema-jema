@@ -1,0 +1,389 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Productos - JEMA Admin{% endblock %}
+{% block page_title %}Gestión de Productos{% endblock %}
+
+{% block content %}
+<!-- Barra de acciones superior -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-secondary" id="massEditBtn" disabled>
+            <i class="bi bi-pencil-square me-2"></i> Edición Masiva
+        </button>
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+                data-bs-toggle="dropdown" id="quickActionsBtn" disabled>
+            <span class="visually-hidden">Acciones rápidas</span>
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <a class="dropdown-item" href="#" data-action="set_online">
+                    <i class="bi bi-eye text-success me-2"></i> Poner En Línea
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" data-action="set_offline">
+                    <i class="bi bi-eye-slash text-warning me-2"></i> Poner Fuera de Línea
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item" href="#" data-action="add_categories">
+                    <i class="bi bi-tag text-primary me-2"></i> Agregar Categorías
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" data-action="remove_categories">
+                    <i class="bi bi-tag-fill text-secondary me-2"></i> Quitar Categorías
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" data-action="change_type">
+                    <i class="bi bi-box me-2 text-info"></i> Cambiar Tipo
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" data-action="change_description">
+                    <i class="bi bi-text-left me-2 text-dark"></i> Cambiar Descripción
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item" href="#" data-action="delete_products"
+                   onclick="return confirm('¿Eliminar los productos seleccionados? Esta acción no se puede deshacer.')">
+                    <i class="bi bi-trash text-danger me-2"></i> Eliminar Productos
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="{% url 'bulk_upload' %}" class="btn btn-jema-teal">
+            <i class="bi bi-cloud-upload me-2"></i> Carga Masiva
+        </a>
+        <a href="{% url 'panel_product_create' %}" class="btn btn-jema-primary">
+            <i class="bi bi-plus-circle me-2"></i> Nuevo Producto
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="jema-card p-3 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small mb-1">Buscar</label>
+            <input type="text" name="q" class="form-control"
+                   placeholder="Nombre o descripción..." value="{{ search_query }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Categoría</label>
+            <select name="category" class="form-select">
+                <option value="">Todas</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == current_category %}selected{% endif %}>
+                    {{ cat.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Tipo</label>
+            <select name="type" class="form-select">
+                <option value="">Todos</option>
+                {% for value, label in product_types %}
+                <option value="{{ value }}" {% if value == current_type %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Estado</label>
+            <select name="online" class="form-select">
+                <option value="">Todos</option>
+                <option value="1" {% if current_online == "1" %}selected{% endif %}>En Línea</option>
+                <option value="0" {% if current_online == "0" %}selected{% endif %}>Fuera de Línea</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Ordenar por</label>
+            <select name="sort" class="form-select">
+                <option value="-created_at" {% if current_sort == "-created_at" %}selected{% endif %}>Más recientes</option>
+                <option value="created_at" {% if current_sort == "created_at" %}selected{% endif %}>Más antiguos</option>
+                <option value="name" {% if current_sort == "name" %}selected{% endif %}>Nombre (A-Z)</option>
+                <option value="-name" {% if current_sort == "-name" %}selected{% endif %}>Nombre (Z-A)</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla de productos -->
+<div class="jema-card">
+    <form id="massEditForm" method="post" action="{% url 'mass_edit_products' %}">
+        {% csrf_token %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead style="background-color: var(--muted);">
+                    <tr>
+                        <th class="py-3 ps-4" style="width: 40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th style="width: 60px;">Imagen</th>
+                        <th>Referencia</th>
+                        <th>Categorías</th>
+                        <th>Tipo</th>
+                        <th style="width: 150px;">Estado</th>
+                        <th class="pe-4" style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in page_obj %}
+                    <tr>
+                        <td class="ps-4">
+                            <input type="checkbox" name="selected_products" value="{{ product.id }}"
+                                   class="form-check-input product-checkbox">
+                        </td>
+                        <td>
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" class="rounded-3 object-fit-cover" width="50" height="50">
+                            {% else %}
+                            <div class="rounded-3 bg-light d-flex align-items-center justify-content-center"
+                                style="width: 50px; height: 50px;">
+                                <i class="bi bi-image text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="editable-name fw-medium text-jema-purple"
+                                  data-product-id="{{ product.id }}"
+                                  title="Doble clic para editar">
+                                {{ product.name }}
+                            </span>
+                        </td>
+                        <td>
+                            {% for cat in product.categories.all %}
+                            <span class="jema-badge jema-badge-teal me-1 mb-1">{{ cat.name }}</span>
+                            {% empty %}
+                            <span class="text-muted small">Sin categoría</span>
+                            {% endfor %}
+                        </td>
+                        <td>{{ product.get_product_type_display }}</td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input online-toggle" type="checkbox"
+                                       data-product-id="{{ product.id }}"
+                                       {% if product.is_online %}checked{% endif %}>
+                                <label class="form-check-label small online-label">
+                                    {% if product.is_online %}
+                                    <span class="text-success"><i class="bi bi-eye me-1"></i>En línea</span>
+                                    {% else %}
+                                    <span class="text-muted"><i class="bi bi-eye-slash me-1"></i>Offline</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <a href="{% url 'panel_product_variants' product.id %}"
+                                class="btn btn-sm btn-light text-success me-1" title="Ver Precios">
+                                <i class="bi bi-currency-dollar"></i>
+                            </a>
+                            <a href="{% url 'panel_product_update' product.id %}"
+                                class="btn btn-sm btn-light text-jema-teal me-1" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'panel_product_delete' product.id %}"
+                               class="btn btn-sm btn-light text-danger" title="Eliminar"
+                               onclick="return confirm('¿Eliminar este producto?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                            <p class="mb-0">No hay productos que coincidan con los filtros.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="p-3 border-top">
+        <nav>
+            <ul class="pagination mb-0 justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
+                        Primera
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
+                        Anterior
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
+                        Siguiente
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
+                        Última
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        <div class="text-center mt-2">
+            <small class="text-muted">
+                Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} productos
+            </small>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Seleccionar todos los checkboxes
+document.getElementById('selectAll').addEventListener('change', function() {
+    document.querySelectorAll('.product-checkbox').forEach(cb => {
+        cb.checked = this.checked;
+    });
+    updateMassEditButtons();
+});
+
+// Actualizar estado de botones de edición masiva
+function updateMassEditButtons() {
+    const selected = document.querySelectorAll('.product-checkbox:checked').length;
+    document.getElementById('massEditBtn').disabled = selected === 0;
+    document.getElementById('quickActionsBtn').disabled = selected === 0;
+}
+
+document.querySelectorAll('.product-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateMassEditButtons);
+});
+
+// Botón de edición masiva
+document.getElementById('massEditBtn').addEventListener('click', function() {
+    document.getElementById('massEditForm').submit();
+});
+
+// Acciones rápidas
+document.querySelectorAll('[data-action]').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const action = this.dataset.action;
+        const form = document.getElementById('massEditForm');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'action';
+        input.value = action;
+        form.appendChild(input);
+        form.submit();
+    });
+});
+
+// Edición inline del nombre (doble clic)
+document.querySelectorAll('.editable-name').forEach(el => {
+    el.addEventListener('dblclick', function() {
+        const productId = this.dataset.productId;
+        const currentName = this.textContent.trim();
+        const newName = prompt('Nuevo nombre del producto:', currentName);
+
+        if (newName && newName !== currentName) {
+            fetch('{% url "inline_edit_product" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    field: 'name',
+                    value: newName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    this.textContent = newName;
+                    // Mostrar feedback visual
+                    this.classList.add('text-success');
+                    setTimeout(() => this.classList.remove('text-success'), 2000);
+                } else {
+                    alert('Error al actualizar el nombre');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar el nombre');
+            });
+        }
+    });
+});
+
+// Toggle estado online/offline
+document.querySelectorAll('.online-toggle').forEach(toggle => {
+    toggle.addEventListener('change', function() {
+        const productId = this.dataset.productId;
+        const isOnline = this.checked;
+        const label = this.nextElementSibling.querySelector('span');
+
+        fetch('{% url "inline_edit_product" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                product_id: productId,
+                field: 'is_online',
+                value: isOnline
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                // Actualizar label
+                if (isOnline) {
+                    label.innerHTML = '<i class="bi bi-eye me-1"></i>En línea';
+                    label.classList.remove('text-muted');
+                    label.classList.add('text-success');
+                } else {
+                    label.innerHTML = '<i class="bi bi-eye-slash me-1"></i>Offline';
+                    label.classList.remove('text-success');
+                    label.classList.add('text-muted');
+                }
+            } else {
+                alert('Error al cambiar el estado');
+                this.checked = !isOnline; // Revertir
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cambiar el estado');
+            this.checked = !isOnline; // Revertir
+        });
+    });
+});
+</script>
+{% endblock %}

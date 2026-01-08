@@ -37,7 +37,13 @@
                         {% endif %}
                     </td>
                     <td class="fw-medium text-jema-purple">{{ product.name }}</td>
-                    <td><span class="jema-badge jema-badge-teal">{{ product.category.name }}</span></td>
+                    <td>
+                        {% for cat in product.categories.all %}
+                        <span class="jema-badge jema-badge-teal me-1">{{ cat.name }}</span>
+                        {% empty %}
+                        <span class="text-muted">Sin categoría</span>
+                        {% endfor %}
+                    </td>
                     <td>{{ product.get_product_type_display }}</td>
                     <td>
                         {% if product.source_file %}

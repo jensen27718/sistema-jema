@@ -6,15 +6,19 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Product, Category, ProductVariant,Cart, CartItem
 from .forms import ProductForm, CategoryForm
 from .services import generar_variantes_vinilo, generar_variantes_impresos # <--- Importamos la magia
-from django.db.models import Min
+from django.db.models import Min, Q
 import json  # <--- AGREGAR ESTA LÍNEA
 from django.http import JsonResponse
 from django.core.serializers import serialize
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core.paginator import Paginator
 
 import urllib.parse # <--- AGREGAR ARRIBA
 from .models import ShippingAddress, Order, OrderItem, OrderStatus # <--- IMPORTAR NUEVOS MODELOS
+from .models import BulkUploadBatch, BulkUploadItem  # Bulk upload models
 from .forms import AddressForm # <--- IMPORTAR FORM
+from .bulk_forms import BulkUploadForm, MassEditForm  # Bulk upload forms
+# NO Celery - Todo síncrono para PythonAnywhere
 
 # ... (Tus otras vistas) ...
 
@@ -200,14 +204,17 @@ def category_delete_view(request, category_id):
 from django.core.paginator import Paginator
 
 def catalogo_publico_view(request, category_slug=None):
-    # 1. Obtener productos base
-    products_query = Product.objects.filter(variants__isnull=False).distinct().order_by('-created_at')
-    
-    # 2. Filtrar por categoría si existe el slug
+    # 1. Obtener productos base (solo productos online con variantes)
+    products_query = Product.objects.filter(
+        variants__isnull=False,
+        is_online=True  # Solo mostrar productos en línea
+    ).distinct().order_by('-created_at')
+
+    # 2. Filtrar por categoría si existe el slug (soporte para múltiples categorías)
     current_category = None
     if category_slug:
         current_category = get_object_or_404(Category, slug=category_slug)
-        products_query = products_query.filter(category=current_category)
+        products_query = products_query.filter(categories=current_category)  # Cambiado de category a categories
 
     # 3. Paginación (12 productos por página para velocidad)
     paginator = Paginator(products_query, 12)
@@ -490,14 +497,336 @@ def api_remove_cart_item(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         item_id = data.get('item_id')
-        
+
         item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
         cart = item.cart
         item.delete()
-        
+
         return JsonResponse({
             'status': 'ok',
             'cart_total': cart.get_total(),
             'cart_count': cart.items.count()
         })
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+# =================================================================================
+# BULK UPLOAD VIEWS - Carga masiva de productos con IA
+# =================================================================================
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def bulk_upload_view(request):
+    """
+    Vista para carga masiva de productos.
+    Procesamiento SÍNCRONO (sin Celery) para compatibilidad con PythonAnywhere.
+    """
+    if request.method == 'POST':
+        form = BulkUploadForm(request.POST)
+        files = request.FILES.getlist('files')
+
+        if not files:
+            messages.error(request, 'No se seleccionaron archivos.')
+            return redirect('bulk_upload')
+
+        if len(files) > 50:
+            messages.error(request, f'Máximo 50 archivos. Seleccionaste {len(files)}.')
+            return redirect('bulk_upload')
+
+        if not form.is_valid():
+            messages.error(request, 'Debes seleccionar el tipo de producto.')
+            return redirect('bulk_upload')
+
+        # Obtener el tipo de producto seleccionado
+        product_type = form.cleaned_data['product_type']
+
+        # Crear batch
+        batch = BulkUploadBatch.objects.create(
+            created_by=request.user,
+            total_files=len(files),
+            status='processing'
+        )
+
+        # Procesar archivos SÍNCRONAMENTE
+        from .tasks import process_single_upload_item
+        from django.utils import timezone
+
+        for uploaded_file in files:
+            item = BulkUploadItem.objects.create(
+                batch=batch,
+                original_filename=uploaded_file.name,
+                source_file=uploaded_file,
+                status='processing'
+            )
+
+            try:
+                # Procesar directamente pasando el tipo de producto
+                process_single_upload_item(item, product_type)
+                batch.processed_files += 1
+                batch.successful_uploads += 1
+                batch.save()
+            except Exception as e:
+                item.status = 'failed'
+                item.error_message = str(e)
+                item.save()
+                batch.processed_files += 1
+                batch.failed_uploads += 1
+                batch.error_log += f"\n{uploaded_file.name}: {str(e)}"
+                batch.save()
+
+        # Marcar batch como completado
+        batch.status = 'completed'
+        batch.save()
+
+        messages.success(
+            request,
+            f'Procesamiento completado: {batch.successful_uploads} exitosos, '
+            f'{batch.failed_uploads} fallidos de {batch.total_files} archivos.'
+        )
+        return redirect('bulk_upload_status', batch_id=batch.id)
+
+    # GET: Mostrar formulario y lotes recientes
+    form = BulkUploadForm()
+    recent_batches = BulkUploadBatch.objects.filter(
+        created_by=request.user
+    ).order_by('-created_at')[:10]
+
+    return render(request, 'dashboard/products/bulk_upload.html', {
+        'form': form,
+        'recent_batches': recent_batches
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def bulk_upload_status_view(request, batch_id):
+    """
+    Vista para ver el progreso de un lote de carga masiva.
+    Soporta AJAX polling para actualizar progreso.
+    """
+    batch = get_object_or_404(BulkUploadBatch, id=batch_id)
+
+    # Si es AJAX, retornar JSON con progreso
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': batch.status,
+            'progress': batch.get_progress_percentage(),
+            'processed': batch.processed_files,
+            'total': batch.total_files,
+            'successful': batch.successful_uploads,
+            'failed': batch.failed_uploads,
+        })
+
+    # Vista normal con template
+    items = batch.items.all().order_by('-created_at')
+
+    return render(request, 'dashboard/products/bulk_upload_status.html', {
+        'batch': batch,
+        'items': items
+    })
+
+
+# =================================================================================
+# ENHANCED PRODUCT MANAGEMENT - Lista mejorada con paginación y filtros
+# =================================================================================
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def product_list_enhanced_view(request):
+    """
+    Lista mejorada de productos con:
+    - Paginación (20 por página)
+    - Búsqueda por nombre/descripción
+    - Filtros por categoría, tipo, estado online/offline
+    - Ordenamiento
+    - Checkboxes para acciones masivas
+    """
+    products = Product.objects.all().prefetch_related('categories', 'variants')
+
+    # Búsqueda
+    search_query = request.GET.get('q', '')
+    if search_query:
+        products = products.filter(
+            Q(name__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+    # Filtro por categoría
+    category_id = request.GET.get('category')
+    if category_id:
+        products = products.filter(categories__id=category_id)
+
+    # Filtro por tipo de producto
+    product_type = request.GET.get('type')
+    if product_type:
+        products = products.filter(product_type=product_type)
+
+    # Filtro por estado online/offline
+    online_status = request.GET.get('online')
+    if online_status == '1':
+        products = products.filter(is_online=True)
+    elif online_status == '0':
+        products = products.filter(is_online=False)
+
+    # Ordenamiento
+    sort_by = request.GET.get('sort', '-created_at')
+    products = products.order_by(sort_by)
+
+    # Paginación (20 por página)
+    paginator = Paginator(products.distinct(), 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'categories': Category.objects.all(),
+        'product_types': Product.TYPE_CHOICES,
+        'search_query': search_query,
+        'current_category': category_id,
+        'current_type': product_type,
+        'current_online': online_status,
+        'current_sort': sort_by,
+    }
+
+    return render(request, 'dashboard/products/list_enhanced.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def mass_edit_products_view(request):
+    """
+    Vista para editar múltiples productos a la vez.
+    Soporta:
+    - Agregar/Quitar/Reemplazar categorías
+    - Poner online/offline
+    - Eliminar productos
+    """
+    if request.method == 'POST':
+        product_ids = request.POST.getlist('selected_products')
+        action = request.POST.get('action')
+
+        print(f"[Mass Edit] Products: {product_ids}, Action: {action}")  # Debug
+
+        if not product_ids:
+            messages.error(request, 'No has seleccionado ningún producto.')
+            return redirect('panel_product_list')
+
+        if not action:
+            messages.error(request, 'No se seleccionó ninguna acción.')
+            return redirect('panel_product_list')
+
+        products = Product.objects.filter(id__in=product_ids)
+        count = products.count()
+
+        # Acciones que NO requieren categorías
+        if action == 'set_online':
+            products.update(is_online=True)
+            messages.success(request, f'✓ {count} producto(s) ahora están EN LÍNEA.')
+            return redirect('panel_product_list')
+
+        elif action == 'set_offline':
+            products.update(is_online=False)
+            messages.success(request, f'✓ {count} producto(s) ahora están FUERA DE LÍNEA.')
+            return redirect('panel_product_list')
+
+        elif action == 'delete_products':
+            product_names = [p.name for p in products[:5]]  # Primeros 5
+            products.delete()
+            messages.success(
+                request,
+                f'✓ {count} producto(s) eliminado(s): {", ".join(product_names)}{"..." if count > 5 else ""}'
+            )
+            return redirect('panel_product_list')
+
+        # Acciones que requieren datos adicionales (mostrar formulario o procesar)
+        elif action in ['add_categories', 'remove_categories', 'replace_categories', 'change_type', 'change_description']:
+            # Si venimos del dropdown principal (solo acción, sin datos), mostrar el formulario
+            if 'categories' not in request.POST and 'product_type' not in request.POST and 'description' not in request.POST:
+                form = MassEditForm(initial={'action': action})
+                return render(request, 'dashboard/products/mass_edit.html', {
+                    'form': form,
+                    'products': products,
+                    'action': action,
+                    'product_ids': product_ids
+                })
+
+            # Si ya enviamos el formulario de mass_edit.html, procesar los datos
+            form = MassEditForm(request.POST)
+            if form.is_valid():
+                cat_ids = form.cleaned_data.get('categories')
+                new_type = form.cleaned_data.get('product_type')
+                new_desc = form.cleaned_data.get('description')
+
+                if action == 'add_categories':
+                    for product in products:
+                        product.categories.add(*cat_ids)
+                    messages.success(request, f'✓ Categorías agregadas a {count} producto(s).')
+
+                elif action == 'remove_categories':
+                    for product in products:
+                        product.categories.remove(*cat_ids)
+                    messages.success(request, f'✓ Categorías removidas de {count} producto(s).')
+
+                elif action == 'replace_categories':
+                    for product in products:
+                        product.categories.clear()
+                        product.categories.add(*cat_ids)
+                    messages.success(request, f'✓ Categorías reemplazadas en {count} producto(s).')
+
+                elif action == 'change_type':
+                    products.update(product_type=new_type)
+                    # Forzar regeneración de variantes si es necesario (opcional)
+                    messages.success(request, f'✓ Tipo de producto cambiado en {count} productos.')
+
+                elif action == 'change_description':
+                    products.update(description=new_desc)
+                    messages.success(request, f'✓ Descripción actualizada en {count} producto(s).')
+
+                return redirect('panel_product_list')
+            else:
+                # Si el formulario no es válido, volver a mostrarlo con errores
+                return render(request, 'dashboard/products/mass_edit.html', {
+                    'form': form,
+                    'products': products,
+                    'action': action,
+                    'product_ids': product_ids
+                })
+
+        else:
+            messages.error(request, f'Acción no reconocida: {action}')
+            return redirect('panel_product_list')
+
+    # GET request - mostrar formulario (no debería llegar aquí normalmente)
+    messages.error(request, 'Método no permitido.')
+    return redirect('panel_product_list')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def inline_edit_product_api(request):
+    """
+    API AJAX para edición inline (rápida):
+    - Cambiar nombre del producto
+    - Toggle estado online/offline
+    """
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        product_id = data.get('product_id')
+        field = data.get('field')
+        value = data.get('value')
+
+        product = get_object_or_404(Product, id=product_id)
+
+        if field == 'name':
+            product.name = value
+            product.save()
+            return JsonResponse({'status': 'ok', 'new_value': value})
+
+        elif field == 'is_online':
+            product.is_online = bool(value)
+            product.save()
+            return JsonResponse({'status': 'ok', 'new_value': value})
+
+        return JsonResponse({'status': 'error', 'message': 'Campo no válido'}, status=400)
+
     return JsonResponse({'status': 'error'}, status=400)
