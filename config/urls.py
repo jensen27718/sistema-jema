@@ -91,6 +91,7 @@ urlpatterns = [
 
     # === APIs AJAX PARA PEDIDOS INTERNOS ===
     path('api/internal-orders/filter-variants/', views_internal_orders.api_filter_variants, name='api_filter_variants'),
+    path('api/internal-orders/get-filters/', views_internal_orders.api_get_available_filters, name='api_get_available_filters'),
     path('api/internal-orders/add-item/', views_internal_orders.api_internal_order_add_item, name='api_add_item'),
     path('api/internal-orders/remove-item/', views_internal_orders.api_internal_order_remove_item, name='api_remove_item'),
     path('api/internal-orders/update-quantity/', views_internal_orders.api_internal_order_update_qty, name='api_update_qty'),

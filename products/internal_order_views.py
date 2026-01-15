@@ -187,6 +187,79 @@ def internal_order_update_status_view(request, order_id):
 
 @login_required
 @require_POST
+def api_get_available_filters(request):
+    """
+    Devuelve los filtros disponibles para un tipo de producto.
+    Esto permite mostrar solo los filtros relevantes en la UI.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'JSON inválido'}, status=400)
+
+    product_type = data.get('product_type', '')
+
+    # Base query para variantes de productos activos
+    variants_query = ProductVariant.objects.filter(product__is_online=True)
+
+    if product_type:
+        variants_query = variants_query.filter(product__product_type=product_type)
+
+    # Verificar qué atributos tienen valores (no nulos) en las variantes
+    # Material: verificar si hay variantes con material asignado Y si hay mas de 1 material
+    materials_in_use = variants_query.exclude(material__isnull=True).values_list('material_id', flat=True).distinct()
+    has_materials = materials_in_use.count() > 0
+
+    # Sizes: verificar si hay variantes con size asignado Y si hay mas de 1 size
+    sizes_in_use = variants_query.exclude(size__isnull=True).values_list('size_id', flat=True).distinct()
+    has_sizes = sizes_in_use.count() > 0
+
+    # Colors: verificar si hay variantes con color asignado Y si hay mas de 1 color
+    colors_in_use = variants_query.exclude(color__isnull=True).values_list('color_id', flat=True).distinct()
+    has_colors = colors_in_use.count() > 0
+
+    # Obtener las opciones disponibles para cada filtro
+    available_materials = []
+    if has_materials:
+        for mat in Material.objects.filter(id__in=materials_in_use).order_by('name'):
+            available_materials.append({'id': mat.id, 'name': mat.name})
+
+    available_sizes = []
+    if has_sizes:
+        for size in Size.objects.filter(id__in=sizes_in_use).order_by('name'):
+            available_sizes.append({'id': size.id, 'name': size.name, 'dimensions': size.dimensions})
+
+    available_colors = []
+    if has_colors:
+        for color in Color.objects.filter(id__in=colors_in_use).order_by('name'):
+            available_colors.append({'id': color.id, 'name': color.name, 'hex_code': color.hex_code})
+
+    # Categorias siempre disponibles pero filtradas por tipo de producto
+    categories_in_use = Product.objects.filter(is_online=True)
+    if product_type:
+        categories_in_use = categories_in_use.filter(product_type=product_type)
+    category_ids = categories_in_use.values_list('categories__id', flat=True).distinct()
+
+    available_categories = []
+    for cat in Category.objects.filter(id__in=category_ids).order_by('name'):
+        available_categories.append({'id': cat.id, 'name': cat.name})
+
+    return JsonResponse({
+        'status': 'ok',
+        'filters': {
+            'has_materials': has_materials,
+            'has_sizes': has_sizes,
+            'has_colors': has_colors,
+            'materials': available_materials,
+            'sizes': available_sizes,
+            'colors': available_colors,
+            'categories': available_categories,
+        }
+    })
+
+
+@login_required
+@require_POST
 def api_filter_variants(request):
     """
     Filtra variantes según criterios.
@@ -447,6 +520,7 @@ def api_internal_order_auto_select(request):
     """
     Selección semi-automática de referencias.
     Selecciona aleatoriamente N variantes según los filtros.
+    Si allow_repeat=True y no hay suficientes, repite desde el inicio.
     """
     try:
         data = json.loads(request.body)
@@ -455,6 +529,7 @@ def api_internal_order_auto_select(request):
 
     order_id = data.get('order_id')
     quantity = int(data.get('quantity', 10))
+    allow_repeat = data.get('allow_repeat', False)
 
     if quantity > 100:
         quantity = 100
@@ -494,6 +569,10 @@ def api_internal_order_auto_select(request):
     if size_id:
         variants = variants.filter(size_id=size_id)
 
+    color_id = data.get('color_id')
+    if color_id:
+        variants = variants.filter(color_id=color_id)
+
     min_price = data.get('min_price')
     max_price = data.get('max_price')
     if min_price:
@@ -507,44 +586,101 @@ def api_internal_order_auto_select(request):
         except:
             pass
 
-    # Excluir variantes que ya están en el pedido
-    existing_variant_ids = list(order.items.values_list('variant_id', flat=True))
-    variants = variants.exclude(id__in=existing_variant_ids)
+    # Obtener todas las variantes disponibles (sin excluir existentes primero para repetir si es necesario)
+    all_variants_list = list(variants.distinct())
 
-    # Obtener todas las variantes y seleccionar aleatoriamente
-    variants_list = list(variants.distinct())
+    if not all_variants_list:
+        return JsonResponse({
+            'status': 'ok',
+            'added_count': 0,
+            'added_items': [],
+            'message': 'No hay variantes disponibles con estos filtros',
+            'order_totals': {
+                'total_items': order.total_items,
+                'total_estimated': float(order.total_estimated)
+            }
+        })
 
-    if len(variants_list) > quantity:
-        selected = random.sample(variants_list, quantity)
+    # Excluir variantes que ya están en el pedido para la primera pasada
+    existing_variant_ids = set(order.items.values_list('variant_id', flat=True))
+    new_variants = [v for v in all_variants_list if v.id not in existing_variant_ids]
+
+    # Seleccionar variantes
+    selected = []
+
+    if allow_repeat and len(new_variants) < quantity:
+        # Primero agregar todas las nuevas
+        selected.extend(new_variants)
+        remaining = quantity - len(new_variants)
+
+        # Si aún faltan, repetir desde el inicio de todas las variantes
+        while remaining > 0:
+            # Elegir aleatoriamente de todas las variantes (pueden repetirse)
+            batch_size = min(remaining, len(all_variants_list))
+            if batch_size == len(all_variants_list):
+                selected.extend(all_variants_list)
+            else:
+                selected.extend(random.sample(all_variants_list, batch_size))
+            remaining -= batch_size
     else:
-        selected = variants_list
+        # Comportamiento normal: solo nuevas variantes
+        if len(new_variants) > quantity:
+            selected = random.sample(new_variants, quantity)
+        else:
+            selected = new_variants
 
     # Agregar al pedido
     added_items = []
     for variant in selected:
-        item = InternalOrderItem.objects.create(
-            order=order,
-            variant=variant,
-            quantity=1,
-            product_name=variant.product.name,
-            variant_details=_build_variant_text(variant),
-            unit_price=variant.price or 0
-        )
+        # Verificar si ya existe este item en el pedido
+        existing_item = order.items.filter(variant=variant).first()
 
-        image_url = ''
-        if variant.product.image:
-            try:
-                image_url = variant.product.image.url
-            except:
-                pass
+        if existing_item:
+            # Incrementar cantidad si ya existe
+            existing_item.quantity += 1
+            existing_item.save()
 
-        added_items.append({
-            'id': item.id,
-            'product_name': item.product_name,
-            'variant_details': item.variant_details,
-            'unit_price': float(item.unit_price),
-            'image_url': image_url,
-        })
+            image_url = ''
+            if variant.product.image:
+                try:
+                    image_url = variant.product.image.url
+                except:
+                    pass
+
+            added_items.append({
+                'id': existing_item.id,
+                'product_name': existing_item.product_name,
+                'variant_details': existing_item.variant_details,
+                'quantity': existing_item.quantity,
+                'unit_price': float(existing_item.unit_price),
+                'image_url': image_url,
+            })
+        else:
+            # Crear nuevo item
+            item = InternalOrderItem.objects.create(
+                order=order,
+                variant=variant,
+                quantity=1,
+                product_name=variant.product.name,
+                variant_details=_build_variant_text(variant),
+                unit_price=variant.price or 0
+            )
+
+            image_url = ''
+            if variant.product.image:
+                try:
+                    image_url = variant.product.image.url
+                except:
+                    pass
+
+            added_items.append({
+                'id': item.id,
+                'product_name': item.product_name,
+                'variant_details': item.variant_details,
+                'quantity': item.quantity,
+                'unit_price': float(item.unit_price),
+                'image_url': image_url,
+            })
 
     # Recalcular totales
     order.recalculate_totals()

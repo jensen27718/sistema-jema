@@ -583,33 +583,250 @@ def debt_detail_view(request, debt_id):
 def payment_create_view(request, debt_id):
     """Crear un abono a una deuda"""
     debt = get_object_or_404(Debt, id=debt_id)
-    
+
     if request.method == 'POST':
         try:
             from decimal import Decimal
-            
+
             amount = Decimal(request.POST.get('amount'))
             payment_date = request.POST.get('payment_date')
             notes = request.POST.get('notes', '')
-            
+
             if amount <= 0:
                 messages.error(request, "El monto debe ser mayor a cero.")
                 return redirect('accounting_debt_detail', debt_id=debt_id)
-            
+
             if amount > debt.get_remaining():
                 messages.warning(request, f"El monto excede la deuda pendiente (${debt.get_remaining():,.2f})")
-            
+
             Payment.objects.create(
                 debt=debt,
                 amount=amount,
                 payment_date=payment_date,
                 notes=notes
             )
-            
+
             messages.success(request, f"✅ Abono registrado: ${amount:,.2f}. Pendiente: ${debt.get_remaining():,.2f}")
             return redirect('accounting_debt_detail', debt_id=debt_id)
-            
+
         except Exception as e:
             messages.error(request, f"❌ Error al registrar abono: {str(e)}")
-    
+
     return redirect('accounting_debt_detail', debt_id=debt_id)
+
+
+# ==========================
+# TRANSACTIONS LIST WITH PAGINATION
+# ==========================
+
+@login_required
+@user_passes_test(is_staff)
+def transaction_list_view(request):
+    """Lista todos los movimientos con paginacion y busqueda"""
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+
+    transactions = Transaction.objects.select_related('account', 'category', 'provider', 'client').order_by('-date', '-created_at')
+
+    # Filtros
+    search_query = request.GET.get('q', '').strip()
+    account_filter = request.GET.get('account', '')
+    type_filter = request.GET.get('type', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    if search_query:
+        transactions = transactions.filter(
+            Q(description__icontains=search_query) |
+            Q(client_name__icontains=search_query) |
+            Q(provider__name__icontains=search_query)
+        )
+
+    if account_filter:
+        transactions = transactions.filter(account_id=account_filter)
+
+    if type_filter:
+        if type_filter == 'ingreso':
+            transactions = transactions.filter(category__transaction_type='ingreso')
+        elif type_filter == 'egreso':
+            transactions = transactions.filter(category__transaction_type='egreso')
+        elif type_filter == 'transferencia':
+            transactions = transactions.filter(category__isnull=True)
+
+    if date_from:
+        transactions = transactions.filter(date__gte=date_from)
+
+    if date_to:
+        transactions = transactions.filter(date__lte=date_to)
+
+    # Paginacion
+    paginator = Paginator(transactions, 25)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # Preparar datos para el template
+    transaction_list = []
+    for t in page_obj:
+        if t.category:
+            cat_name = t.category.name
+            trans_type = t.category.transaction_type
+        else:
+            cat_name = "Transferencia"
+            trans_type = "transferencia"
+
+        detail = cat_name
+        if t.client_name:
+            detail = f"{cat_name} - {t.client_name}"
+
+        if trans_type == 'ingreso':
+            amount_class = "text-success"
+            amount_sign = "+"
+            badge_class = "bg-success"
+        elif trans_type == 'transferencia':
+            amount_class = "text-primary"
+            amount_sign = ""
+            badge_class = "bg-primary"
+        else:
+            amount_class = "text-danger"
+            amount_sign = "-"
+            badge_class = "bg-danger"
+
+        transaction_list.append({
+            'id': t.id,
+            'date': t.date,
+            'description': t.description,
+            'detail': detail,
+            'account_name': t.account.name,
+            'amount': t.amount,
+            'amount_class': amount_class,
+            'amount_sign': amount_sign,
+            'trans_type': trans_type,
+            'badge_class': badge_class,
+        })
+
+    accounts = Account.objects.all()
+
+    context = {
+        'transactions': transaction_list,
+        'page_obj': page_obj,
+        'accounts': accounts,
+        'search_query': search_query,
+        'account_filter': account_filter,
+        'type_filter': type_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    return render(request, 'contabilidad/transaction_list.html', context)
+
+
+@login_required
+@user_passes_test(is_staff)
+def account_detail_view(request, account_id):
+    """Vista detallada de una cuenta con sus movimientos"""
+    from django.core.paginator import Paginator
+    from django.db.models import Q, Sum
+    from django.utils import timezone
+    from datetime import datetime
+
+    account = get_object_or_404(Account, id=account_id)
+
+    transactions = Transaction.objects.filter(account=account).select_related('category', 'provider', 'client').order_by('-date', '-created_at')
+
+    # Filtros
+    search_query = request.GET.get('q', '').strip()
+    type_filter = request.GET.get('type', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    if search_query:
+        transactions = transactions.filter(
+            Q(description__icontains=search_query) |
+            Q(client_name__icontains=search_query)
+        )
+
+    if type_filter:
+        if type_filter == 'ingreso':
+            transactions = transactions.filter(category__transaction_type='ingreso')
+        elif type_filter == 'egreso':
+            transactions = transactions.filter(category__transaction_type='egreso')
+        elif type_filter == 'transferencia':
+            transactions = transactions.filter(category__isnull=True)
+
+    if date_from:
+        transactions = transactions.filter(date__gte=date_from)
+
+    if date_to:
+        transactions = transactions.filter(date__lte=date_to)
+
+    # Calcular totales del mes
+    now = timezone.now()
+    month_start = datetime(now.year, now.month, 1).date()
+
+    monthly_income = Transaction.objects.filter(
+        account=account,
+        category__transaction_type='ingreso',
+        date__gte=month_start
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    monthly_expenses = Transaction.objects.filter(
+        account=account,
+        category__transaction_type='egreso',
+        date__gte=month_start
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    # Paginacion
+    paginator = Paginator(transactions, 25)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # Preparar datos para el template
+    transaction_list = []
+    for t in page_obj:
+        if t.category:
+            cat_name = t.category.name
+            trans_type = t.category.transaction_type
+        else:
+            cat_name = "Transferencia"
+            trans_type = "transferencia"
+
+        detail = cat_name
+        if t.client_name:
+            detail = f"{cat_name} - {t.client_name}"
+
+        if trans_type == 'ingreso':
+            amount_class = "text-success"
+            amount_sign = "+"
+            badge_class = "bg-success"
+        elif trans_type == 'transferencia':
+            amount_class = "text-primary"
+            amount_sign = ""
+            badge_class = "bg-primary"
+        else:
+            amount_class = "text-danger"
+            amount_sign = "-"
+            badge_class = "bg-danger"
+
+        transaction_list.append({
+            'id': t.id,
+            'date': t.date,
+            'description': t.description,
+            'detail': detail,
+            'amount': t.amount,
+            'amount_class': amount_class,
+            'amount_sign': amount_sign,
+            'trans_type': trans_type,
+            'badge_class': badge_class,
+        })
+
+    context = {
+        'account': account,
+        'transactions': transaction_list,
+        'page_obj': page_obj,
+        'monthly_income': monthly_income,
+        'monthly_expenses': monthly_expenses,
+        'search_query': search_query,
+        'type_filter': type_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    return render(request, 'contabilidad/account_detail.html', context)

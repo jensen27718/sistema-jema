@@ -5,32 +5,79 @@
 
 {% block extra_css %}
 <style>
-    /* === LAYOUT PRINCIPAL === */
-    .order-editor {
-        display: grid;
-        grid-template-columns: 1fr 380px;
-        gap: 20px;
+    /* === LAYOUT PRINCIPAL 3 COLUMNAS === */
+    .order-editor-wrapper {
+        display: flex;
+        gap: 16px;
         min-height: calc(100vh - 200px);
     }
 
-    @media (max-width: 1200px) {
-        .order-editor {
-            grid-template-columns: 1fr;
+    /* Columna Izquierda: Filtros/Variaciones */
+    .filters-column {
+        width: 280px;
+        flex-shrink: 0;
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: var(--shadow-md);
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+        max-height: calc(100vh - 140px);
+        overflow-y: auto;
+    }
+
+    /* Columna Central: Referencias */
+    .references-column {
+        flex: 1;
+        min-width: 0;
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Columna Derecha: Carrito */
+    .cart-column {
+        width: 340px;
+        flex-shrink: 0;
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+        max-height: calc(100vh - 140px);
+    }
+
+    @media (max-width: 1400px) {
+        .filters-column {
+            width: 240px;
+        }
+        .cart-column {
+            width: 300px;
         }
     }
 
-    /* === PANEL IZQUIERDO: SELECTOR === */
-    .selector-panel {
-        background: var(--card-bg);
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: var(--shadow-md);
-        position: relative;
+    @media (max-width: 1100px) {
+        .order-editor-wrapper {
+            flex-direction: column;
+        }
+        .filters-column, .cart-column {
+            width: 100%;
+            position: relative;
+            top: 0;
+            max-height: none;
+        }
     }
 
+    /* === SECCIONES DE FILTROS === */
     .filter-section {
-        margin-bottom: 16px;
-        padding-bottom: 12px;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
         border-bottom: 1px solid var(--border);
     }
 
@@ -38,20 +85,32 @@
         border-bottom: none;
     }
 
+    .filter-section h6 {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
     .filter-row {
         display: flex;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
     }
 
     .filter-chip {
-        padding: 6px 14px;
-        border-radius: 20px;
+        padding: 5px 12px;
+        border-radius: 16px;
         background: var(--muted);
         border: 2px solid transparent;
         cursor: pointer;
         transition: all 0.2s;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 500;
         user-select: none;
     }
@@ -67,16 +126,151 @@
         border-color: var(--jema-purple-dark);
     }
 
-    /* === GRID DE VARIANTES === */
-    .variants-container {
-        margin-top: 16px;
+    /* Secciones ocultas por tipo de producto */
+    .filter-section.hidden {
+        display: none !important;
     }
 
+    /* === MODOS DE SELECCION === */
+    .selection-modes {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 14px;
+    }
+
+    .mode-btn {
+        flex: 1;
+        padding: 8px 6px;
+        border-radius: 8px;
+        border: 2px solid var(--border);
+        background: white;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+        font-size: 10px;
+    }
+
+    .mode-btn:hover {
+        border-color: var(--jema-purple);
+    }
+
+    .mode-btn.active {
+        background: var(--jema-purple);
+        color: white;
+        border-color: var(--jema-purple);
+    }
+
+    .mode-btn i {
+        font-size: 16px;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    /* === AUTO SELECT PANEL === */
+    .auto-select-panel {
+        background: linear-gradient(135deg, rgba(107, 45, 123, 0.05) 0%, rgba(26, 154, 154, 0.05) 100%);
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 14px;
+        display: none;
+        border: 1px solid var(--jema-purple-light);
+    }
+
+    .auto-select-panel.show {
+        display: block;
+    }
+
+    .auto-select-panel h6 {
+        margin: 0 0 6px 0;
+        font-size: 12px;
+        color: var(--jema-purple);
+    }
+
+    .quantity-input {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .quantity-input label {
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .quantity-input input {
+        width: 60px;
+        padding: 6px;
+        text-align: center;
+        font-size: 13px;
+        border-radius: 6px;
+        border: 2px solid var(--border);
+    }
+
+    .quantity-input input:focus {
+        border-color: var(--jema-purple);
+        outline: none;
+    }
+
+    /* === FILTRO DE PRECIO === */
+    .price-filter-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .price-filter-row input {
+        width: 75px;
+        padding: 5px 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 11px;
+    }
+
+    .price-filter-row input:focus {
+        border-color: var(--jema-purple);
+        outline: none;
+    }
+
+    /* === BUSQUEDA === */
+    .search-section {
+        background: linear-gradient(135deg, rgba(107, 45, 123, 0.03) 0%, rgba(26, 154, 154, 0.03) 100%);
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        margin-bottom: 14px;
+    }
+
+    .search-section .input-group {
+        box-shadow: var(--shadow-sm);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .search-section .form-control {
+        border: 1px solid var(--border);
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .search-section .form-control:focus {
+        border-color: var(--jema-purple);
+        box-shadow: none;
+    }
+
+    .search-highlight {
+        background: rgba(233, 30, 140, 0.2);
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+
+    /* === GRID DE VARIANTES === */
     .variants-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 10px;
-        max-height: 450px;
+        max-height: calc(100vh - 320px);
         overflow-y: auto;
         padding: 8px;
         background: var(--muted);
@@ -108,7 +302,7 @@
 
     .variant-card img {
         width: 100%;
-        height: 70px;
+        height: 80px;
         object-fit: cover;
         border-radius: 6px;
         margin-bottom: 6px;
@@ -154,8 +348,8 @@
         position: absolute;
         top: 6px;
         right: 6px;
-        width: 22px;
-        height: 22px;
+        width: 24px;
+        height: 24px;
         border-radius: 50%;
         background: var(--jema-teal);
         color: white;
@@ -173,38 +367,17 @@
         opacity: 1;
     }
 
-    /* === PANEL DERECHO: PEDIDO === */
-    .order-panel {
-        background: var(--card-bg);
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: var(--shadow-md);
-        display: flex;
-        flex-direction: column;
-        height: fit-content;
-        position: sticky;
-        top: 100px;
-        max-height: calc(100vh - 140px);
-    }
-
-    @media (max-width: 1200px) {
-        .order-panel {
-            position: relative;
-            top: 0;
-            max-height: none;
-        }
-    }
-
-    .order-header {
-        padding-bottom: 12px;
+    /* === CARRITO / PEDIDO === */
+    .cart-header {
+        padding-bottom: 10px;
         border-bottom: 2px solid var(--jema-purple);
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
-    .order-header h4 {
+    .cart-header h4 {
         margin: 0;
         color: var(--jema-purple);
-        font-size: 16px;
+        font-size: 14px;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -213,7 +386,7 @@
     .order-name-input {
         border: none;
         background: transparent;
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 700;
         color: var(--jema-purple);
         width: 100%;
@@ -227,24 +400,24 @@
         margin: -4px -8px;
     }
 
-    .order-drop-zone {
+    .cart-drop-zone {
         flex: 1;
-        min-height: 250px;
-        max-height: 400px;
+        min-height: 200px;
+        max-height: 350px;
         border: 3px dashed var(--border);
         border-radius: 12px;
-        padding: 12px;
+        padding: 10px;
         transition: all 0.3s;
         overflow-y: auto;
     }
 
-    .order-drop-zone.drag-over {
+    .cart-drop-zone.drag-over {
         border-color: var(--jema-purple);
         background: rgba(107, 45, 123, 0.05);
         border-style: solid;
     }
 
-    .order-drop-zone.empty {
+    .cart-drop-zone.empty {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -257,7 +430,7 @@
     }
 
     .drop-hint i {
-        font-size: 40px;
+        font-size: 36px;
         color: var(--border);
         margin-bottom: 10px;
         display: block;
@@ -265,190 +438,138 @@
 
     .drop-hint p {
         margin: 0;
-        font-size: 13px;
+        font-size: 12px;
     }
 
-    /* === ITEMS EN EL PEDIDO === */
-    .order-item {
+    /* === ITEMS EN EL CARRITO === */
+    .cart-item {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px;
+        gap: 8px;
+        padding: 8px;
         background: var(--muted);
-        border-radius: 10px;
-        margin-bottom: 8px;
+        border-radius: 8px;
+        margin-bottom: 6px;
         transition: all 0.2s;
     }
 
-    .order-item:hover {
+    .cart-item:hover {
         background: #e8e4eb;
     }
 
-    .order-item img {
-        width: 45px;
-        height: 45px;
+    .cart-item img {
+        width: 40px;
+        height: 40px;
         object-fit: cover;
         border-radius: 6px;
         flex-shrink: 0;
     }
 
-    .order-item-info {
+    .cart-item-info {
         flex: 1;
         min-width: 0;
     }
 
-    .order-item-name {
-        font-size: 11px;
+    .cart-item-name {
+        font-size: 10px;
         font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
-    .order-item-details {
+    .cart-item-details {
         font-size: 9px;
         color: var(--muted-foreground);
     }
 
-    .order-item-price {
+    .cart-item-price {
         font-size: 10px;
         color: var(--jema-teal);
         font-weight: 600;
     }
 
-    .order-item-qty {
+    .cart-item-qty {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 2px;
+        flex-shrink: 0;
     }
 
-    .order-item-qty input {
-        width: 45px;
+    .cart-item-qty input {
+        width: 40px;
         text-align: center;
         border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 4px;
-        font-size: 12px;
+        border-radius: 4px;
+        padding: 3px;
+        font-size: 11px;
     }
 
-    .order-item-remove {
+    .cart-item-remove {
         color: #dc3545;
         cursor: pointer;
-        padding: 6px;
+        padding: 4px;
         border-radius: 50%;
         transition: all 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
     }
 
-    .order-item-remove:hover {
+    .cart-item-remove:hover {
         background: #dc3545;
         color: white;
     }
 
     /* === TOTALES === */
-    .order-totals {
+    .cart-totals {
         margin-top: auto;
-        padding-top: 12px;
+        padding-top: 10px;
         border-top: 2px solid var(--border);
     }
 
     .total-row {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 6px;
-        font-size: 13px;
+        margin-bottom: 4px;
+        font-size: 12px;
     }
 
     .total-row.grand-total {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 700;
         color: var(--jema-purple);
-        margin-top: 8px;
-        padding-top: 8px;
+        margin-top: 6px;
+        padding-top: 6px;
         border-top: 1px solid var(--border);
     }
 
-    /* === MODOS DE SELECCIÓN === */
-    .selection-modes {
+    /* === ACTION BUTTONS === */
+    .action-buttons {
         display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
+        gap: 6px;
+        margin-top: 10px;
     }
 
-    .mode-btn {
+    .action-buttons .btn {
         flex: 1;
-        padding: 10px 8px;
-        border-radius: 10px;
-        border: 2px solid var(--border);
-        background: white;
-        cursor: pointer;
-        text-align: center;
-        transition: all 0.2s;
-        font-size: 12px;
-    }
-
-    .mode-btn:hover {
-        border-color: var(--jema-purple);
-    }
-
-    .mode-btn.active {
-        background: var(--jema-purple);
-        color: white;
-        border-color: var(--jema-purple);
-    }
-
-    .mode-btn i {
-        font-size: 18px;
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    /* === AUTO SELECT PANEL === */
-    .auto-select-panel {
-        background: linear-gradient(135deg, rgba(107, 45, 123, 0.05) 0%, rgba(26, 154, 154, 0.05) 100%);
-        border-radius: 12px;
-        padding: 14px;
-        margin-bottom: 16px;
-        display: none;
-        border: 1px solid var(--jema-purple-light);
-    }
-
-    .auto-select-panel.show {
-        display: block;
-    }
-
-    .auto-select-panel h6 {
-        margin: 0 0 8px 0;
-        font-size: 13px;
-        color: var(--jema-purple);
-    }
-
-    .quantity-input {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .quantity-input label {
-        font-size: 12px;
-        font-weight: 500;
-    }
-
-    .quantity-input input {
-        width: 70px;
+        font-size: 11px;
         padding: 8px;
-        text-align: center;
-        font-size: 14px;
-        border-radius: 8px;
-        border: 2px solid var(--border);
     }
 
-    .quantity-input input:focus {
-        border-color: var(--jema-purple);
-        outline: none;
+    /* === EMPTY STATE === */
+    .empty-variants {
+        text-align: center;
+        padding: 30px 20px;
+        color: var(--muted-foreground);
+        grid-column: 1/-1;
+    }
+
+    .empty-variants i {
+        font-size: 40px;
+        margin-bottom: 10px;
+        color: var(--border);
     }
 
     /* === LOADING === */
@@ -471,8 +592,8 @@
     }
 
     .spinner {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         border: 4px solid var(--border);
         border-top-color: var(--jema-purple);
         border-radius: 50%;
@@ -485,40 +606,6 @@
         }
     }
 
-    /* === EMPTY STATE === */
-    .empty-variants {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--muted-foreground);
-    }
-
-    .empty-variants i {
-        font-size: 48px;
-        margin-bottom: 12px;
-        color: var(--border);
-    }
-
-    /* === PRICE FILTER === */
-    .price-filter-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .price-filter-row input {
-        width: 90px;
-        padding: 6px 10px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        font-size: 12px;
-    }
-
-    .price-filter-row input:focus {
-        border-color: var(--jema-purple);
-        outline: none;
-    }
-
     /* === STATUS BADGE === */
     .order-status-badge {
         padding: 4px 10px;
@@ -526,78 +613,15 @@
         font-size: 11px;
         font-weight: 600;
     }
-
-    /* === ACTION BUTTONS === */
-    .action-buttons {
-        display: flex;
-        gap: 8px;
-        margin-top: 12px;
-    }
-
-    .action-buttons .btn {
-        flex: 1;
-        font-size: 12px;
-        padding: 10px;
-    }
-
-    /* === SEARCH SECTION === */
-    .search-section {
-        background: linear-gradient(135deg, rgba(107, 45, 123, 0.03) 0%, rgba(26, 154, 154, 0.03) 100%);
-        padding: 12px;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-    }
-
-    .search-section .input-group {
-        box-shadow: var(--shadow-sm);
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .search-section .input-group-text {
-        border: 1px solid var(--border);
-        border-right: none;
-    }
-
-    .search-section .form-control {
-        border: 1px solid var(--border);
-        padding: 10px 12px;
-        font-size: 14px;
-    }
-
-    .search-section .form-control:focus {
-        border-color: var(--jema-purple);
-        box-shadow: none;
-    }
-
-    .search-section .form-control::placeholder {
-        color: var(--muted-foreground);
-        font-size: 13px;
-    }
-
-    .search-section .btn {
-        border-radius: 0;
-    }
-
-    .search-section .btn:last-child {
-        border-top-right-radius: 10px;
-        border-bottom-right-radius: 10px;
-    }
-
-    .search-highlight {
-        background: rgba(233, 30, 140, 0.2);
-        padding: 2px 4px;
-        border-radius: 3px;
-    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Encabezado -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
-            <a href="{% url 'internal_orders_list' %}" class="text-muted text-decoration-none mb-2 d-inline-block">
+            <a href="{% url 'internal_orders_list' %}" class="text-muted text-decoration-none mb-1 d-inline-block small">
                 <i class="bi bi-arrow-left"></i> Volver a pedidos
             </a>
             <h5 class="mb-0">
@@ -612,13 +636,13 @@
             {% if order.status == 'draft' %}
             <form action="{% url 'internal_order_confirm' order.id %}" method="post" class="d-inline">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-success">
+                <button type="submit" class="btn btn-success btn-sm">
                     <i class="bi bi-check-lg"></i> Confirmar
                 </button>
             </form>
             {% endif %}
             <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
                     <i class="bi bi-gear"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -630,14 +654,10 @@
         </div>
     </div>
 
-    <div class="order-editor">
-        <!-- Panel Izquierdo: Selector de Variantes -->
-        <div class="selector-panel">
-            <div class="loading-overlay" id="loadingOverlay">
-                <div class="spinner"></div>
-            </div>
-
-            <!-- Modos de Selección -->
+    <div class="order-editor-wrapper">
+        <!-- COLUMNA IZQUIERDA: FILTROS Y VARIACIONES -->
+        <div class="filters-column">
+            <!-- Modos de Seleccion -->
             <div class="selection-modes">
                 <button class="mode-btn active" data-mode="manual" onclick="setMode('manual')">
                     <i class="bi bi-hand-index"></i>
@@ -645,18 +665,18 @@
                 </button>
                 <button class="mode-btn" data-mode="auto" onclick="setMode('auto')">
                     <i class="bi bi-magic"></i>
-                    Semi-Auto
+                    Auto
                 </button>
                 <button class="mode-btn" data-mode="price" onclick="setMode('price')">
-                    <i class="bi bi-currency-dollar"></i>
-                    Por Precio
+                    <i class="bi bi-cash"></i>
+                    Precio
                 </button>
             </div>
 
             <!-- Panel Auto-Select -->
             <div class="auto-select-panel" id="autoSelectPanel">
-                <h6><i class="bi bi-magic"></i> Selección Semi-Automática</h6>
-                <p class="text-muted small mb-2">El sistema elegirá referencias aleatorias según tus filtros</p>
+                <h6><i class="bi bi-magic"></i> Seleccion Automatica</h6>
+                <p class="text-muted small mb-2">Genera referencias aleatorias</p>
                 <div class="quantity-input">
                     <label>Cantidad:</label>
                     <input type="number" id="autoQuantity" value="10" min="1" max="100">
@@ -666,8 +686,69 @@
                 </div>
             </div>
 
-            <!-- Barra de Búsqueda -->
-            <div class="search-section mb-3">
+            <!-- Tipo de Producto (Estatico) -->
+            <div class="filter-section" id="filterProductType">
+                <h6><i class="bi bi-funnel"></i> Tipo de Producto</h6>
+                <div class="filter-row" id="productTypeChips">
+                    <span class="filter-chip active" data-filter="product_type" data-value="">Todos</span>
+                    {% for code, name in product_types %}
+                    <span class="filter-chip" data-filter="product_type" data-value="{{ code }}">{{ name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Categoria (Dinamico) -->
+            <div class="filter-section" id="filterCategory">
+                <h6><i class="bi bi-folder"></i> Categoria</h6>
+                <div class="filter-row" id="categoryChips">
+                    <span class="text-muted small">Cargando...</span>
+                </div>
+            </div>
+
+            <!-- Material (Dinamico - Se oculta si no aplica) -->
+            <div class="filter-section hidden" id="filterMaterial">
+                <h6><i class="bi bi-layers"></i> Material</h6>
+                <div class="filter-row" id="materialChips">
+                    <span class="text-muted small">Cargando...</span>
+                </div>
+            </div>
+
+            <!-- Tamano (Dinamico - Se oculta si no aplica) -->
+            <div class="filter-section hidden" id="filterSize">
+                <h6><i class="bi bi-rulers"></i> Tamano</h6>
+                <div class="filter-row" id="sizeChips">
+                    <span class="text-muted small">Cargando...</span>
+                </div>
+            </div>
+
+            <!-- Color (Dinamico - Se oculta si no aplica) -->
+            <div class="filter-section hidden" id="filterColor">
+                <h6><i class="bi bi-palette"></i> Color</h6>
+                <div class="filter-row" id="colorChips">
+                    <span class="text-muted small">Cargando...</span>
+                </div>
+            </div>
+
+            <!-- Filtro de Precio (Solo modo precio) -->
+            <div class="filter-section" id="priceFilter" style="display: none;">
+                <h6><i class="bi bi-cash"></i> Rango de Precio</h6>
+                <div class="price-filter-row">
+                    <input type="number" id="minPrice" placeholder="Min $">
+                    <span>-</span>
+                    <input type="number" id="maxPrice" placeholder="Max $">
+                    <button class="btn btn-sm btn-outline-primary" onclick="applyFilters()">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA CENTRAL: REFERENCIAS -->
+        <div class="references-column">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+            </div>
+
+            <!-- Barra de Busqueda -->
+            <div class="search-section">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0">
                         <i class="bi bi-search text-muted"></i>
@@ -675,7 +756,7 @@
                     <input type="text"
                            class="form-control border-start-0 ps-0"
                            id="searchInput"
-                           placeholder="Buscar por referencia o descripción..."
+                           placeholder="Buscar por referencia..."
                            onkeyup="handleSearchKeyup(event)">
                     <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()" id="clearSearchBtn" style="display: none;">
                         <i class="bi bi-x-lg"></i>
@@ -684,82 +765,27 @@
                         Buscar
                     </button>
                 </div>
-                <small class="text-muted mt-1 d-block">Presiona Enter para buscar o usa los filtros</small>
             </div>
 
-            <!-- Filtros -->
-            <div class="filter-section">
-                <h6 class="mb-2" style="font-size: 12px;"><i class="bi bi-funnel"></i> Tipo de Producto</h6>
-                <div class="filter-row">
-                    <span class="filter-chip active" data-filter="product_type" data-value="">Todos</span>
-                    {% for code, name in product_types %}
-                    <span class="filter-chip" data-filter="product_type" data-value="{{ code }}">{{ name }}</span>
-                    {% endfor %}
-                </div>
+            <!-- Grid de Referencias -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0" style="font-size: 12px;">
+                    <i class="bi bi-grid"></i> Referencias
+                    <span id="variantCount" class="badge bg-secondary ms-1">0</span>
+                </h6>
+                <small class="text-muted">Arrastra o doble clic para agregar</small>
             </div>
-
-            <div class="filter-section">
-                <h6 class="mb-2" style="font-size: 12px;"><i class="bi bi-folder"></i> Categoría</h6>
-                <div class="filter-row">
-                    <span class="filter-chip active" data-filter="category_id" data-value="">Todas</span>
-                    {% for cat in categories %}
-                    <span class="filter-chip" data-filter="category_id" data-value="{{ cat.id }}">{{ cat.name }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="filter-section">
-                <h6 class="mb-2" style="font-size: 12px;"><i class="bi bi-layers"></i> Material</h6>
-                <div class="filter-row">
-                    <span class="filter-chip active" data-filter="material_id" data-value="">Todos</span>
-                    {% for mat in materials %}
-                    <span class="filter-chip" data-filter="material_id" data-value="{{ mat.id }}">{{ mat.name }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="filter-section">
-                <h6 class="mb-2" style="font-size: 12px;"><i class="bi bi-rulers"></i> Tamaño</h6>
-                <div class="filter-row">
-                    <span class="filter-chip active" data-filter="size_id" data-value="">Todos</span>
-                    {% for size in sizes %}
-                    <span class="filter-chip" data-filter="size_id" data-value="{{ size.id }}">{{ size.name }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Filtro de Precio (Solo modo precio) -->
-            <div class="filter-section" id="priceFilter" style="display: none;">
-                <h6 class="mb-2" style="font-size: 12px;"><i class="bi bi-cash"></i> Rango de Precio</h6>
-                <div class="price-filter-row">
-                    <input type="number" id="minPrice" placeholder="Mín $">
-                    <span>-</span>
-                    <input type="number" id="maxPrice" placeholder="Máx $">
-                    <button class="btn btn-sm btn-outline-primary" onclick="applyFilters()">Aplicar</button>
-                </div>
-            </div>
-
-            <!-- Grid de Variantes -->
-            <div class="variants-container">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="mb-0" style="font-size: 12px;">
-                        <i class="bi bi-grid"></i> Referencias
-                        <span id="variantCount" class="badge bg-secondary ms-1">0</span>
-                    </h6>
-                    <small class="text-muted">Arrastra o haz doble clic para agregar</small>
-                </div>
-                <div class="variants-grid" id="variantsGrid">
-                    <div class="empty-variants" style="grid-column: 1/-1;">
-                        <i class="bi bi-arrow-up-circle"></i>
-                        <p>Selecciona filtros para ver referencias</p>
-                    </div>
+            <div class="variants-grid" id="variantsGrid">
+                <div class="empty-variants">
+                    <i class="bi bi-arrow-left-circle"></i>
+                    <p>Selecciona filtros para ver referencias</p>
                 </div>
             </div>
         </div>
 
-        <!-- Panel Derecho: Pedido Actual -->
-        <div class="order-panel">
-            <div class="order-header">
+        <!-- COLUMNA DERECHA: CARRITO -->
+        <div class="cart-column">
+            <div class="cart-header">
                 <h4>
                     <i class="bi bi-cart3"></i>
                     <input type="text"
@@ -769,36 +795,36 @@
                            onchange="updateOrderName(this.value)"
                            placeholder="Nombre del pedido">
                 </h4>
-                <small class="text-muted">Arrastra referencias aquí o haz doble clic</small>
+                <small class="text-muted">Arrastra referencias aqui</small>
             </div>
 
-            <div class="order-drop-zone {% if not order_items %}empty{% endif %}"
-                id="orderDropZone"
+            <div class="cart-drop-zone {% if not order_items %}empty{% endif %}"
+                id="cartDropZone"
                 ondragover="handleDragOver(event)"
                 ondragleave="handleDragLeave(event)"
                 ondrop="handleDrop(event)">
 
                 {% if order_items %}
-                <div id="orderItemsContainer">
+                <div id="cartItemsContainer">
                     {% for item in order_items %}
-                    <div class="order-item" data-item-id="{{ item.id }}">
+                    <div class="cart-item" data-item-id="{{ item.id }}">
                         {% if item.variant.product.image %}
                         <img src="{{ item.variant.product.image.url }}" alt="">
                         {% else %}
-                        <img src="https://via.placeholder.com/45x45?text=IMG" alt="">
+                        <img src="https://via.placeholder.com/40x40?text=IMG" alt="">
                         {% endif %}
-                        <div class="order-item-info">
-                            <div class="order-item-name">{{ item.product_name }}</div>
-                            <div class="order-item-details">{{ item.variant_details }}</div>
-                            <div class="order-item-price">${{ item.unit_price|floatformat:0 }}</div>
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">{{ item.product_name }}</div>
+                            <div class="cart-item-details">{{ item.variant_details }}</div>
+                            <div class="cart-item-price">${{ item.unit_price|floatformat:0 }}</div>
                         </div>
-                        <div class="order-item-qty">
+                        <div class="cart-item-qty">
                             <input type="number"
                                    value="{{ item.quantity }}"
                                    min="1"
                                    onchange="updateQuantity({{ item.id }}, this.value)">
                         </div>
-                        <span class="order-item-remove" onclick="removeItem({{ item.id }})">
+                        <span class="cart-item-remove" onclick="removeItem({{ item.id }})">
                             <i class="bi bi-trash"></i>
                         </span>
                     </div>
@@ -807,12 +833,12 @@
                 {% else %}
                 <div class="drop-hint" id="dropHint">
                     <i class="bi bi-box-arrow-in-down"></i>
-                    <p>Arrastra referencias aquí<br>o usa selección automática</p>
+                    <p>Arrastra referencias aqui<br>o usa seleccion automatica</p>
                 </div>
                 {% endif %}
             </div>
 
-            <div class="order-totals">
+            <div class="cart-totals">
                 <div class="total-row">
                     <span>Total referencias:</span>
                     <span id="totalItems">{{ order.total_items }}</span>
@@ -828,7 +854,7 @@
                 <form action="{% url 'internal_order_confirm' order.id %}" method="post" style="flex: 1;">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-success w-100">
-                        <i class="bi bi-check-circle"></i> Confirmar Pedido
+                        <i class="bi bi-check-circle"></i> Confirmar
                     </button>
                 </form>
                 {% else %}
@@ -853,54 +879,157 @@
         category_id: '',
         material_id: '',
         size_id: '',
+        color_id: '',
         min_price: '',
         max_price: '',
         search: ''
     };
 
     let currentMode = 'manual';
-    let searchQuery = '';
+    let draggedElement = null;
 
-    // === MODO DE SELECCIÓN ===
+    // === CARGAR FILTROS DINAMICOS DESDE LA API ===
+    async function loadAvailableFilters() {
+        try {
+            const response = await fetch('/api/internal-orders/get-filters/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify({ product_type: currentFilters.product_type })
+            });
+
+            const data = await response.json();
+            if (data.status === 'ok') {
+                renderDynamicFilters(data.filters);
+            }
+        } catch (error) {
+            console.error('Error cargando filtros:', error);
+        }
+    }
+
+    function renderDynamicFilters(filters) {
+        // Renderizar categorias
+        const categoryChips = document.getElementById('categoryChips');
+        if (filters.categories.length > 0) {
+            document.getElementById('filterCategory').classList.remove('hidden');
+            categoryChips.innerHTML = `
+                <span class="filter-chip active" data-filter="category_id" data-value="">Todas</span>
+                ${filters.categories.map(cat =>
+                    `<span class="filter-chip" data-filter="category_id" data-value="${cat.id}">${escapeHtml(cat.name)}</span>`
+                ).join('')}
+            `;
+        } else {
+            document.getElementById('filterCategory').classList.add('hidden');
+            categoryChips.innerHTML = '<span class="text-muted small">Sin categorias</span>';
+        }
+
+        // Renderizar materiales
+        const materialChips = document.getElementById('materialChips');
+        if (filters.has_materials && filters.materials.length > 0) {
+            document.getElementById('filterMaterial').classList.remove('hidden');
+            materialChips.innerHTML = `
+                <span class="filter-chip active" data-filter="material_id" data-value="">Todos</span>
+                ${filters.materials.map(mat =>
+                    `<span class="filter-chip" data-filter="material_id" data-value="${mat.id}">${escapeHtml(mat.name)}</span>`
+                ).join('')}
+            `;
+        } else {
+            document.getElementById('filterMaterial').classList.add('hidden');
+            currentFilters.material_id = '';
+        }
+
+        // Renderizar tamanos
+        const sizeChips = document.getElementById('sizeChips');
+        if (filters.has_sizes && filters.sizes.length > 0) {
+            document.getElementById('filterSize').classList.remove('hidden');
+            sizeChips.innerHTML = `
+                <span class="filter-chip active" data-filter="size_id" data-value="">Todos</span>
+                ${filters.sizes.map(size =>
+                    `<span class="filter-chip" data-filter="size_id" data-value="${size.id}">${escapeHtml(size.name)}</span>`
+                ).join('')}
+            `;
+        } else {
+            document.getElementById('filterSize').classList.add('hidden');
+            currentFilters.size_id = '';
+        }
+
+        // Renderizar colores
+        const colorChips = document.getElementById('colorChips');
+        if (filters.has_colors && filters.colors.length > 0) {
+            document.getElementById('filterColor').classList.remove('hidden');
+            colorChips.innerHTML = `
+                <span class="filter-chip active" data-filter="color_id" data-value="">Todos</span>
+                ${filters.colors.map(color =>
+                    `<span class="filter-chip" data-filter="color_id" data-value="${color.id}">
+                        <span class="color-dot me-1" style="background: ${color.hex_code}"></span>
+                        ${escapeHtml(color.name)}
+                    </span>`
+                ).join('')}
+            `;
+        } else {
+            document.getElementById('filterColor').classList.add('hidden');
+            currentFilters.color_id = '';
+        }
+
+        // Re-asignar event listeners a los nuevos chips
+        attachChipListeners();
+    }
+
+    function attachChipListeners() {
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.removeEventListener('click', handleChipClick);
+            chip.addEventListener('click', handleChipClick);
+        });
+    }
+
+    function handleChipClick(e) {
+        const chip = e.currentTarget;
+        const filterType = chip.dataset.filter;
+        const value = chip.dataset.value;
+
+        // Toggle active dentro del mismo grupo
+        chip.closest('.filter-row').querySelectorAll('.filter-chip').forEach(c => {
+            c.classList.remove('active');
+        });
+        chip.classList.add('active');
+
+        currentFilters[filterType] = value;
+
+        // Si cambia el tipo de producto, recargar filtros disponibles
+        if (filterType === 'product_type') {
+            // Resetear filtros secundarios
+            currentFilters.category_id = '';
+            currentFilters.material_id = '';
+            currentFilters.size_id = '';
+            currentFilters.color_id = '';
+            loadAvailableFilters();
+        }
+
+        applyFilters();
+    }
+
+    // === MODO DE SELECCION ===
     function setMode(mode) {
         currentMode = mode;
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
 
-        // Mostrar/ocultar panels según modo
         document.getElementById('autoSelectPanel').classList.toggle('show', mode === 'auto');
         document.getElementById('priceFilter').style.display = mode === 'price' ? 'block' : 'none';
 
         applyFilters();
     }
 
-    // === FILTROS ===
-    document.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.addEventListener('click', function() {
-            const filterType = this.dataset.filter;
-            const value = this.dataset.value;
-
-            // Toggle active dentro del mismo grupo
-            this.closest('.filter-row').querySelectorAll('.filter-chip').forEach(c => {
-                c.classList.remove('active');
-            });
-            this.classList.add('active');
-
-            currentFilters[filterType] = value;
-            applyFilters();
-        });
-    });
-
-    // === BÚSQUEDA ===
+    // === BUSQUEDA ===
     function handleSearchKeyup(event) {
         const searchInput = document.getElementById('searchInput');
         const clearBtn = document.getElementById('clearSearchBtn');
 
-        // Mostrar/ocultar botón de limpiar
         clearBtn.style.display = searchInput.value.length > 0 ? 'block' : 'none';
 
-        // Buscar al presionar Enter
         if (event.key === 'Enter') {
             applyFilters();
         }
@@ -921,7 +1050,6 @@
 
         const filters = { ...currentFilters };
 
-        // Agregar búsqueda
         const searchInput = document.getElementById('searchInput');
         filters.search = searchInput ? searchInput.value.trim() : '';
         currentFilters.search = filters.search;
@@ -961,7 +1089,7 @@
                 emptyMsg = `No se encontraron referencias para<br><strong>"${escapeHtml(searchTerm)}"</strong>`;
             }
             grid.innerHTML = `
-                <div class="empty-variants" style="grid-column: 1/-1;">
+                <div class="empty-variants">
                     <i class="bi bi-search"></i>
                     <p>${emptyMsg}</p>
                 </div>
@@ -970,7 +1098,6 @@
         }
 
         grid.innerHTML = items.map(item => {
-            // Resaltar texto de búsqueda si existe
             let displayName = escapeHtml(item.product_name);
             if (searchTerm) {
                 displayName = highlightText(item.product_name, searchTerm);
@@ -986,7 +1113,7 @@
                 <button class="add-btn" onclick="event.stopPropagation(); addItemDirect(${item.id})">
                     <i class="bi bi-plus"></i>
                 </button>
-                <img src="${item.product_image || 'https://via.placeholder.com/100x70?text=IMG'}" alt="" onerror="this.src='https://via.placeholder.com/100x70?text=IMG'">
+                <img src="${item.product_image || 'https://via.placeholder.com/100x80?text=IMG'}" alt="" onerror="this.src='https://via.placeholder.com/100x80?text=IMG'">
                 <div class="name" title="${escapeHtml(item.product_name)}">${displayName}</div>
                 <div class="details">
                     ${item.color ? `<span class="color-dot" style="background: ${item.color_hex}"></span>` : ''}
@@ -995,53 +1122,67 @@
                 <div class="price">$${item.price.toLocaleString('es-CO')}</div>
             </div>
         `}).join('');
+
+        // Re-inicializar drag & drop para los nuevos elementos
+        initDragAndDrop();
     }
 
-    // Función para escapar HTML
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
-    // Función para resaltar texto de búsqueda
     function highlightText(text, search) {
         if (!search) return escapeHtml(text);
         const regex = new RegExp(`(${escapeRegex(search)})`, 'gi');
         return escapeHtml(text).replace(regex, '<mark class="search-highlight">$1</mark>');
     }
 
-    // Escapar caracteres especiales de regex
     function escapeRegex(string) {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
-    // === DRAG & DROP ===
+    // === DRAG & DROP MEJORADO ===
+    function initDragAndDrop() {
+        const variantCards = document.querySelectorAll('.variant-card');
+        variantCards.forEach(card => {
+            card.setAttribute('draggable', 'true');
+        });
+    }
+
     function handleDragStart(e) {
-        e.target.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', e.target.dataset.variantId);
-        e.dataTransfer.effectAllowed = 'copy';
+        draggedElement = e.target.closest('.variant-card');
+        if (draggedElement) {
+            draggedElement.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', draggedElement.dataset.variantId);
+            e.dataTransfer.effectAllowed = 'copy';
+        }
     }
 
     function handleDragEnd(e) {
-        e.target.classList.remove('dragging');
+        if (draggedElement) {
+            draggedElement.classList.remove('dragging');
+            draggedElement = null;
+        }
+        document.getElementById('cartDropZone').classList.remove('drag-over');
     }
 
     function handleDragOver(e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copy';
-        document.getElementById('orderDropZone').classList.add('drag-over');
+        document.getElementById('cartDropZone').classList.add('drag-over');
     }
 
     function handleDragLeave(e) {
         if (!e.currentTarget.contains(e.relatedTarget)) {
-            document.getElementById('orderDropZone').classList.remove('drag-over');
+            document.getElementById('cartDropZone').classList.remove('drag-over');
         }
     }
 
     async function handleDrop(e) {
         e.preventDefault();
-        document.getElementById('orderDropZone').classList.remove('drag-over');
+        document.getElementById('cartDropZone').classList.remove('drag-over');
 
         const variantId = e.dataTransfer.getData('text/plain');
         if (variantId) {
@@ -1072,7 +1213,6 @@
                 if (data.is_new) {
                     addItemToUI(data.item);
                 } else {
-                    // Actualizar cantidad existente
                     const itemEl = document.querySelector(`[data-item-id="${data.item.id}"]`);
                     if (itemEl) {
                         itemEl.querySelector('input').value = data.item.quantity;
@@ -1089,36 +1229,33 @@
     }
 
     function addItemToUI(item) {
-        const dropZone = document.getElementById('orderDropZone');
+        const dropZone = document.getElementById('cartDropZone');
         const hint = document.getElementById('dropHint');
 
-        // Remover hint si existe
         if (hint) {
             hint.remove();
         }
         dropZone.classList.remove('empty');
 
-        // Crear o obtener el contenedor
-        let container = document.getElementById('orderItemsContainer');
+        let container = document.getElementById('cartItemsContainer');
         if (!container) {
             container = document.createElement('div');
-            container.id = 'orderItemsContainer';
+            container.id = 'cartItemsContainer';
             dropZone.appendChild(container);
         }
 
-        // Agregar item
         const itemHTML = `
-            <div class="order-item" data-item-id="${item.id}">
-                <img src="${item.image_url || 'https://via.placeholder.com/45x45?text=IMG'}" alt="" onerror="this.src='https://via.placeholder.com/45x45?text=IMG'">
-                <div class="order-item-info">
-                    <div class="order-item-name">${item.product_name}</div>
-                    <div class="order-item-details">${item.variant_details}</div>
-                    <div class="order-item-price">$${item.unit_price.toLocaleString('es-CO')}</div>
+            <div class="cart-item" data-item-id="${item.id}">
+                <img src="${item.image_url || 'https://via.placeholder.com/40x40?text=IMG'}" alt="" onerror="this.src='https://via.placeholder.com/40x40?text=IMG'">
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${escapeHtml(item.product_name)}</div>
+                    <div class="cart-item-details">${escapeHtml(item.variant_details)}</div>
+                    <div class="cart-item-price">$${item.unit_price.toLocaleString('es-CO')}</div>
                 </div>
-                <div class="order-item-qty">
+                <div class="cart-item-qty">
                     <input type="number" value="${item.quantity}" min="1" onchange="updateQuantity(${item.id}, this.value)">
                 </div>
-                <span class="order-item-remove" onclick="removeItem(${item.id})">
+                <span class="cart-item-remove" onclick="removeItem(${item.id})">
                     <i class="bi bi-trash"></i>
                 </span>
             </div>
@@ -1127,7 +1264,7 @@
     }
 
     async function removeItem(itemId) {
-        if (!confirm('¿Eliminar este item?')) return;
+        if (!confirm('Eliminar este item?')) return;
 
         try {
             const response = await fetch('/api/internal-orders/remove-item/', {
@@ -1147,8 +1284,7 @@
                 }
                 updateTotals(data.order_totals.total_items, data.order_totals.total_estimated);
 
-                // Mostrar hint si está vacío
-                const container = document.getElementById('orderItemsContainer');
+                const container = document.getElementById('cartItemsContainer');
                 if (!container || !container.children.length) {
                     showEmptyHint();
                 }
@@ -1159,22 +1295,22 @@
     }
 
     function showEmptyHint() {
-        const dropZone = document.getElementById('orderDropZone');
-        const container = document.getElementById('orderItemsContainer');
+        const dropZone = document.getElementById('cartDropZone');
+        const container = document.getElementById('cartItemsContainer');
         if (container) container.remove();
 
         dropZone.classList.add('empty');
         dropZone.innerHTML = `
             <div class="drop-hint" id="dropHint">
                 <i class="bi bi-box-arrow-in-down"></i>
-                <p>Arrastra referencias aquí<br>o usa selección automática</p>
+                <p>Arrastra referencias aqui<br>o usa seleccion automatica</p>
             </div>
         `;
     }
 
-    // === SELECCIÓN AUTOMÁTICA ===
+    // === SELECCION AUTOMATICA CON REPETICION ===
     async function autoSelect() {
-        const quantity = document.getElementById('autoQuantity').value;
+        const quantity = parseInt(document.getElementById('autoQuantity').value);
         showLoading(true);
 
         try {
@@ -1186,14 +1322,14 @@
                 },
                 body: JSON.stringify({
                     order_id: ORDER_ID,
-                    quantity: parseInt(quantity),
+                    quantity: quantity,
+                    allow_repeat: true, // Permitir repeticion si no hay suficientes
                     ...currentFilters
                 })
             });
 
             const data = await response.json();
             if (data.status === 'ok') {
-                // Agregar items a la UI
                 data.added_items.forEach(item => {
                     addItemToUI(item);
                 });
@@ -1252,7 +1388,7 @@
 
     // === VACIAR PEDIDO ===
     async function clearOrder() {
-        if (!confirm('¿Estás seguro de vaciar todo el pedido?')) return;
+        if (!confirm('Estas seguro de vaciar todo el pedido?')) return;
 
         try {
             const response = await fetch('/api/internal-orders/clear/', {
@@ -1277,14 +1413,26 @@
     // === HELPERS ===
     function updateTotals(items, estimated) {
         document.getElementById('totalItems').textContent = items;
-        document.getElementById('totalEstimated').textContent = '$' + estimated.toLocaleString('es-CO');
+        document.getElementById('totalEstimated').textContent = '$' + Math.round(estimated).toLocaleString('es-CO');
     }
 
     function showLoading(show) {
         document.getElementById('loadingOverlay').classList.toggle('show', show);
     }
 
-    // Cargar variantes al iniciar
-    document.addEventListener('DOMContentLoaded', applyFilters);
+    // Inicializar al cargar
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Asignar listeners a los chips de tipo de producto (estaticos)
+        attachChipListeners();
+
+        // Cargar filtros dinamicos basados en los datos reales
+        await loadAvailableFilters();
+
+        // Cargar variantes
+        applyFilters();
+
+        // Inicializar drag & drop
+        initDragAndDrop();
+    });
 </script>
 {% endblock %}

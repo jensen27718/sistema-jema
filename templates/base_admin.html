@@ -91,6 +91,58 @@
             transform: translateX(-280px);
         }
 
+        /* Boton para ocultar/mostrar sidebar en desktop */
+        .sidebar-collapse-btn {
+            position: fixed;
+            left: 264px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--jema-purple);
+            color: white;
+            border: 3px solid var(--muted);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            transition: left 0.3s ease, background 0.3s ease;
+            box-shadow: var(--shadow-md);
+        }
+
+        .sidebar-collapse-btn:hover {
+            background: var(--jema-teal);
+        }
+
+        .sidebar-collapse-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        /* Cuando sidebar esta colapsado, mover el boton a la izquierda */
+        .sidebar-collapse-btn.collapsed {
+            left: 0px;
+        }
+
+        .sidebar-collapse-btn.collapsed i {
+            transform: rotate(180deg);
+        }
+
+        @media (min-width: 992px) {
+            .sidebar-collapse-btn {
+                display: flex;
+            }
+
+            .admin-sidebar.desktop-collapsed {
+                transform: translateX(-280px);
+            }
+
+            .admin-content.desktop-expanded {
+                margin-left: 0;
+            }
+        }
+
         .sidebar-header {
             padding: 24px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -362,6 +414,11 @@
 </head>
 
 <body>
+    <!-- Boton para colapsar sidebar en desktop (fuera del sidebar para que sea visible siempre) -->
+    <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Ocultar/Mostrar menu">
+        <i class="bi bi-chevron-left"></i>
+    </button>
+
     <!-- Sidebar -->
     <aside class="admin-sidebar" id="adminSidebar">
         <!-- Logo -->
@@ -584,6 +641,30 @@
                 document.body.style.overflow = '';
             }
         });
+
+        // Sidebar collapse for desktop
+        const collapseBtn = document.getElementById('sidebarCollapseBtn');
+        const adminContent = document.getElementById('adminContent');
+
+        function toggleSidebarDesktop() {
+            sidebar.classList.toggle('desktop-collapsed');
+            adminContent.classList.toggle('desktop-expanded');
+            collapseBtn.classList.toggle('collapsed');
+
+            // Guardar preferencia en localStorage
+            const isCollapsed = sidebar.classList.contains('desktop-collapsed');
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+        }
+
+        collapseBtn?.addEventListener('click', toggleSidebarDesktop);
+
+        // Restaurar estado del sidebar al cargar
+        const savedState = localStorage.getItem('sidebarCollapsed');
+        if (savedState === 'true' && window.innerWidth >= 992) {
+            sidebar.classList.add('desktop-collapsed');
+            adminContent.classList.add('desktop-expanded');
+            collapseBtn.classList.add('collapsed');
+        }
     </script>
 
     {% block extra_js %}{% endblock %}

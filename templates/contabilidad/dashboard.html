@@ -509,30 +509,32 @@
 <div class="row g-4 mb-5">
     {% for account in accounts %}
     <div class="col-md-6 col-xl-4">
-        <div class="account-card">
-            <div class="account-header">
-                <h5 class="account-name">{{ account.name }}</h5>
-                <div class="account-icon">
-                    <i class="bi bi-wallet2"></i>
+        <a href="{% url 'accounting_account_detail' account.id %}" class="text-decoration-none">
+            <div class="account-card">
+                <div class="account-header">
+                    <h5 class="account-name">{{ account.name }}</h5>
+                    <div class="account-icon">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
                 </div>
-            </div>
 
-            <div class="account-balance">${{ account.current_balance|intcomma }}</div>
+                <div class="account-balance">${{ account.current_balance|intcomma }}</div>
 
-            {% if account.limit_amount > 0 %}
-            {% widthratio account.monthly_income account.limit_amount 100 as pct %}
-            <div class="progress-info">
-                <span>Ingresos: ${{ account.monthly_income|intcomma }}</span>
-                <span>Meta: ${{ account.limit_amount|intcomma }} ({{ pct }}%)</span>
+                {% if account.limit_amount > 0 %}
+                {% widthratio account.monthly_income account.limit_amount 100 as pct %}
+                <div class="progress-info">
+                    <span>Ingresos: ${{ account.monthly_income|intcomma }}</span>
+                    <span>Meta: ${{ account.limit_amount|intcomma }} ({{ pct }}%)</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                    <div class="progress-fill {% if pct|add:0 > 90 %}high{% elif pct|add:0 > 50 %}mid{% else %}low{% endif %}"
+                        style="width: {{ pct }}%"></div>
+                </div>
+                {% else %}
+                <div class="no-goal">Click para ver movimientos</div>
+                {% endif %}
             </div>
-            <div class="progress-bar-wrapper">
-                <div class="progress-fill {% if pct|add:0 > 90 %}high{% elif pct|add:0 > 50 %}mid{% else %}low{% endif %}"
-                    style="width: {{ pct }}%"></div>
-            </div>
-            {% else %}
-            <div class="no-goal">Sin meta mensual establecida</div>
-            {% endif %}
-        </div>
+        </a>
     </div>
     {% endfor %}
 
@@ -554,7 +556,9 @@
         <div class="transactions-card">
             <div class="card-header-jema">
                 <h5>Movimientos Recientes</h5>
-                <span class="badge-count">Últimos 10</span>
+                <a href="{% url 'accounting_transaction_list' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-list-ul"></i> Ver Todos
+                </a>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
@@ -619,12 +623,20 @@
                 <i class="bi bi-plus-circle-fill"></i> REGISTRAR MOVIMIENTO
             </a>
 
+            <a href="{% url 'accounting_transaction_list' %}" class="btn-secondary-action">
+                <i class="bi bi-list-ul"></i> Ver Todos los Movimientos
+            </a>
+
             <a href="{% url 'accounting_category_list' %}" class="btn-secondary-action">
-                <i class="bi bi-tags-fill"></i> Gestionar Categorías
+                <i class="bi bi-tags-fill"></i> Gestionar Categorias
             </a>
 
             <a href="{% url 'accounting_provider_list' %}" class="btn-secondary-action">
                 <i class="bi bi-truck"></i> Gestionar Proveedores
+            </a>
+
+            <a href="{% url 'accounting_debt_list' %}" class="btn-secondary-action">
+                <i class="bi bi-credit-card"></i> Gestionar Deudas
             </a>
 
             <div class="summary-card">
