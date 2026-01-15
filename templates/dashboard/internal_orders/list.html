@@ -1,0 +1,315 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Pedidos Internos - JEMA{% endblock %}
+{% block page_title %}Pedidos Internos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .stat-info h3 {
+        font-size: 24px;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .stat-info span {
+        font-size: 13px;
+        color: var(--muted-foreground);
+    }
+
+    .filters-bar {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .order-row {
+        transition: all 0.2s;
+    }
+
+    .order-row:hover {
+        background: var(--muted);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--muted-foreground);
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: var(--border);
+        margin-bottom: 16px;
+    }
+
+    .table th {
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+        border-bottom: 2px solid var(--border);
+    }
+
+    .table td {
+        vertical-align: middle;
+        padding: 16px 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-box-seam text-jema-purple"></i> Pedidos Internos</h4>
+            <p class="text-muted mb-0">Gestiona los pedidos de producción interna</p>
+        </div>
+        <a href="{% url 'internal_order_create' %}" class="btn btn-jema-primary">
+            <i class="bi bi-plus-lg"></i> Nuevo Pedido
+        </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(107, 45, 123, 0.1); color: var(--jema-purple);">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ orders.paginator.count }}</h3>
+                <span>Total Pedidos</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(108, 117, 125, 0.1); color: #6c757d;">
+                <i class="bi bi-pencil"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="draftCount">-</h3>
+                <span>Borradores</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(13, 110, 253, 0.1); color: #0d6efd;">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="confirmedCount">-</h3>
+                <span>Confirmados</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(25, 135, 84, 0.1); color: #198754;">
+                <i class="bi bi-trophy"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="completedCount">-</h3>
+                <span>Completados</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+        <div class="flex-grow-1">
+            <form method="get" class="d-flex gap-2">
+                <div class="input-group" style="max-width: 300px;">
+                    <span class="input-group-text bg-light border-0">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control bg-light border-0"
+                           placeholder="Buscar pedidos..."
+                           value="{{ search_query }}">
+                </div>
+                <select name="status" class="form-select bg-light border-0" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">Todos los estados</option>
+                    {% for code, name in status_choices %}
+                    <option value="{{ code }}" {% if current_status == code %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th>Nombre</th>
+                            <th style="width: 120px;">Estado</th>
+                            <th style="width: 100px;">Items</th>
+                            <th style="width: 130px;">Estimado</th>
+                            <th style="width: 150px;">Creado</th>
+                            <th style="width: 120px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr class="order-row">
+                            <td><strong>{{ order.id }}</strong></td>
+                            <td>
+                                <a href="{% url 'internal_order_edit' order.id %}" class="text-decoration-none fw-semibold">
+                                    {{ order.name }}
+                                </a>
+                                {% if order.description %}
+                                <br><small class="text-muted">{{ order.description|truncatewords:10 }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status-badge bg-{{ order.get_status_color }}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="fw-bold">{{ order.total_items }}</span>
+                                <small class="text-muted">refs</small>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-jema-teal">${{ order.total_estimated|floatformat:0 }}</span>
+                            </td>
+                            <td>
+                                <small>{{ order.created_at|date:"d/m/Y" }}</small>
+                                <br>
+                                <small class="text-muted">{{ order.created_at|time:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a href="{% url 'internal_order_edit' order.id %}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'internal_order_detail' order.id %}"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Ver detalle">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'internal_order_delete' order.id %}"
+                                       class="btn btn-sm btn-outline-danger"
+                                       title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if orders.has_other_pages %}
+            <div class="d-flex justify-content-center py-3">
+                <nav>
+                    <ul class="pagination mb-0">
+                        {% if orders.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ orders.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in orders.paginator.page_range %}
+                            {% if orders.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > orders.number|add:'-3' and num < orders.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if orders.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ orders.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-box-seam"></i>
+                <h5>No hay pedidos internos</h5>
+                <p class="mb-3">Crea tu primer pedido para empezar a gestionar la producción</p>
+                <a href="{% url 'internal_order_create' %}" class="btn btn-jema-primary">
+                    <i class="bi bi-plus-lg"></i> Crear Pedido
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Contar pedidos por estado (simplificado, cuenta solo los visibles)
+    document.addEventListener('DOMContentLoaded', function() {
+        const badges = document.querySelectorAll('.status-badge');
+        let draft = 0, confirmed = 0, completed = 0;
+
+        badges.forEach(badge => {
+            const text = badge.textContent.trim();
+            if (text === 'Borrador') draft++;
+            else if (text === 'Confirmado') confirmed++;
+            else if (text === 'Completado') completed++;
+        });
+
+        // Estos son solo para la página actual, idealmente se harían con una API
+        document.getElementById('draftCount').textContent = draft || '-';
+        document.getElementById('confirmedCount').textContent = confirmed || '-';
+        document.getElementById('completedCount').textContent = completed || '-';
+    });
+</script>
+{% endblock %}

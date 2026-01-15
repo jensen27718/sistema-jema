@@ -1,0 +1,306 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Pedido #{{ order.id }} - JEMA{% endblock %}
+{% block page_title %}Detalle de Pedido{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-header {
+        background: linear-gradient(135deg, var(--jema-purple) 0%, var(--jema-teal) 100%);
+        border-radius: 16px;
+        padding: 24px;
+        color: white;
+        margin-bottom: 24px;
+    }
+
+    .detail-header h3 {
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .detail-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .detail-stat {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .detail-stat h4 {
+        font-size: 28px;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .detail-stat span {
+        font-size: 13px;
+        opacity: 0.9;
+    }
+
+    .items-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .item-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        gap: 12px;
+    }
+
+    .item-card img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+
+    .item-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .item-info h6 {
+        font-size: 13px;
+        margin: 0 0 4px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .item-info small {
+        color: var(--muted-foreground);
+        font-size: 11px;
+    }
+
+    .item-info .price {
+        font-weight: 700;
+        color: var(--jema-teal);
+        font-size: 14px;
+    }
+
+    .item-qty {
+        background: var(--muted);
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-weight: 700;
+        font-size: 14px;
+        display: inline-block;
+        margin-top: 8px;
+    }
+
+    .status-timeline {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+
+    .status-timeline form {
+        display: inline;
+    }
+
+    .status-btn {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 2px solid var(--border);
+        background: white;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .status-btn:hover {
+        border-color: var(--jema-purple);
+    }
+
+    .status-btn.active {
+        background: var(--jema-purple);
+        color: white;
+        border-color: var(--jema-purple);
+    }
+
+    .print-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 24px;
+    }
+
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .detail-header {
+            background: #6B2D7B !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .item-card {
+            break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Back button -->
+    <div class="mb-3 no-print">
+        <a href="{% url 'internal_orders_list' %}" class="text-muted text-decoration-none">
+            <i class="bi bi-arrow-left"></i> Volver a pedidos
+        </a>
+    </div>
+
+    <!-- Header -->
+    <div class="detail-header">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h3><i class="bi bi-box-seam me-2"></i>{{ order.name }}</h3>
+                {% if order.description %}
+                <p class="mb-0 mt-2 opacity-75">{{ order.description }}</p>
+                {% endif %}
+            </div>
+            <div class="no-print">
+                <span class="badge bg-light text-dark fs-6">
+                    {{ order.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <div class="detail-stats">
+            <div class="detail-stat">
+                <h4>{{ order.total_items }}</h4>
+                <span>Referencias</span>
+            </div>
+            <div class="detail-stat">
+                <h4>${{ order.total_estimated|floatformat:0 }}</h4>
+                <span>Total Estimado</span>
+            </div>
+            <div class="detail-stat">
+                <h4>{{ order.created_at|date:"d/m/Y" }}</h4>
+                <span>Fecha Creación</span>
+            </div>
+            <div class="detail-stat">
+                <h4>{{ order_items.count }}</h4>
+                <span>Líneas</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Change -->
+    <div class="card mb-4 no-print">
+        <div class="card-body">
+            <h6 class="mb-3"><i class="bi bi-arrow-repeat"></i> Cambiar Estado</h6>
+            <div class="status-timeline">
+                {% for code, name in order.STATUS_CHOICES %}
+                <form method="post" action="{% url 'internal_order_update_status' order.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="{{ code }}">
+                    <button type="submit" class="status-btn {% if order.status == code %}active{% endif %}">
+                        {% if code == 'draft' %}<i class="bi bi-pencil"></i>
+                        {% elif code == 'confirmed' %}<i class="bi bi-check-circle"></i>
+                        {% elif code == 'in_production' %}<i class="bi bi-gear"></i>
+                        {% elif code == 'completed' %}<i class="bi bi-trophy"></i>
+                        {% elif code == 'cancelled' %}<i class="bi bi-x-circle"></i>
+                        {% endif %}
+                        {{ name }}
+                    </button>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex gap-2 mb-4 no-print">
+        <a href="{% url 'internal_order_edit' order.id %}" class="btn btn-jema-primary">
+            <i class="bi bi-pencil"></i> Editar Pedido
+        </a>
+        <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimir
+        </button>
+    </div>
+
+    <!-- Items -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-list-ul"></i> Items del Pedido</h5>
+        </div>
+        <div class="card-body">
+            {% if order_items %}
+            <div class="items-grid">
+                {% for item in order_items %}
+                <div class="item-card">
+                    {% if item.variant.product.image %}
+                    <img src="{{ item.variant.product.image.url }}" alt="">
+                    {% else %}
+                    <img src="https://via.placeholder.com/60x60?text=IMG" alt="">
+                    {% endif %}
+                    <div class="item-info">
+                        <h6 title="{{ item.product_name }}">{{ item.product_name }}</h6>
+                        <small>{{ item.variant_details }}</small>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="price">${{ item.unit_price|floatformat:0 }}</span>
+                            <span class="item-qty">x{{ item.quantity }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox" style="font-size: 48px;"></i>
+                <p class="mt-2">Este pedido no tiene items</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Print Summary -->
+    <div class="print-section" style="display: none;">
+        <h5>Resumen de Pedido</h5>
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Variante</th>
+                    <th>Cant.</th>
+                    <th>Precio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order_items %}
+                <tr>
+                    <td>{{ item.product_name }}</td>
+                    <td>{{ item.variant_details }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ item.unit_price|floatformat:0 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="2">Total</th>
+                    <th>{{ order.total_items }}</th>
+                    <th>${{ order.total_estimated|floatformat:0 }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -294,3 +294,7 @@ class BulkUploadItem(models.Model):
         verbose_name = "Item de Carga Masiva"
         verbose_name_plural = "Items de Carga Masiva"
         ordering = ['-created_at']
+
+
+# --- MODELOS DE PEDIDOS INTERNOS ---
+from products.models_internal_orders import InternalOrder, InternalOrderItem, InternalOrderGroup

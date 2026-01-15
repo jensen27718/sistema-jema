@@ -391,9 +391,15 @@
                 </a>
                 <!-- CORREGIDO: panel_pedidos -->
                 <a href="{% url 'panel_pedidos' %}"
-                    class="sidebar-link {% if 'pedidos' in request.path %}active{% endif %}">
+                    class="sidebar-link {% if '/ordenes/' in request.path %}active{% endif %}">
                     <i class="bi bi-bag-check"></i>
-                    <span>Pedidos</span>
+                    <span>Pedidos Clientes</span>
+                </a>
+                <!-- PEDIDOS INTERNOS (NUEVO) -->
+                <a href="{% url 'internal_orders_list' %}"
+                    class="sidebar-link {% if 'pedidos-internos' in request.path %}active{% endif %}">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Pedidos Internos</span>
                 </a>
                 <!-- ENLACES DE CATÁLOGO -->
                 <div class="sidebar-section-title mt-3">Catálogo</div>

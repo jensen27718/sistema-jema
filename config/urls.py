@@ -6,7 +6,8 @@ from django.conf.urls.static import static
 
 from users import views
 from products import views as views_products
-from products import catalog_views as views_catalogs # Nueva importación
+from products import catalog_views as views_catalogs
+from products import internal_order_views as views_internal_orders  # Pedidos internos
 
 urlpatterns = [
     path('admin-django/', admin.site.urls),
@@ -79,6 +80,23 @@ urlpatterns = [
     path('panel/catalogos/', views_catalogs.catalog_selection_view, name='catalog_selection'),
     path('panel/catalogos/generar/', views_catalogs.generate_catalog_pdf_view, name='generate_catalog_pdf'),
 
+    # === RUTAS DE PEDIDOS INTERNOS (DRAG & DROP) ===
+    path('panel/pedidos-internos/', views_internal_orders.internal_orders_list_view, name='internal_orders_list'),
+    path('panel/pedidos-internos/crear/', views_internal_orders.internal_order_create_view, name='internal_order_create'),
+    path('panel/pedidos-internos/<int:order_id>/', views_internal_orders.internal_order_detail_view, name='internal_order_detail'),
+    path('panel/pedidos-internos/<int:order_id>/editar/', views_internal_orders.internal_order_edit_view, name='internal_order_edit'),
+    path('panel/pedidos-internos/<int:order_id>/eliminar/', views_internal_orders.internal_order_delete_view, name='internal_order_delete'),
+    path('panel/pedidos-internos/<int:order_id>/confirmar/', views_internal_orders.internal_order_confirm_view, name='internal_order_confirm'),
+    path('panel/pedidos-internos/<int:order_id>/estado/', views_internal_orders.internal_order_update_status_view, name='internal_order_update_status'),
+
+    # === APIs AJAX PARA PEDIDOS INTERNOS ===
+    path('api/internal-orders/filter-variants/', views_internal_orders.api_filter_variants, name='api_filter_variants'),
+    path('api/internal-orders/add-item/', views_internal_orders.api_internal_order_add_item, name='api_add_item'),
+    path('api/internal-orders/remove-item/', views_internal_orders.api_internal_order_remove_item, name='api_remove_item'),
+    path('api/internal-orders/update-quantity/', views_internal_orders.api_internal_order_update_qty, name='api_update_qty'),
+    path('api/internal-orders/auto-select/', views_internal_orders.api_internal_order_auto_select, name='api_auto_select'),
+    path('api/internal-orders/clear/', views_internal_orders.api_internal_order_clear, name='api_clear_order'),
+    path('api/internal-orders/update-info/', views_internal_orders.api_internal_order_update_info, name='api_update_order_info'),
 
     # ...
     path('checkout/', views_products.checkout_process_view, name='checkout_process'),

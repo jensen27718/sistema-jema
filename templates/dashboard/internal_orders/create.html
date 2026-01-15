@@ -1,0 +1,166 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Nuevo Pedido Interno - JEMA{% endblock %}
+{% block page_title %}Nuevo Pedido{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-card {
+        max-width: 600px;
+        margin: 0 auto;
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .create-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .create-header i {
+        font-size: 48px;
+        color: var(--jema-purple);
+        margin-bottom: 16px;
+    }
+
+    .form-floating label {
+        color: var(--muted-foreground);
+    }
+
+    .form-floating .form-control:focus {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 0.25rem rgba(107, 45, 123, 0.15);
+    }
+
+    .quick-templates {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .template-btn {
+        padding: 16px;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+    }
+
+    .template-btn:hover {
+        border-color: var(--jema-purple);
+        background: var(--muted);
+    }
+
+    .template-btn i {
+        font-size: 24px;
+        color: var(--jema-purple);
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .template-btn span {
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .template-btn small {
+        color: var(--muted-foreground);
+        font-size: 12px;
+        display: block;
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="mb-4">
+        <a href="{% url 'internal_orders_list' %}" class="text-muted text-decoration-none">
+            <i class="bi bi-arrow-left"></i> Volver a pedidos
+        </a>
+    </div>
+
+    <div class="create-card">
+        <div class="create-header">
+            <i class="bi bi-box-seam"></i>
+            <h4 class="mb-2">Crear Nuevo Pedido</h4>
+            <p class="text-muted mb-0">Define un nombre para tu pedido y comienza a agregar referencias</p>
+        </div>
+
+        <!-- Quick Templates -->
+        <h6 class="mb-3"><i class="bi bi-lightning"></i> Inicio Rápido</h6>
+        <div class="quick-templates">
+            <button type="button" class="template-btn" onclick="setTemplate('Pedido Vinilos', 'Pedido de vinilos de corte')">
+                <i class="bi bi-scissors"></i>
+                <span>Vinilos de Corte</span>
+                <small>Stickers de vinilo tradicional</small>
+            </button>
+            <button type="button" class="template-btn" onclick="setTemplate('Pedido Impresos', 'Pedido de stickers impresos')">
+                <i class="bi bi-printer"></i>
+                <span>Impresos</span>
+                <small>Stickers impresos a color</small>
+            </button>
+            <button type="button" class="template-btn" onclick="setTemplate('Pedido Mixto', 'Combinación de varios tipos')">
+                <i class="bi bi-collection"></i>
+                <span>Mixto</span>
+                <small>Varios tipos de productos</small>
+            </button>
+            <button type="button" class="template-btn" onclick="setTemplate('Pedido Especial', 'Pedido con requerimientos especiales')">
+                <i class="bi bi-star"></i>
+                <span>Especial</span>
+                <small>Pedido personalizado</small>
+            </button>
+        </div>
+
+        <hr class="my-4">
+
+        <form method="post" action="{% url 'internal_order_create' %}">
+            {% csrf_token %}
+
+            <div class="form-floating mb-3">
+                <input type="text"
+                       class="form-control"
+                       id="orderName"
+                       name="name"
+                       placeholder="Nombre del pedido"
+                       required
+                       autofocus>
+                <label for="orderName">Nombre del pedido *</label>
+            </div>
+
+            <div class="form-floating mb-4">
+                <textarea class="form-control"
+                          id="orderDescription"
+                          name="description"
+                          placeholder="Descripción"
+                          style="height: 100px;"></textarea>
+                <label for="orderDescription">Descripción (opcional)</label>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-jema-primary btn-lg">
+                    <i class="bi bi-plus-circle"></i> Crear y Continuar al Editor
+                </button>
+                <a href="{% url 'internal_orders_list' %}" class="btn btn-outline-secondary">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function setTemplate(name, description) {
+        document.getElementById('orderName').value = name;
+        document.getElementById('orderDescription').value = description;
+        document.getElementById('orderName').focus();
+    }
+</script>
+{% endblock %}

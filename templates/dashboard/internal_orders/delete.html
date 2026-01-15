@@ -1,0 +1,49 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Eliminar Pedido - JEMA{% endblock %}
+{% block page_title %}Eliminar Pedido{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                    </div>
+
+                    <h4 class="mb-3">¿Eliminar este pedido?</h4>
+
+                    <div class="bg-light rounded-3 p-3 mb-4">
+                        <h5 class="mb-1">{{ order.name }}</h5>
+                        <span class="badge bg-{{ order.get_status_color }}">{{ order.get_status_display }}</span>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                {{ order.total_items }} items &bull;
+                                ${{ order.total_estimated|floatformat:0 }} estimado
+                            </small>
+                        </div>
+                    </div>
+
+                    <p class="text-muted mb-4">
+                        Esta acción no se puede deshacer. Se eliminarán todos los items asociados a este pedido.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-trash"></i> Sí, Eliminar Pedido
+                            </button>
+                            <a href="{% url 'internal_orders_list' %}" class="btn btn-outline-secondary">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
