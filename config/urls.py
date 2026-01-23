@@ -85,6 +85,7 @@ urlpatterns = [
     path('panel/pedidos-internos/crear/', views_internal_orders.internal_order_create_view, name='internal_order_create'),
     path('panel/pedidos-internos/<int:order_id>/', views_internal_orders.internal_order_detail_view, name='internal_order_detail'),
     path('panel/pedidos-internos/<int:order_id>/editar/', views_internal_orders.internal_order_edit_view, name='internal_order_edit'),
+    path('panel/pedidos-internos/<int:order_id>/csv/', views_internal_orders.internal_order_export_csv_view, name='internal_order_export_csv'),
     path('panel/pedidos-internos/<int:order_id>/eliminar/', views_internal_orders.internal_order_delete_view, name='internal_order_delete'),
     path('panel/pedidos-internos/<int:order_id>/confirmar/', views_internal_orders.internal_order_confirm_view, name='internal_order_confirm'),
     path('panel/pedidos-internos/<int:order_id>/estado/', views_internal_orders.internal_order_update_status_view, name='internal_order_update_status'),

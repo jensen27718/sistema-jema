@@ -95,22 +95,22 @@
         <!-- Quick Templates -->
         <h6 class="mb-3"><i class="bi bi-lightning"></i> Inicio Rápido</h6>
         <div class="quick-templates">
-            <button type="button" class="template-btn" onclick="setTemplate('Pedido Vinilos', 'Pedido de vinilos de corte')">
+            <button type="button" class="template-btn" onclick="setTemplate('Pedido Vinilos', 'Pedido de vinilos de corte', 'vinilo_corte')">
                 <i class="bi bi-scissors"></i>
                 <span>Vinilos de Corte</span>
                 <small>Stickers de vinilo tradicional</small>
             </button>
-            <button type="button" class="template-btn" onclick="setTemplate('Pedido Impresos', 'Pedido de stickers impresos')">
+            <button type="button" class="template-btn" onclick="setTemplate('Pedido Impresos', 'Pedido de stickers impresos', 'impreso_globo')">
                 <i class="bi bi-printer"></i>
                 <span>Impresos</span>
                 <small>Stickers impresos a color</small>
             </button>
-            <button type="button" class="template-btn" onclick="setTemplate('Pedido Mixto', 'Combinación de varios tipos')">
+            <button type="button" class="template-btn" onclick="setTemplate('Pedido Mixto', 'Combinación de varios tipos', 'mixed')">
                 <i class="bi bi-collection"></i>
                 <span>Mixto</span>
                 <small>Varios tipos de productos</small>
             </button>
-            <button type="button" class="template-btn" onclick="setTemplate('Pedido Especial', 'Pedido con requerimientos especiales')">
+            <button type="button" class="template-btn" onclick="setTemplate('Pedido Especial', 'Pedido con requerimientos especiales', 'mixed')">
                 <i class="bi bi-star"></i>
                 <span>Especial</span>
                 <small>Pedido personalizado</small>
@@ -121,6 +121,8 @@
 
         <form method="post" action="{% url 'internal_order_create' %}">
             {% csrf_token %}
+            <!-- Hidden input for mode -->
+            <input type="hidden" id="initialDetails" name="initial_mode" value="">
 
             <div class="form-floating mb-3">
                 <input type="text"
@@ -157,9 +159,12 @@
 
 {% block extra_js %}
 <script>
-    function setTemplate(name, description) {
+    function setTemplate(name, description, mode) {
         document.getElementById('orderName').value = name;
         document.getElementById('orderDescription').value = description;
+        if (mode) {
+             document.getElementById('initialDetails').value = mode;
+        }
         document.getElementById('orderName').focus();
     }
 </script>

@@ -633,6 +633,9 @@
             </h5>
         </div>
         <div class="d-flex gap-2">
+            <button class="btn btn-warning btn-sm text-white" onclick="downloadOrderCSV()">
+                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </button>
             {% if order.status == 'draft' %}
             <form action="{% url 'internal_order_confirm' order.id %}" method="post" class="d-inline">
                 {% csrf_token %}
@@ -985,30 +988,37 @@
     }
 
     function handleChipClick(e) {
-        const chip = e.currentTarget;
-        const filterType = chip.dataset.filter;
-        const value = chip.dataset.value;
+            const chip = e.currentTarget;
+            const filterType = chip.dataset.filter;
+            const value = chip.dataset.value;
 
-        // Toggle active dentro del mismo grupo
-        chip.closest('.filter-row').querySelectorAll('.filter-chip').forEach(c => {
-            c.classList.remove('active');
-        });
-        chip.classList.add('active');
+            // Visual: Toggle active class
+            chip.closest('.filter-row').querySelectorAll('.filter-chip').forEach(c => {
+                c.classList.remove('active');
+            });
+            chip.classList.add('active');
 
-        currentFilters[filterType] = value;
+            // Actualizar el estado global
+            currentFilters[filterType] = value;
 
-        // Si cambia el tipo de producto, recargar filtros disponibles
-        if (filterType === 'product_type') {
-            // Resetear filtros secundarios
-            currentFilters.category_id = '';
-            currentFilters.material_id = '';
-            currentFilters.size_id = '';
-            currentFilters.color_id = '';
-            loadAvailableFilters();
+            // LÓGICA IMPORTANTE: Si cambia el Tipo de Producto, resetear todo lo demás
+            if (filterType === 'product_type') {
+                console.log("Cambio de tipo de producto detectado. Reseteando filtros hijos.");
+                
+                // 1. Limpiar variables de estado
+                currentFilters.category_id = '';
+                currentFilters.material_id = '';
+                currentFilters.size_id = '';
+                currentFilters.color_id = '';
+                
+                // 2. Recargar los filtros disponibles (Materiales, Colores, etc.)
+                // Esto llamará a la API y redibujará los chips
+                loadAvailableFilters();
+            }
+
+            // Aplicar la búsqueda con los nuevos filtros
+            applyFilters();
         }
-
-        applyFilters();
-    }
 
     // === MODO DE SELECCION ===
     function setMode(mode) {
@@ -1024,15 +1034,22 @@
     }
 
     // === BUSQUEDA ===
+    // Variable para el timer de debounce
+    let searchDebounceTimer;
+
     function handleSearchKeyup(event) {
         const searchInput = document.getElementById('searchInput');
         const clearBtn = document.getElementById('clearSearchBtn');
 
         clearBtn.style.display = searchInput.value.length > 0 ? 'block' : 'none';
 
-        if (event.key === 'Enter') {
+        // Limpiar el timer anterior
+        clearTimeout(searchDebounceTimer);
+
+        // Crear nuevo timer para ejecutar la búsqueda después de 300ms de inactividad
+        searchDebounceTimer = setTimeout(() => {
             applyFilters();
-        }
+        }, 300);
     }
 
     function clearSearch() {
@@ -1115,9 +1132,17 @@
                 </button>
                 <img src="${item.product_image || 'https://via.placeholder.com/100x80?text=IMG'}" alt="" onerror="this.src='https://via.placeholder.com/100x80?text=IMG'">
                 <div class="name" title="${escapeHtml(item.product_name)}">${displayName}</div>
+                
+                <div class="d-flex gap-1 flex-wrap mt-2 mb-1">
+                    ${item.size ? `<span class="badge bg-light text-dark border">${item.size}</span>` : ''}
+                    ${item.color ? `<span class="badge border text-dark d-flex align-items-center gap-1" style="background-color: white;">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${item.color_hex}; border: 1px solid rgba(0,0,0,0.1);"></span>
+                        ${item.color}
+                    </span>` : ''}
+                </div>
+                
                 <div class="details">
-                    ${item.color ? `<span class="color-dot" style="background: ${item.color_hex}"></span>` : ''}
-                    <span>${item.size || ''} ${item.material || ''}</span>
+                     <span>${item.material || ''}</span>
                 </div>
                 <div class="price">$${item.price.toLocaleString('es-CO')}</div>
             </div>
@@ -1420,6 +1445,79 @@
         document.getElementById('loadingOverlay').classList.toggle('show', show);
     }
 
+    // === EXPORTAR CSV ===
+    const cleanCSVData = (data) => {
+        if (!data) return "";
+        const text = String(data);
+        if (text.includes(",") || text.includes('"') || text.includes("\n")) {
+            return `"${text.replace(/"/g, '""')}"`;
+        }
+        return text;
+    };
+
+    function downloadOrderCSV() {
+        const items = [];
+        // Iterar sobre los elementos del DOM o usar datos del backend si están disponibles en JS.
+        // Aquí extraemos del DOM para simplicidad, ya que están renderizados.
+        const cartItems = document.querySelectorAll('#cartItemsContainer .cart-item');
+        
+        cartItems.forEach(itemEl => {
+            const name = itemEl.querySelector('.cart-item-name').textContent.trim();
+            const details = itemEl.querySelector('.cart-item-details').textContent.trim(); // "Grande - Dorado"
+            const qty = itemEl.querySelector('input').value;
+
+            // Intentar parsear detalles
+            let size = "";
+            let color = "";
+            
+            // Lógica simple de parseo basada en el formato "Size - Material - Color"
+            const parts = details.split('-').map(p => p.trim());
+            if (parts.length > 0) size = parts[0];
+            if (parts.length > 2) color = parts[2]; // Asumiendo Size - Material - Color
+            else if (parts.length === 2) color = parts[1]; // Posiblemente Size - Color o Size - Material
+
+            items.push({
+                referencia: name,
+                cantidad: qty,
+                tamano: size, // O todo el string details si se prefiere
+                color: color,
+                full_details: details
+            });
+        });
+
+        if (items.length === 0) {
+            alert("El pedido está vacío.");
+            return;
+        }
+
+        const headers = ["Referencia", "Cantidad", "Detalles", "Tamaño (Est)", "Color (Est)"];
+        const rows = items.map(item => {
+            return [
+                cleanCSVData(item.referencia),
+                cleanCSVData(item.cantidad),
+                cleanCSVData(item.full_details),
+                cleanCSVData(item.tamano),
+                cleanCSVData(item.color)
+            ].join(",");
+        });
+
+        const csvContent = [
+            headers.join(","),
+            ...rows
+        ].join("\n");
+
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        const date = new Date().toISOString().slice(0,10);
+        link.download = `Pedido_${ORDER_ID}_${date}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
     // Inicializar al cargar
     document.addEventListener('DOMContentLoaded', async function() {
         // Asignar listeners a los chips de tipo de producto (estaticos)
@@ -1428,8 +1526,23 @@
         // Cargar filtros dinamicos basados en los datos reales
         await loadAvailableFilters();
 
-        // Cargar variantes
-        applyFilters();
+        // CHECK URL PARAMS FOR AUTO-SELECTION
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+
+        if (mode && mode !== 'mixed') {
+            const typeChip = document.querySelector(`.filter-chip[data-filter="product_type"][data-value="${mode}"]`);
+            if (typeChip) {
+                // Simular click en el chip
+                typeChip.click();
+            } else {
+                // Fallback si no encuentra el chip
+                 applyFilters();
+            }
+        } else {
+            // Cargar variantes default
+            applyFilters();
+        }
 
         // Inicializar drag & drop
         initDragAndDrop();

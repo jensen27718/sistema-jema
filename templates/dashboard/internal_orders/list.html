@@ -235,6 +235,11 @@
                                        title="Eliminar">
                                         <i class="bi bi-trash"></i>
                                     </a>
+                                    <a href="{% url 'internal_order_export_csv' order.id %}"
+                                       class="btn btn-sm btn-warning text-white"
+                                       title="Exportar CSV">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

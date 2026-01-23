@@ -7,6 +7,7 @@ import random
 from decimal import Decimal
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.db.models import Q, Sum, F
@@ -67,6 +68,8 @@ def internal_order_create_view(request):
     """Crea un nuevo pedido y redirige al editor"""
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
+        initial_mode = request.POST.get('initial_mode', '')
+        
         if not name:
             name = f"Pedido #{InternalOrder.objects.count() + 1}"
 
@@ -78,10 +81,51 @@ def internal_order_create_view(request):
             created_by=request.user,
             status='draft'
         )
-        return redirect('internal_order_edit', order_id=order.id)
+        
+        # Redireccionar con el modo si existe
+        url = reverse('internal_order_edit', kwargs={'order_id': order.id})
+        if initial_mode:
+            url += f"?mode={initial_mode}"
+            
+        return redirect(url)
 
     return render(request, 'dashboard/internal_orders/create.html')
 
+
+import csv
+from django.http import HttpResponse
+
+def internal_order_export_csv_view(request, order_id):
+    """Exporta el pedido a CSV"""
+    order = get_object_or_404(InternalOrder, id=order_id)
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="Pedido_{order.id}_{order.created_at.strftime("%Y-%m-%d")}.csv"'
+    
+    # Escribir BOM para Excel
+    response.write(u'\ufeff'.encode('utf8'))
+    
+    writer = csv.writer(response)
+    # Encabezados
+    writer.writerow(['Referencia', 'Cantidad', 'Tamaño', 'Color', 'Material', 'Detalles Completos'])
+    
+    items = order.items.select_related('variant', 'variant__size', 'variant__color', 'variant__material').all()
+    
+    for item in items:
+        size = item.variant.size.name if item.variant and item.variant.size else ''
+        color = item.variant.color.name if item.variant and item.variant.color else ''
+        material = item.variant.material.name if item.variant and item.variant.material else ''
+        
+        writer.writerow([
+            item.product_name,
+            item.quantity,
+            size,
+            color,
+            material,
+            item.variant_details
+        ])
+            
+    return response
 
 @login_required
 @user_passes_test(is_staff)
@@ -189,8 +233,8 @@ def internal_order_update_status_view(request, order_id):
 @require_POST
 def api_get_available_filters(request):
     """
-    Devuelve los filtros disponibles para un tipo de producto.
-    Esto permite mostrar solo los filtros relevantes en la UI.
+    Devuelve los filtros disponibles BASADO en el tipo de producto seleccionado.
+    Solo devuelve atributos que realmente existen en variantes activas.
     """
     try:
         data = json.loads(request.body)
@@ -199,57 +243,41 @@ def api_get_available_filters(request):
 
     product_type = data.get('product_type', '')
 
-    # Base query para variantes de productos activos
+    # 1. Base: Solo variantes de productos ONLINE (Soluciona productos borrados/viejos)
+    # Usamos 'select_related' para optimizar
     variants_query = ProductVariant.objects.filter(product__is_online=True)
 
+    # 2. Si hay tipo seleccionado, filtramos estrictamente
     if product_type:
         variants_query = variants_query.filter(product__product_type=product_type)
 
-    # Verificar qué atributos tienen valores (no nulos) en las variantes
-    # Material: verificar si hay variantes con material asignado Y si hay mas de 1 material
-    materials_in_use = variants_query.exclude(material__isnull=True).values_list('material_id', flat=True).distinct()
-    has_materials = materials_in_use.count() > 0
+    # 3. Obtener IDs únicos de atributos que están EN USO por estas variantes
+    # Esto soluciona que salgan materiales de Vinilo cuando estás en Impresos
+    material_ids = variants_query.values_list('material_id', flat=True).distinct()
+    size_ids = variants_query.values_list('size_id', flat=True).distinct()
+    color_ids = variants_query.values_list('color_id', flat=True).distinct()
+    category_ids = variants_query.values_list('product__categories__id', flat=True).distinct()
 
-    # Sizes: verificar si hay variantes con size asignado Y si hay mas de 1 size
-    sizes_in_use = variants_query.exclude(size__isnull=True).values_list('size_id', flat=True).distinct()
-    has_sizes = sizes_in_use.count() > 0
+    # 4. Construir las listas de objetos basados en los IDs encontrados
+    
+    # Materiales
+    available_materials = list(Material.objects.filter(id__in=material_ids).values('id', 'name').order_by('name'))
+    
+    # Tamaños
+    available_sizes = list(Size.objects.filter(id__in=size_ids).values('id', 'name', 'dimensions').order_by('name'))
+    
+    # Colores
+    available_colors = list(Color.objects.filter(id__in=color_ids).values('id', 'name', 'hex_code').order_by('name'))
 
-    # Colors: verificar si hay variantes con color asignado Y si hay mas de 1 color
-    colors_in_use = variants_query.exclude(color__isnull=True).values_list('color_id', flat=True).distinct()
-    has_colors = colors_in_use.count() > 0
-
-    # Obtener las opciones disponibles para cada filtro
-    available_materials = []
-    if has_materials:
-        for mat in Material.objects.filter(id__in=materials_in_use).order_by('name'):
-            available_materials.append({'id': mat.id, 'name': mat.name})
-
-    available_sizes = []
-    if has_sizes:
-        for size in Size.objects.filter(id__in=sizes_in_use).order_by('name'):
-            available_sizes.append({'id': size.id, 'name': size.name, 'dimensions': size.dimensions})
-
-    available_colors = []
-    if has_colors:
-        for color in Color.objects.filter(id__in=colors_in_use).order_by('name'):
-            available_colors.append({'id': color.id, 'name': color.name, 'hex_code': color.hex_code})
-
-    # Categorias siempre disponibles pero filtradas por tipo de producto
-    categories_in_use = Product.objects.filter(is_online=True)
-    if product_type:
-        categories_in_use = categories_in_use.filter(product_type=product_type)
-    category_ids = categories_in_use.values_list('categories__id', flat=True).distinct()
-
-    available_categories = []
-    for cat in Category.objects.filter(id__in=category_ids).order_by('name'):
-        available_categories.append({'id': cat.id, 'name': cat.name})
+    # Categorías
+    available_categories = list(Category.objects.filter(id__in=category_ids).values('id', 'name').order_by('name'))
 
     return JsonResponse({
         'status': 'ok',
         'filters': {
-            'has_materials': has_materials,
-            'has_sizes': has_sizes,
-            'has_colors': has_colors,
+            'has_materials': len(available_materials) > 0,
+            'has_sizes': len(available_sizes) > 0,
+            'has_colors': len(available_colors) > 0,
             'materials': available_materials,
             'sizes': available_sizes,
             'colors': available_colors,
@@ -262,19 +290,46 @@ def api_get_available_filters(request):
 @require_POST
 def api_filter_variants(request):
     """
-    Filtra variantes según criterios.
-    Retorna JSON con lista de variantes.
+    Filtra variantes según criterios estrictos.
     """
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'JSON inválido'}, status=400)
 
+    # 1. Base: Solo productos ONLINE (Evita productos viejos)
     variants = ProductVariant.objects.select_related(
         'product', 'size', 'material', 'color'
     ).filter(product__is_online=True)
 
-    # Búsqueda por nombre/referencia y descripción
+    # --- APLICACIÓN DE FILTROS ---
+
+    # Tipo de Producto
+    product_type = data.get('product_type')
+    if product_type:
+        variants = variants.filter(product__product_type=product_type)
+
+    # Categoría
+    category_id = data.get('category_id')
+    if category_id:
+        variants = variants.filter(product__categories__id=category_id)
+
+    # Material
+    material_id = data.get('material_id')
+    if material_id:
+        variants = variants.filter(material_id=material_id)
+
+    # Tamaño (Aquí estaba el problema, aseguramos que el ID venga como entero si no es nulo)
+    size_id = data.get('size_id')
+    if size_id:
+        variants = variants.filter(size_id=size_id)
+
+    # Color
+    color_id = data.get('color_id')
+    if color_id:
+        variants = variants.filter(color_id=color_id)
+
+    # Búsqueda de texto
     search_query = data.get('search', '').strip()
     if search_query:
         variants = variants.filter(
@@ -282,60 +337,33 @@ def api_filter_variants(request):
             Q(product__description__icontains=search_query)
         )
 
-    # Filtro por tipo de producto
-    product_type = data.get('product_type')
-    if product_type:
-        variants = variants.filter(product__product_type=product_type)
-
-    # Filtro por categoría
-    category_id = data.get('category_id')
-    if category_id:
-        variants = variants.filter(product__categories__id=category_id)
-
-    # Filtro por material (puede ser uno o varios)
-    material_id = data.get('material_id')
-    material_ids = data.get('material_ids', [])
-    if material_id:
-        variants = variants.filter(material_id=material_id)
-    elif material_ids:
-        variants = variants.filter(material_id__in=material_ids)
-
-    # Filtro por tamaño
-    size_id = data.get('size_id')
-    if size_id:
-        variants = variants.filter(size_id=size_id)
-
-    # Filtro por color
-    color_id = data.get('color_id')
-    if color_id:
-        variants = variants.filter(color_id=color_id)
-
-    # Filtro por rango de precio
+    # Precios
     min_price = data.get('min_price')
     max_price = data.get('max_price')
     if min_price:
-        try:
-            variants = variants.filter(price__gte=Decimal(str(min_price)))
-        except:
-            pass
+        variants = variants.filter(price__gte=Decimal(str(min_price)))
     if max_price:
-        try:
-            variants = variants.filter(price__lte=Decimal(str(max_price)))
-        except:
-            pass
+        variants = variants.filter(price__lte=Decimal(str(max_price)))
 
-    # Limitar resultados para rendimiento
-    variants = variants.distinct().order_by('product__name')[:150]
+    # Limitar y ordenar
+    # Usamos distinct() para evitar duplicados si un producto tiene múltiples categorías
+    variants = variants.distinct().order_by('product__name', 'size__name')[:150]
 
-    # Construir respuesta
+    # Construir respuesta JSON
     items = []
     for v in variants:
+        # Imagen segura
         image_url = ''
         if v.product.image:
             try:
                 image_url = v.product.image.url
             except:
                 pass
+        
+        # Construir texto de la variante explícitamente para depuración visual
+        variant_text = f"{v.size.name if v.size else ''} - {v.material.name if v.material else ''}"
+        if v.color:
+            variant_text += f" - {v.color.name}"
 
         items.append({
             'id': v.id,
@@ -348,7 +376,7 @@ def api_filter_variants(request):
             'color': v.color.name if v.color else '',
             'color_hex': v.color.hex_code if v.color else '#cccccc',
             'price': float(v.price) if v.price else 0,
-            'variant_text': _build_variant_text(v)
+            'variant_text': variant_text
         })
 
     return JsonResponse({
