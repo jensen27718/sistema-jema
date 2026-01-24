@@ -68,7 +68,7 @@
 
 <!-- Filtros -->
 <div class="jema-card p-3 mb-4">
-    <form method="get" class="row g-3 align-items-end">
+    <form id="filterForm" class="row g-3 align-items-end">
         <div class="col-md-3">
             <label class="form-label small mb-1">Buscar</label>
             <input type="text" name="q" class="form-control"
@@ -114,9 +114,10 @@
             </select>
         </div>
         <div class="col-md-1">
-            <button type="submit" class="btn btn-primary w-100">
-                <i class="bi bi-search"></i>
-            </button>
+             <!-- Spinner de carga -->
+             <div id="loadingSpinner" class="spinner-border text-primary spinner-border-sm d-none" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
         </div>
     </form>
 </div>
@@ -125,265 +126,349 @@
 <div class="jema-card">
     <form id="massEditForm" method="post" action="{% url 'mass_edit_products' %}">
         {% csrf_token %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead style="background-color: var(--muted);">
-                    <tr>
-                        <th class="py-3 ps-4" style="width: 40px;">
-                            <input type="checkbox" id="selectAll" class="form-check-input">
-                        </th>
-                        <th style="width: 60px;">Imagen</th>
-                        <th>Referencia</th>
-                        <th>Categorías</th>
-                        <th>Tipo</th>
-                        <th style="width: 150px;">Estado</th>
-                        <th class="pe-4" style="width: 150px;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for product in page_obj %}
-                    <tr>
-                        <td class="ps-4">
-                            <input type="checkbox" name="selected_products" value="{{ product.id }}"
-                                   class="form-check-input product-checkbox">
-                        </td>
-                        <td>
-                            {% if product.image %}
-                            <img src="{{ product.image.url }}" class="rounded-3 object-fit-cover" width="50" height="50">
-                            {% else %}
-                            <div class="rounded-3 bg-light d-flex align-items-center justify-content-center"
-                                style="width: 50px; height: 50px;">
-                                <i class="bi bi-image text-muted"></i>
-                            </div>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="editable-name fw-medium text-jema-purple"
-                                  data-product-id="{{ product.id }}"
-                                  title="Doble clic para editar">
-                                {{ product.name }}
-                            </span>
-                        </td>
-                        <td>
-                            {% for cat in product.categories.all %}
-                            <span class="jema-badge jema-badge-teal me-1 mb-1">{{ cat.name }}</span>
-                            {% empty %}
-                            <span class="text-muted small">Sin categoría</span>
-                            {% endfor %}
-                        </td>
-                        <td>{{ product.get_product_type_display }}</td>
-                        <td>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input online-toggle" type="checkbox"
-                                       data-product-id="{{ product.id }}"
-                                       {% if product.is_online %}checked{% endif %}>
-                                <label class="form-check-label small online-label">
-                                    {% if product.is_online %}
-                                    <span class="text-success"><i class="bi bi-eye me-1"></i>En línea</span>
-                                    {% else %}
-                                    <span class="text-muted"><i class="bi bi-eye-slash me-1"></i>Offline</span>
-                                    {% endif %}
-                                </label>
-                            </div>
-                        </td>
-                        <td class="pe-4 text-end">
-                            <a href="{% url 'panel_product_variants' product.id %}"
-                                class="btn btn-sm btn-light text-success me-1" title="Ver Precios">
-                                <i class="bi bi-currency-dollar"></i>
-                            </a>
-                            <a href="{% url 'panel_product_update' product.id %}"
-                                class="btn btn-sm btn-light text-jema-teal me-1" title="Editar">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <a href="{% url 'panel_product_delete' product.id %}"
-                               class="btn btn-sm btn-light text-danger" title="Eliminar"
-                               onclick="return confirm('¿Eliminar este producto?')">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                            <p class="mb-0">No hay productos que coincidan con los filtros.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div id="product-results-container">
+            {% include 'dashboard/products/partials/product_list_results.html' %}
         </div>
     </form>
+</div>
 
-    <!-- Paginación -->
-    {% if page_obj.has_other_pages %}
-    <div class="p-3 border-top">
-        <nav>
-            <ul class="pagination mb-0 justify-content-center">
-                {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
-                        Primera
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
-                        Anterior
-                    </a>
-                </li>
-                {% endif %}
-
-                <li class="page-item active">
-                    <span class="page-link">
-                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                    </span>
-                </li>
-
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
-                        Siguiente
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
-                        Última
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-        <div class="text-center mt-2">
-            <small class="text-muted">
-                Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} productos
-            </small>
+<!-- Modal para editar categorías -->
+<div class="modal fade" id="categoryEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fs-6">Editar Categorías</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modalProductId">
+                <div class="d-flex flex-column gap-2" style="max-height: 300px; overflow-y: auto;">
+                    {% for cat in categories %}
+                    <div class="form-check">
+                        <input class="form-check-input category-checkbox-modal" type="checkbox" value="{{ cat.id }}" id="catModal{{ cat.id }}">
+                        <label class="form-check-label" for="catModal{{ cat.id }}">
+                            {{ cat.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer p-1">
+                <button type="button" class="btn btn-sm btn-primary w-100" id="saveCategoryBtn">Guardar</button>
+            </div>
         </div>
     </div>
-    {% endif %}
 </div>
 
 <script>
-// Seleccionar todos los checkboxes
-document.getElementById('selectAll').addEventListener('change', function() {
-    document.querySelectorAll('.product-checkbox').forEach(cb => {
-        cb.checked = this.checked;
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const container = document.getElementById('product-results-container');
+    const spinner = document.getElementById('loadingSpinner');
+    let debounceTimer;
+
+    // --- FUNCIONES AJAX ---
+
+    function fetchProducts(url = null) {
+        spinner.classList.remove('d-none');
+        
+        // Construir URL con parámetros
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData);
+        
+        let fetchUrl = url || `${window.location.pathname}?${params.toString()}`;
+
+        fetch(fetchUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            container.innerHTML = html;
+            initEventListeners(); // Re-inicializar eventos después de actualizar DOM
+            spinner.classList.add('d-none');
+            
+            // Actualizar URL del navegador sin recargar (opcional, para compartir links)
+            window.history.pushState({}, '', fetchUrl);
+        })
+        .catch(err => {
+            console.error('Error fetching products:', err);
+            spinner.classList.add('d-none');
+        });
+    }
+
+    // --- EVENT LISTENERS FILTROS ---
+
+    filterForm.addEventListener('change', () => fetchProducts());
+    
+    // Búsqueda con debounce para no saturar
+    filterForm.querySelector('input[name="q"]').addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fetchProducts(), 500);
     });
-    updateMassEditButtons();
-});
 
-// Actualizar estado de botones de edición masiva
-function updateMassEditButtons() {
-    const selected = document.querySelectorAll('.product-checkbox:checked').length;
-    document.getElementById('massEditBtn').disabled = selected === 0;
-    document.getElementById('quickActionsBtn').disabled = selected === 0;
-}
 
-document.querySelectorAll('.product-checkbox').forEach(cb => {
-    cb.addEventListener('change', updateMassEditButtons);
-});
+    // --- EVENT LISTENERS DINÁMICOS (se llaman al inicio y tras AJAX) ---
 
-// Botón de edición masiva
-document.getElementById('massEditBtn').addEventListener('click', function() {
-    document.getElementById('massEditForm').submit();
-});
-
-// Acciones rápidas
-document.querySelectorAll('[data-action]').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        const action = this.dataset.action;
-        const form = document.getElementById('massEditForm');
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'action';
-        input.value = action;
-        form.appendChild(input);
-        form.submit();
-    });
-});
-
-// Edición inline del nombre (doble clic)
-document.querySelectorAll('.editable-name').forEach(el => {
-    el.addEventListener('dblclick', function() {
-        const productId = this.dataset.productId;
-        const currentName = this.textContent.trim();
-        const newName = prompt('Nuevo nombre del producto:', currentName);
-
-        if (newName && newName !== currentName) {
-            fetch('{% url "inline_edit_product" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                    field: 'name',
-                    value: newName
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'ok') {
-                    this.textContent = newName;
-                    // Mostrar feedback visual
-                    this.classList.add('text-success');
-                    setTimeout(() => this.classList.remove('text-success'), 2000);
-                } else {
-                    alert('Error al actualizar el nombre');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error al actualizar el nombre');
+    function initEventListeners() {
+        // 1. Checkboxes masivos
+        const selectAll = document.getElementById('selectAll');
+        if(selectAll) {
+            selectAll.addEventListener('change', function() {
+                document.querySelectorAll('.product-checkbox').forEach(cb => {
+                    cb.checked = this.checked;
+                });
+                updateMassEditButtons();
             });
         }
-    });
-});
 
-// Toggle estado online/offline
-document.querySelectorAll('.online-toggle').forEach(toggle => {
-    toggle.addEventListener('change', function() {
-        const productId = this.dataset.productId;
-        const isOnline = this.checked;
-        const label = this.nextElementSibling.querySelector('span');
+        document.querySelectorAll('.product-checkbox').forEach(cb => {
+            cb.addEventListener('change', updateMassEditButtons);
+        });
+        updateMassEditButtons(); // Resetear estado botones
 
+        // 2. Paginación AJAX
+        document.querySelectorAll('.ajax-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetchProducts(this.href);
+            });
+        });
+
+        // 3. Edición Inline: NOMBRE
+        document.querySelectorAll('.editable-name').forEach(el => {
+            el.addEventListener('dblclick', function() {
+               // ... (Mismo código anterior) ...
+               // Por brevedad, lo dejo similar pero mejorado
+               const productId = this.dataset.productId;
+               const currentName = this.textContent.trim();
+               const newName = prompt('Nombre:', currentName);
+               if (newName && newName !== currentName) updateField(productId, 'name', newName, this);
+            });
+        });
+
+        // 4. Edición Inline: DESCRIPCIÓN (Textarea)
+        document.querySelectorAll('.editable-description').forEach(el => {
+            el.addEventListener('dblclick', function() {
+                if (this.querySelector('textarea')) return; // Ya editando
+
+                const currentText = this.innerText.trim() === 'Sin descripción' ? '' : this.innerText.trim();
+                const productId = this.dataset.productId;
+                
+                // Reemplazar con textarea
+                this.innerHTML = `
+                    <textarea class="form-control form-control-sm" rows="3" style="min-width: 200px;">${currentText}</textarea>
+                    <div class="mt-1 d-flex gap-1 justify-content-end">
+                        <button class="btn btn-xs btn-outline-danger cancel-desc"><i class="bi bi-x"></i></button>
+                        <button class="btn btn-xs btn-outline-success save-desc"><i class="bi bi-check"></i></button>
+                    </div>
+                `;
+                
+                const textarea = this.querySelector('textarea');
+                textarea.focus();
+
+                // Manejadores botones
+                this.querySelector('.save-desc').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const newVal = textarea.value;
+                    updateField(productId, 'description', newVal, this, true); // true = render html
+                });
+                
+                this.querySelector('.cancel-desc').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.innerHTML = currentText || '<em class="text-muted">Sin descripción</em>';
+                });
+            });
+        });
+
+        // 5. Edición Inline: CATEGORÍAS (Modal)
+        document.querySelectorAll('.editable-categories').forEach(el => {
+            el.addEventListener('click', function() {
+                const productId = this.dataset.productId;
+                const currentCats = this.dataset.currentCategories.split(',').filter(Boolean);
+                
+                // Popular modal
+                document.getElementById('modalProductId').value = productId;
+                document.querySelectorAll('.category-checkbox-modal').forEach(cb => {
+                    cb.checked = currentCats.includes(cb.value);
+                });
+                
+                // Mostrar modal
+                const modal = new bootstrap.Modal(document.getElementById('categoryEditModal'));
+                modal.show();
+
+                // Guardar referencia al elemento para actualizar UI después
+                window.currentCategoryElement = this;
+            });
+        });
+
+        // 6. Toggle Online
+        document.querySelectorAll('.online-toggle').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                updateField(this.dataset.productId, 'is_online', this.checked, this.nextElementSibling.querySelector('span'), false, true);
+            });
+        });
+    }
+
+    // --- UTILS ---
+
+    function updateMassEditButtons() {
+        const selected = document.querySelectorAll('.product-checkbox:checked').length;
+        const btn1 = document.getElementById('massEditBtn');
+        const btn2 = document.getElementById('quickActionsBtn');
+        if(btn1) btn1.disabled = selected === 0;
+        if(btn2) btn2.disabled = selected === 0;
+    }
+
+    function updateField(productId, field, value, uiElement, isHtml = false, isToggle = false) {
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
         fetch('{% url "inline_edit_product" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
+                'X-CSRFToken': csrf
             },
             body: JSON.stringify({
                 product_id: productId,
-                field: 'is_online',
-                value: isOnline
+                field: field,
+                value: value
             })
         })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-            if (data.status === 'ok') {
-                // Actualizar label
-                if (isOnline) {
-                    label.innerHTML = '<i class="bi bi-eye me-1"></i>En línea';
-                    label.classList.remove('text-muted');
-                    label.classList.add('text-success');
-                } else {
-                    label.innerHTML = '<i class="bi bi-eye-slash me-1"></i>Offline';
-                    label.classList.remove('text-success');
-                    label.classList.add('text-muted');
+            if(data.status === 'ok') {
+                // UI Updates
+                if (isToggle) {
+                    if (value) {
+                        uiElement.innerHTML = '<i class="bi bi-eye me-1"></i>En línea';
+                        uiElement.className = 'text-success';
+                    } else {
+                        uiElement.innerHTML = '<i class="bi bi-eye-slash me-1"></i>Offline';
+                        uiElement.className = 'text-muted';
+                    }
+                } else if (field === 'description') {
+                     uiElement.innerHTML = value || '<em class="text-muted">Sin descripción</em>';
+                } else if (field === 'name') {
+                    uiElement.textContent = value;
+                    uiElement.classList.add('text-success');
+                    setTimeout(() => uiElement.classList.remove('text-success'), 1000);
                 }
             } else {
-                alert('Error al cambiar el estado');
-                this.checked = !isOnline; // Revertir
+                alert('Error: ' + data.message);
             }
+        });
+    }
+
+    // --- MODAL SAVE CATEGORIES ---
+    document.getElementById('saveCategoryBtn').addEventListener('click', function() {
+        const productId = document.getElementById('modalProductId').value;
+        const selected = Array.from(document.querySelectorAll('.category-checkbox-modal:checked')).map(cb => cb.value);
+        
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        fetch('{% url "inline_edit_product" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ product_id: productId, field: 'categories', value: selected })
         })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al cambiar el estado');
-            this.checked = !isOnline; // Revertir
+        .then(res => res.json())
+        .then(data => {
+             if(data.status === 'ok') {
+                 // Update UI
+                 const el = window.currentCategoryElement;
+                 if(el) {
+                     // data.new_value debe ser [{id, name}, ...]
+                     const cats = data.new_value;
+                     let html = '';
+                     let ids = '';
+                     cats.forEach(c => {
+                         html += `<span class="jema-badge jema-badge-teal me-1 mb-1">${c.name}</span>`;
+                         ids += c.id + ',';
+                     });
+                     if(cats.length === 0) html = '<span class="text-muted small">Sin categoría</span>';
+                     
+                     el.innerHTML = html;
+                     el.dataset.currentCategories = ids;
+                 }
+                 
+                 // Cerrar modal
+                 const modalEl = document.getElementById('categoryEditModal');
+                 const modal = bootstrap.Modal.getInstance(modalEl);
+                 modal.hide();
+             }
         });
     });
+    
+    // --- MASS ACTIONS (AJAX) ---
+    document.querySelectorAll('[data-action]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const action = this.dataset.action;
+            const form = document.getElementById('massEditForm');
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Recoger IDs
+            const ids = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.value);
+            if(ids.length === 0) return;
+
+            // Para acciones simples, usar AJAX completo.
+            // Para acciones complejas (cambiar tipo, etc) que requieren form extra, 
+            // quizás sea mejor dejar el submit normal O implementar modal.
+            // Por ahora, implementamos las simples inline.
+            
+            // Crear FormData compatible con la vista existente
+            const formData = new FormData();
+            formData.append('action', action);
+            ids.forEach(id => formData.append('selected_products', id));
+            
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'ok') {
+                    // Refrescar tabla
+                    fetchProducts(); 
+                    // Toast o alerta
+                    // alert('Acción completada'); 
+                } else {
+                    // Si falla o la vista redirige (que no debería con AJAX),
+                    // tal vez sea una acción compleja que requiere la vista completa.
+                    // Si es "add_categories", etc. la vista actual espera redirigir a un form intermedio.
+                    // Para soportar eso 100% AJAX necesitaríamos modales para todo.
+                    // Por simplicidad en este paso, si la acción requiere input extra y la vista falló,
+                    // hacemos submit normal.
+                     if (['add_categories', 'remove_categories', 'change_type', 'change_description'].includes(action)) {
+                         const input = document.createElement('input');
+                         input.type = 'hidden';
+                         input.name = 'action';
+                         input.value = action;
+                         form.appendChild(input);
+                         form.submit(); // Fallback a submit normal para forms intermedios
+                     } else {
+                        alert('Error: ' + (data.message || 'Desconocido'));
+                     }
+                }
+            })
+            .catch(err => {
+                 // Si falla el fetch (ej. la vista redirigió a HTML), hacemos submit normal
+                 const input = document.createElement('input');
+                 input.type = 'hidden';
+                 input.name = 'action';
+                 input.value = action;
+                 form.appendChild(input);
+                 form.submit();
+            });
+        });
+    });
+
+
+    // Inicializar al cargar
+    initEventListeners();
 });
 </script>
 {% endblock %}

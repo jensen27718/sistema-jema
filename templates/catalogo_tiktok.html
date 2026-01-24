@@ -656,9 +656,27 @@
 
             <div class="menu-divider"></div>
 
+            <div class="menu-section-title">Tipos de Producto</div>
+            
+            {% for type_item in product_types_menu %}
+            <a href="{% url 'catalogo' type_slug=type_item.slug %}" 
+               class="category-link {% if type_item.active %}bg-light text-primary{% endif %}">
+                <div class="category-icon-placeholder" {% if type_item.active %}style="color: var(--jema-teal);"{% endif %}>
+                    {% if type_item.slug == 'impresos-para-globos' %}<i class="bi bi-balloon"></i>
+                    {% elif type_item.slug == 'vinilos-de-corte' %}<i class="bi bi-scissors"></i>
+                    {% elif type_item.slug == 'cintas-ramos' %}<i class="bi bi-flower1"></i>
+                    {% elif type_item.slug == 'stickers-logo' %}<i class="bi bi-layers"></i>
+                    {% else %}<i class="bi bi-box"></i>{% endif %}
+                </div>
+                <span {% if type_item.active %}class="fw-bold"{% endif %}>{{ type_item.name }}</span>
+            </a>
+            {% endfor %}
+
+            <div class="menu-divider"></div>
+
             <div class="menu-section-title">Categorías</div>
 
-            <a href="{% url 'catalogo' %}" class="category-link">
+            <a href="{% url 'catalogo' type_slug=current_type_slug %}" class="category-link">
                 <div class="category-icon-placeholder">
                     <i class="bi bi-collection"></i>
                 </div>
@@ -666,7 +684,7 @@
             </a>
 
             {% for cat in categories %}
-            <a href="{% url 'catalogo_category' cat.slug %}" class="category-link">
+            <a href="{% url 'catalogo_category' type_slug=current_type_slug category_slug=cat.slug %}" class="category-link">
                 {% if cat.image %}
                 <img src="{{ cat.image.url }}" alt="{{ cat.name }}" class="category-icon">
                 {% else %}
@@ -774,7 +792,7 @@
                 <i class="bi bi-emoji-frown"></i>
                 <h4>No hay productos aquí</h4>
                 <p>Intenta con otra categoría</p>
-                <a href="{% url 'catalogo' %}" class="btn-empty-action">Ver Todo</a>
+                <a href="{% url 'catalogo' type_slug='impresos-para-globos' %}" class="btn-empty-action">Ver Todo</a>
             </div>
         </div>
         {% endfor %}

@@ -1,0 +1,161 @@
+<div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+        <thead style="background-color: var(--muted);">
+            <tr>
+                <th class="py-3 ps-4" style="width: 40px;">
+                    <input type="checkbox" id="selectAll" class="form-check-input">
+                </th>
+                <th style="width: 60px;">Imagen</th>
+                <th style="width: 20%;">Referencia</th>
+                <th style="width: 30%;">Descripción</th> <!-- Nueva columna -->
+                <th>Categorías</th>
+                <th>Tipo</th>
+                <th style="width: 120px;">Estado</th>
+                <th class="pe-4" style="width: 120px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in page_obj %}
+            <tr>
+                <td class="ps-4">
+                    <input type="checkbox" name="selected_products" value="{{ product.id }}"
+                           class="form-check-input product-checkbox">
+                </td>
+                <td>
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="rounded-3 object-fit-cover" width="50" height="50">
+                    {% else %}
+                    <div class="rounded-3 bg-light d-flex align-items-center justify-content-center"
+                        style="width: 50px; height: 50px;">
+                        <i class="bi bi-image text-muted"></i>
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="editable-name fw-medium text-jema-purple"
+                          data-product-id="{{ product.id }}"
+                          title="Doble clic para editar">
+                        {{ product.name }}
+                    </span>
+                </td>
+                <td>
+                    <!-- Descripción Editable -->
+                    <div class="editable-description text-muted small text-truncate"
+                         style="max-width: 300px; cursor: pointer;"
+                         data-product-id="{{ product.id }}"
+                         title="Doble clic para editar">
+                        {{ product.description|default:"<em>Sin descripción</em>"|safe }}
+                    </div>
+                </td>
+                <td>
+                     <!-- Categorías Editables -->
+                    <div class="editable-categories" 
+                         data-product-id="{{ product.id }}" 
+                         data-current-categories="{% for cat in product.categories.all %}{{ cat.id }},{% endfor %}"
+                         style="cursor: pointer;"
+                         title="Clic para editar categorías">
+                        {% for cat in product.categories.all %}
+                        <span class="jema-badge jema-badge-teal me-1 mb-1">{{ cat.name }}</span>
+                        {% empty %}
+                        <span class="text-muted small">Sin categoría</span>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td>{{ product.get_product_type_display }}</td>
+                <td>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input online-toggle" type="checkbox"
+                               data-product-id="{{ product.id }}"
+                               {% if product.is_online %}checked{% endif %}>
+                        <label class="form-check-label small online-label">
+                            {% if product.is_online %}
+                            <span class="text-success"><i class="bi bi-eye me-1"></i>En línea</span>
+                            {% else %}
+                            <span class="text-muted"><i class="bi bi-eye-slash me-1"></i>Offline</span>
+                            {% endif %}
+                        </label>
+                    </div>
+                </td>
+                <td class="pe-4 text-end">
+                    <div class="btn-group">
+                        <a href="{% url 'panel_product_variants' product.id %}"
+                            class="btn btn-sm btn-light text-success" title="Ver Precios">
+                            <i class="bi bi-currency-dollar"></i>
+                        </a>
+                        <a href="{% url 'panel_product_update' product.id %}"
+                            class="btn btn-sm btn-light text-jema-teal" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'panel_product_delete' product.id %}"
+                           class="btn btn-sm btn-light text-danger" title="Eliminar"
+                           onclick="return confirm('¿Eliminar este producto?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                    <p class="mb-0">No hay productos que coincidan con los filtros.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Paginación Numerada -->
+{% if page_obj.has_other_pages %}
+<div class="p-3 border-top d-flex justify-content-center">
+    <nav aria-label="Navegación de productos">
+        <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link ajax-link" href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" aria-label="Primera">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link ajax-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" aria-label="Anterior">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for i in page_obj.paginator.page_range %}
+                {% if page_obj.number == i %}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link">{{ i }}</span>
+                    </li>
+                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link ajax-link" href="?page={{ i }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}">
+                            {{ i }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link ajax-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" aria-label="Siguiente">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link ajax-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_online %}&online={{ current_online }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" aria-label="Última">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+<div class="text-center pb-3">
+    <small class="text-muted">
+        Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} productos
+    </small>
+</div>
+{% endif %}

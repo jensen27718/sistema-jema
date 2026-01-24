@@ -203,37 +203,55 @@ def category_delete_view(request, category_id):
 
 from django.core.paginator import Paginator
 
-def catalogo_publico_view(request, category_slug=None):
-    # 1. Obtener productos base (solo productos online con variantes)
+def catalogo_redirect_view(request):
+    """Redirige /catalogo/ al tipo por defecto (Impresos para Globos)"""
+    return redirect('catalogo', type_slug='impresos-para-globos')
+
+def catalogo_publico_view(request, type_slug, category_slug=None):
+    # Mapa de slugs a códigos de BD
+    TYPE_MAP = {
+        'vinilos-de-corte': 'vinilo_corte',
+        'impresos-para-globos': 'impreso_globo',
+        'cintas-ramos': 'cinta',
+        'stickers-logo': 'logo',
+    }
+    
+    # Inverso para la UI
+    SLUG_MAP = {v: k for k, v in TYPE_MAP.items()}
+
+    current_type_code = TYPE_MAP.get(type_slug)
+    if not current_type_code:
+        # Si el slug no es válido, 404 o redirigir al default
+        return redirect('catalogo_root')
+
+    # 1. Obtener productos base (solo del tipo actual y online)
     products_query = Product.objects.filter(
+        product_type=current_type_code,
         variants__isnull=False,
-        is_online=True  # Solo mostrar productos en línea
+        is_online=True
     ).distinct().order_by('-created_at')
 
-    # 2. Filtrar por categoría si existe el slug (soporte para múltiples categorías)
+    # 2. Filtrar por categoría si existe
     current_category = None
     if category_slug:
         current_category = get_object_or_404(Category, slug=category_slug)
-        products_query = products_query.filter(categories=current_category)  # Cambiado de category a categories
+        products_query = products_query.filter(categories=current_category)
 
-    # 3. Paginación (12 productos por página para velocidad)
+    # 3. Paginación
     paginator = Paginator(products_query, 12)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
-    # 4. Obtener todas las categorías para el menú (solo en carga inicial)
+    # 4. Obtener categorías QUE TENGAN productos de este tipo
+    # Para optimizar, podríamos filtrar solo las categorías que tienen al menos un producto activo de este tipo
     categories = []
     if not request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        categories = Category.objects.all()
-        # --- AUTO-FIX: Asegurar que todas las categorías tengan slug ---
-        for cat in categories:
-            if not cat.slug:
-                try:
-                    cat.save()
-                except:
-                    pass
+        categories = Category.objects.filter(
+            products__product_type=current_type_code,
+            products__is_online=True
+        ).distinct()
 
-    # 5. Construir JSON de variantes para los productos de ESTA página
+    # 5. Construir JSON de variantes
     variants_data = {}
     products_list = []
     for product in page_obj:
@@ -252,7 +270,6 @@ def catalogo_publico_view(request, category_slug=None):
                 'stock': v.stock
             })
         
-        # Preparar datos básicos para el renderizado dinámico (si es AJAX)
         products_list.append({
             'id': product.id,
             'name': product.name,
@@ -260,7 +277,7 @@ def catalogo_publico_view(request, category_slug=None):
             'image_url': product.image.url if product.image else None,
         })
 
-    # 6. Manejar respuesta AJAX para Scroll Infinito
+    # 6. Respuesta AJAX
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
             'products': products_list,
@@ -269,10 +286,20 @@ def catalogo_publico_view(request, category_slug=None):
             'next_page': page_obj.next_page_number() if page_obj.has_next() else None
         })
 
+    # Lista de tipos disponibles para el menú
+    product_types_menu = [
+        {'slug': 'impresos-para-globos', 'name': 'Impresos para Globos', 'active': type_slug == 'impresos-para-globos'},
+        {'slug': 'vinilos-de-corte', 'name': 'Vinilos de Corte', 'active': type_slug == 'vinilos-de-corte'},
+        {'slug': 'cintas-ramos', 'name': 'Cintas para Ramos', 'active': type_slug == 'cintas-ramos'},
+        {'slug': 'stickers-logo', 'name': 'Stickers Logo', 'active': type_slug == 'stickers-logo'},
+    ]
+
     context = {
         'products': page_obj,
         'categories': categories,
         'current_category': current_category,
+        'current_type_slug': type_slug,
+        'product_types_menu': product_types_menu,
         'variants_json': json.dumps(variants_data, cls=DjangoJSONEncoder),
         'has_next': page_obj.has_next(),
         'next_page': page_obj.next_page_number() if page_obj.has_next() else None
@@ -688,6 +715,10 @@ def product_list_enhanced_view(request):
         'current_sort': sort_by,
     }
 
+    # Si es petición AJAX, devolver solo la tabla y paginación
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'dashboard/products/partials/product_list_results.html', context)
+
     return render(request, 'dashboard/products/list_enhanced.html', context)
 
 
@@ -794,7 +825,16 @@ def mass_edit_products_view(request):
 
         else:
             messages.error(request, f'Acción no reconocida: {action}')
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': f'Acción no reconocida: {action}'}, status=400)
             return redirect('panel_product_list')
+    
+    # Respuesta para acciones completadas en AJAX
+    if request.method == 'POST' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # Re-renderizar la lista actualizada para devolverla en el JSON?
+        # O simplemente decir OK y que el frontend recarge.
+        # Vamos a devolver un mensaje y status OK.
+        return JsonResponse({'status': 'ok', 'message': 'Acción completada con éxito.'})
 
     # GET request - mostrar formulario (no debería llegar aquí normalmente)
     messages.error(request, 'Método no permitido.')
@@ -826,6 +866,20 @@ def inline_edit_product_api(request):
             product.is_online = bool(value)
             product.save()
             return JsonResponse({'status': 'ok', 'new_value': value})
+            
+        elif field == 'description':
+            product.description = value
+            product.save()
+            return JsonResponse({'status': 'ok', 'new_value': value})
+
+        elif field == 'categories':
+            # value debe ser una lista de IDs [1, 2, 5]
+            categories = Category.objects.filter(id__in=value)
+            product.categories.set(categories)
+            
+            # Devolver nombres para actualizar la UI
+            names = [{"id": c.id, "name": c.name} for c in categories]
+            return JsonResponse({'status': 'ok', 'new_value': names})
 
         return JsonResponse({'status': 'error', 'message': 'Campo no válido'}, status=400)
 
