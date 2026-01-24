@@ -784,6 +784,16 @@
                     <p>Selecciona filtros para ver referencias</p>
                 </div>
             </div>
+            <!-- Pagination Controls -->
+            <div id="paginationControls" class="d-flex justify-content-center align-items-center mt-2 gap-2" style="display: none !important;">
+                <button class="btn btn-sm btn-outline-secondary" onclick="changePage(-1)" id="prevPageBtn" disabled>
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <span class="small text-muted" id="pageInfo">Página 1</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="changePage(1)" id="nextPageBtn" disabled>
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
         </div>
 
         <!-- COLUMNA DERECHA: CARRITO -->
@@ -1035,46 +1045,59 @@
 
     // === BUSQUEDA ===
     // Variable para el timer de debounce
-    let searchDebounceTimer;
+    // Variable para el timer de debounce
+    let debounceTimer;
+    let currentPage = 1; // Track current page
 
     function handleSearchKeyup(event) {
-        const searchInput = document.getElementById('searchInput');
-        const clearBtn = document.getElementById('clearSearchBtn');
-
-        clearBtn.style.display = searchInput.value.length > 0 ? 'block' : 'none';
-
-        // Limpiar el timer anterior
-        clearTimeout(searchDebounceTimer);
-
-        // Crear nuevo timer para ejecutar la búsqueda después de 300ms de inactividad
-        searchDebounceTimer = setTimeout(() => {
-            applyFilters();
-        }, 300);
+        clearTimeout(debounceTimer);
+        const btn = document.getElementById('clearSearchBtn');
+        btn.style.display = event.target.value.length > 0 ? 'block' : 'none';
+        
+        if (event.key === 'Enter') {
+            applyFilters(1); // Reset to page 1 on search
+        } else {
+            debounceTimer = setTimeout(() => applyFilters(1), 500);
+        }
     }
 
     function clearSearch() {
-        const searchInput = document.getElementById('searchInput');
-        const clearBtn = document.getElementById('clearSearchBtn');
-
-        searchInput.value = '';
-        clearBtn.style.display = 'none';
-        currentFilters.search = '';
-        applyFilters();
+        document.getElementById('searchInput').value = '';
+        document.getElementById('clearSearchBtn').style.display = 'none';
+        applyFilters(1);
     }
 
-    async function applyFilters() {
+    function getActiveFilterValue(type) {
+        // Map simplified names to actual data-filter names
+        let filterName = type;
+        if (type === 'category') filterName = 'category_id';
+        if (type === 'material') filterName = 'material_id';
+        if (type === 'size') filterName = 'size_id';
+        if (type === 'color') filterName = 'color_id';
+        
+        const activeChip = document.querySelector(`.filter-chip.active[data-filter="${filterName}"]`);
+        return activeChip ? activeChip.dataset.value : '';
+    }
+
+    async function applyFilters(page = 1) {
         showLoading(true);
+        currentPage = page; // Update global page
 
-        const filters = { ...currentFilters };
+        // Recopilar filtros activos
+        const filters = {
+            product_type: getActiveFilterValue('product_type'),
+            category_id: getActiveFilterValue('category'),
+            material_id: getActiveFilterValue('material'),
+            size_id: getActiveFilterValue('size'),
+            color_id: getActiveFilterValue('color'),
+            search: document.getElementById('searchInput').value,
+            min_price: document.getElementById('minPrice').value,
+            max_price: document.getElementById('maxPrice').value,
+            page: currentPage // Send page param
+        };
 
-        const searchInput = document.getElementById('searchInput');
-        filters.search = searchInput ? searchInput.value.trim() : '';
-        currentFilters.search = filters.search;
-
-        if (currentMode === 'price') {
-            filters.min_price = document.getElementById('minPrice').value;
-            filters.max_price = document.getElementById('maxPrice').value;
-        }
+        // Guardar para uso de auto-select
+        currentFilters = filters;
 
         try {
             const response = await fetch('/api/internal-orders/filter-variants/', {
@@ -1087,13 +1110,38 @@
             });
 
             const data = await response.json();
-            renderVariants(data.items);
-            document.getElementById('variantCount').textContent = data.count;
+            if (data.status === 'ok') {
+                renderVariants(data.items);
+                document.getElementById('variantCount').textContent = data.count;
+                updatePaginationControls(data); // Handle pagination UI
+            }
         } catch (error) {
             console.error('Error:', error);
         }
 
         showLoading(false);
+    }
+
+    function changePage(delta) {
+        applyFilters(currentPage + delta);
+    }
+
+    function updatePaginationControls(data) {
+        const controls = document.getElementById('paginationControls');
+        const prevBtn = document.getElementById('prevPageBtn');
+        const nextBtn = document.getElementById('nextPageBtn');
+        const info = document.getElementById('pageInfo');
+
+        if (data.num_pages > 1) {
+            controls.style.display = 'flex'; // Use flex to align properly, override none
+            controls.style.setProperty('display', 'flex', 'important');
+            
+            info.textContent = `Página ${data.current_page} de ${data.num_pages}`;
+            prevBtn.disabled = !data.has_previous;
+            nextBtn.disabled = !data.has_next;
+        } else {
+            controls.style.setProperty('display', 'none', 'important');
+        }
     }
 
     function renderVariants(items) {

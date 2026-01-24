@@ -347,11 +347,21 @@ def api_filter_variants(request):
 
     # Limitar y ordenar
     # Usamos distinct() para evitar duplicados si un producto tiene múltiples categorías
-    variants = variants.distinct().order_by('product__name', 'size__name')[:150]
+    variants = variants.distinct().order_by('product__name', 'size__name')
+    
+    # Paginación (50 items por página para mejorar rendimiento)
+    page_number = data.get('page', 1)
+    items_per_page = 50
+    paginator = Paginator(variants, items_per_page)
+    
+    try:
+        variants_page = paginator.page(page_number)
+    except:
+        variants_page = paginator.page(1)
 
     # Construir respuesta JSON
     items = []
-    for v in variants:
+    for v in variants_page:
         # Imagen segura
         image_url = ''
         if v.product.image:
@@ -382,7 +392,11 @@ def api_filter_variants(request):
     return JsonResponse({
         'status': 'ok',
         'items': items,
-        'count': len(items)
+        'count': paginator.count,
+        'has_next': variants_page.has_next(),
+        'has_previous': variants_page.has_previous(),
+        'current_page': variants_page.number,
+        'num_pages': paginator.num_pages
     })
 
 

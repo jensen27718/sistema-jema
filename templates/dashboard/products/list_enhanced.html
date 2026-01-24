@@ -268,6 +268,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const textarea = this.querySelector('textarea');
                 textarea.focus();
 
+                // Manejador tecla Enter (Guardar)
+                textarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.querySelector('.save-desc').click();
+                    }
+                });
+
                 // Manejadores botones
                 this.querySelector('.save-desc').addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -431,10 +439,10 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'ok') {
-                    // Refrescar tabla
+                    // Refrescar tabla MANTENIENDO la URL actual (filtros y página)
+                    // No pasamos URL, así fetchProducts usa window.location.search
                     fetchProducts(); 
-                    // Toast o alerta
-                    // alert('Acción completada'); 
+                    // Toast o alerta opcional
                 } else {
                     // Si falla o la vista redirige (que no debería con AJAX),
                     // tal vez sea una acción compleja que requiere la vista completa.

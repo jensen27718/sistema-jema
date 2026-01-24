@@ -7,7 +7,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="jema-card p-4">
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" id="productForm" onsubmit="return handleProductSubmit(event)">
                 {% csrf_token %}
 
                 <h5 class="fw-bold mb-4 text-jema-purple">Información General</h5>
@@ -72,4 +72,57 @@
         </div>
     </div>
 </div>
+</div>
+
+
+{% block extra_js %}
+<script>
+async function handleProductSubmit(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Disable button and show loading spinner
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+    
+    try {
+        const response = await fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.status === 'ok') {
+            // Success: Redirect
+            window.location.href = data.redirect_url;
+        } else {
+            // Error handling
+            console.error('Validation Errors:', data.errors);
+            
+            // Show alert
+            alert('Error al guardar: Verifique los datos e intente nuevamente.');
+            
+            // Re-enable button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    } catch (error) {
+        console.error('Network Error:', error);
+        alert('Error de conexión con el servidor.');
+        
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+    
+    return false; // Ensure form doesn't submit normally
+}
+</script>
 {% endblock %}

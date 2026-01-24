@@ -148,7 +148,13 @@ def product_create_view(request):
             except Exception as e:
                 messages.warning(request, f"Error generando precios: {e}")
             
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'ok', 'redirect_url': reverse('panel_product_list')})
             return redirect('panel_product_list')
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            # Devolver errores en JSON
+            return JsonResponse({'status': 'error', 'errors': form.errors.as_json()}, status=400)
             
     else:
         form = ProductForm()
@@ -459,7 +465,12 @@ def product_update_view(request, product_id):
         form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
             form.save()
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'ok', 'redirect_url': reverse('panel_product_list')})
             return redirect('panel_product_list')
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error', 'errors': form.errors.as_json()}, status=400)
     else:
         form = ProductForm(instance=product)
     return render(request, 'dashboard/products/form.html', {'form': form, 'title': 'Editar Producto'})
@@ -752,21 +763,25 @@ def mass_edit_products_view(request):
         # Acciones que NO requieren categorías
         if action == 'set_online':
             products.update(is_online=True)
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'ok', 'message': f'✓ {count} producto(s) ahora están EN LÍNEA.'})
             messages.success(request, f'✓ {count} producto(s) ahora están EN LÍNEA.')
             return redirect('panel_product_list')
 
         elif action == 'set_offline':
             products.update(is_online=False)
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'ok', 'message': f'✓ {count} producto(s) ahora están FUERA DE LÍNEA.'})
             messages.success(request, f'✓ {count} producto(s) ahora están FUERA DE LÍNEA.')
             return redirect('panel_product_list')
 
         elif action == 'delete_products':
             product_names = [p.name for p in products[:5]]  # Primeros 5
             products.delete()
-            messages.success(
-                request,
-                f'✓ {count} producto(s) eliminado(s): {", ".join(product_names)}{"..." if count > 5 else ""}'
-            )
+            msg = f'✓ {count} producto(s) eliminado(s): {", ".join(product_names)}{"..." if count > 5 else ""}'
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'ok', 'message': msg})
+            messages.success(request, msg)
             return redirect('panel_product_list')
 
         # Acciones que requieren datos adicionales (mostrar formulario o procesar)
@@ -813,6 +828,8 @@ def mass_edit_products_view(request):
                     products.update(description=new_desc)
                     messages.success(request, f'✓ Descripción actualizada en {count} producto(s).')
 
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'ok', 'message': 'Acción completada.'})
                 return redirect('panel_product_list')
             else:
                 # Si el formulario no es válido, volver a mostrarlo con errores

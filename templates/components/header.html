@@ -24,7 +24,7 @@
                         <span class="fw-bold text-jema-purple">{{ user.username|slice:":1"|upper }}</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 p-2">
-                        <li><a class="dropdown-item" href="{% url 'catalogo' %}"><i class="bi bi-grid-3x3 me-2"></i> Ir
+                        <li><a class="dropdown-item" href="{% url 'catalogo_root' %}"><i class="bi bi-grid-3x3 me-2"></i> Ir
                                 al Catálogo</a></li>
                         {% if user.is_staff %}
                         <li><a class="dropdown-item" href="{% url 'panel_home' %}"><i class="bi bi-gear me-2"></i>

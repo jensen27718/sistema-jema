@@ -23,7 +23,7 @@
                 </p>
 
                 <div class="d-grid gap-2 col-10 col-md-5 mx-auto">
-                    <a href="{% url 'catalogo' %}" class="btn btn-jema-primary btn-lg shadow-lg py-3 rounded-4 fw-bold">
+                    <a href="{% url 'catalogo_root' %}" class="btn btn-jema-primary btn-lg shadow-lg py-3 rounded-4 fw-bold">
                         <i class="bi bi-collection-play me-2"></i> Ver Catálogo
                     </a>
                 </div>
@@ -39,7 +39,7 @@
         <div class="row g-3 justify-content-center">
             <!-- Globo -->
             <div class="col-4 col-md-2">
-                <a href="{% url 'catalogo' %}?categoria=impreso-globo" class="text-decoration-none text-dark">
+                <a href="{% url 'catalogo' 'impresos-para-globos' %}" class="text-decoration-none text-dark">
                     <div class="bg-white p-3 rounded-4 text-center shadow-sm h-100">
                         <i class="bi bi-balloon-heart fs-1 text-jema-teal"></i>
                         <p class="small fw-bold mb-0 mt-2 line-height-sm">Para Globos</p>
@@ -48,7 +48,7 @@
             </div>
             <!-- Cajas -->
             <div class="col-4 col-md-2">
-                <a href="{% url 'catalogo' %}?categoria=vinilo-corte" class="text-decoration-none text-dark">
+                <a href="{% url 'catalogo' 'vinilos-de-corte' %}" class="text-decoration-none text-dark">
                     <div class="bg-white p-3 rounded-4 text-center shadow-sm h-100">
                         <i class="bi bi-box2-heart fs-1 text-jema-purple"></i>
                         <p class="small fw-bold mb-0 mt-2 line-height-sm">Vinilo Corte</p>
@@ -57,7 +57,7 @@
             </div>
             <!-- Marcas -->
             <div class="col-4 col-md-2">
-                <a href="{% url 'catalogo' %}?categoria=logo" class="text-decoration-none text-dark">
+                <a href="{% url 'catalogo' 'stickers-logo' %}" class="text-decoration-none text-dark">
                     <div class="bg-white p-3 rounded-4 text-center shadow-sm h-100">
                         <i class="bi bi-briefcase fs-1 text-jema-magenta"></i>
                         <p class="small fw-bold mb-0 mt-2 line-height-sm">Tu Marca</p>
@@ -73,13 +73,13 @@
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="fw-bold mb-0">Recién Llegados</h4>
-            <a href="{% url 'catalogo' %}" class="text-jema-purple text-decoration-none small fw-bold">Ver todo</a>
+            <a href="{% url 'catalogo_root' %}" class="text-jema-purple text-decoration-none small fw-bold">Ver todo</a>
         </div>
 
         <div class="row g-3">
             {% for product in featured_products %}
             <div class="col-6 col-md-3">
-                <a href="{% url 'catalogo' %}" class="text-decoration-none">
+                <a href="{% url 'catalogo_root' %}" class="text-decoration-none">
                     <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
                         <div class="position-relative" style="padding-top: 100%;">
                             {% if product.image %}
