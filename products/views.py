@@ -588,8 +588,16 @@ def bulk_upload_view(request):
         # Procesar archivos SÍNCRONAMENTE
         from .tasks import process_single_upload_item
         from django.utils import timezone
+        import os
+        skipped_duplicates = []
 
         for uploaded_file in files:
+            # Check for duplicate reference (filename without extension)
+            filename_no_ext = os.path.splitext(uploaded_file.name)[0]
+            if Product.objects.filter(name=filename_no_ext).exists():
+                skipped_duplicates.append(uploaded_file.name)
+                continue
+
             item = BulkUploadItem.objects.create(
                 batch=batch,
                 original_filename=uploaded_file.name,
@@ -614,13 +622,16 @@ def bulk_upload_view(request):
 
         # Marcar batch como completado
         batch.status = 'completed'
+        batch.total_files = batch.processed_files # Update total to reflect only processed
         batch.save()
 
-        messages.success(
-            request,
-            f'Procesamiento completado: {batch.successful_uploads} exitosos, '
-            f'{batch.failed_uploads} fallidos de {batch.total_files} archivos.'
-        )
+        msg = f'Procesamiento completado: {batch.successful_uploads} exitosos, {batch.failed_uploads} fallidos.'
+        if skipped_duplicates:
+            msg += f' Se omitieron {len(skipped_duplicates)} archivos duplicados ({", ".join(skipped_duplicates[:3])}{"..." if len(skipped_duplicates)>3 else ""}).'
+            messages.warning(request, msg)
+        else:
+            messages.success(request, msg)
+            
         return redirect('bulk_upload_status', batch_id=batch.id)
 
     # GET: Mostrar formulario y lotes recientes

@@ -83,6 +83,7 @@ class InternalOrderItem(models.Model):
         verbose_name="Variante"
     )
     quantity = models.PositiveIntegerField("Cantidad", default=1)
+    completed_quantity = models.PositiveIntegerField("Cantidad completada", default=0)
 
     # Snapshot para histórico (se guarda al momento de agregar)
     product_name = models.CharField("Nombre del producto", max_length=200)

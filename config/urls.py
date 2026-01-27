@@ -90,6 +90,7 @@ urlpatterns = [
     path('panel/pedidos-internos/<int:order_id>/eliminar/', views_internal_orders.internal_order_delete_view, name='internal_order_delete'),
     path('panel/pedidos-internos/<int:order_id>/confirmar/', views_internal_orders.internal_order_confirm_view, name='internal_order_confirm'),
     path('panel/pedidos-internos/<int:order_id>/estado/', views_internal_orders.internal_order_update_status_view, name='internal_order_update_status'),
+    path('panel/pedidos-internos/<int:order_id>/tareas/', views_internal_orders.internal_order_tasks_view, name='internal_order_tasks'),
 
     # === APIs AJAX PARA PEDIDOS INTERNOS ===
     path('api/internal-orders/filter-variants/', views_internal_orders.api_filter_variants, name='api_filter_variants'),
@@ -100,6 +101,7 @@ urlpatterns = [
     path('api/internal-orders/auto-select/', views_internal_orders.api_internal_order_auto_select, name='api_auto_select'),
     path('api/internal-orders/clear/', views_internal_orders.api_internal_order_clear, name='api_clear_order'),
     path('api/internal-orders/update-info/', views_internal_orders.api_internal_order_update_info, name='api_update_order_info'),
+    path('api/internal-orders/update-task/', views_internal_orders.api_internal_order_update_task, name='api_update_task'),
 
     # ...
     path('checkout/', views_products.checkout_process_view, name='checkout_process'),

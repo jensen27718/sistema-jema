@@ -227,9 +227,12 @@
     </div>
 
     <!-- Actions -->
-    <div class="d-flex gap-2 mb-4 no-print">
+    <div class="d-flex gap-2 mb-4 no-print flex-wrap">
         <a href="{% url 'internal_order_edit' order.id %}" class="btn btn-jema-primary">
             <i class="bi bi-pencil"></i> Editar Pedido
+        </a>
+        <a href="{% url 'internal_order_tasks' order.id %}" class="btn btn-jema-teal">
+            <i class="bi bi-check2-square"></i> Gestionar Tareas
         </a>
         <button class="btn btn-outline-secondary" onclick="window.print()">
             <i class="bi bi-printer"></i> Imprimir

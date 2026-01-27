@@ -826,3 +826,68 @@ def _build_variant_text(variant):
         parts.append(variant.color.name)
 
     return " - ".join(parts) if parts else "Sin especificar"
+
+
+@login_required
+@user_passes_test(is_staff)
+def internal_order_tasks_view(request, order_id):
+    """Vista de gestión de tareas de producción para un pedido"""
+    order = get_object_or_404(InternalOrder, id=order_id)
+    items = order.items.all().select_related(
+        'variant__product',
+        'variant__size',
+        'variant__material',
+        'variant__color'
+    )
+
+    context = {
+        'order': order,
+        'order_items': items,
+    }
+    return render(request, 'dashboard/internal_orders/tasks.html', context)
+
+
+@login_required
+@require_POST
+def api_internal_order_update_task(request):
+    """Actualiza el progreso de una referencia (tarea)"""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'JSON inválido'}, status=400)
+
+    item_id = data.get('item_id')
+    completed_qty = data.get('completed_quantity')
+
+    if not item_id or completed_qty is None:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Faltan parámetros'
+        }, status=400)
+
+    item = get_object_or_404(InternalOrderItem, id=item_id)
+    
+    try:
+        completed_qty = int(completed_qty)
+        if completed_qty < 0:
+            completed_qty = 0
+        if completed_qty > item.quantity:
+            completed_qty = item.quantity
+    except ValueError:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Cantidad inválida'
+        }, status=400)
+
+    item.completed_quantity = completed_qty
+    item.save()
+
+    return JsonResponse({
+        'status': 'ok',
+        'item': {
+            'id': item.id,
+            'completed_quantity': item.completed_quantity,
+            'is_completed': item.completed_quantity >= item.quantity
+        }
+    })
+

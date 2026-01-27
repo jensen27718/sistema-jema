@@ -1,0 +1,358 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Tareas de Producción - Pedido #{{ order.id }}{% endblock %}
+{% block page_title %}Tareas de Producción{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --completed-bg: rgba(26, 154, 154, 0.05);
+        --completed-border: var(--jema-teal);
+    }
+
+    .tasks-container {
+        padding-bottom: 80px;
+    }
+
+    .task-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: var(--shadow-sm);
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .task-card.completed {
+        background: var(--completed-bg);
+        border-color: var(--completed-border);
+    }
+
+    .task-card.completed::before {
+        content: '\F26E'; /* bi-check-circle-fill */
+        font-family: 'bootstrap-icons';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: var(--jema-teal);
+        font-size: 24px;
+        z-index: 1;
+    }
+
+    .task-header {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .task-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 12px;
+        flex-shrink: 0;
+        background: var(--muted);
+    }
+
+    .task-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .task-info h5 {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: var(--foreground);
+    }
+
+    .task-info p {
+        font-size: 13px;
+        color: var(--muted-foreground);
+        margin: 0;
+    }
+
+    .progress-section {
+        margin-top: 12px;
+    }
+
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .progress {
+        height: 10px;
+        border-radius: 5px;
+        background: var(--muted);
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, var(--jema-purple) 0%, var(--jema-teal) 100%);
+    }
+
+    .task-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 20px;
+        gap: 10px;
+    }
+
+    .qty-control {
+        display: flex;
+        align-items: center;
+        background: var(--muted);
+        border-radius: 25px;
+        padding: 4px;
+        width: 140px;
+        justify-content: space-between;
+    }
+
+    .qty-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: white;
+        color: var(--foreground);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.1s;
+    }
+
+    .qty-btn:active {
+        transform: scale(0.9);
+    }
+
+    .qty-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .qty-value {
+        font-weight: 700;
+        font-size: 16px;
+        min-width: 30px;
+        text-align: center;
+    }
+
+    .complete-btn {
+        flex: 1;
+        border-radius: 25px;
+        font-weight: 700;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Floating summary for mobile */
+    .mobile-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--card-bg);
+        padding: 16px;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 1000;
+        border-top: 1px solid var(--border);
+    }
+
+    .stats-summary {
+        font-size: 13px;
+    }
+
+    .stats-summary strong {
+        font-size: 18px;
+        color: var(--jema-purple);
+    }
+
+    @media (min-width: 768px) {
+        .tasks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container tasks-container">
+    <div class="mb-4 d-flex align-items-center justify-content-between">
+        <div>
+            <a href="{% url 'internal_order_detail' order.id %}" class="text-muted text-decoration-none small">
+                <i class="bi bi-arrow-left"></i> Volver al detalle
+            </a>
+            <h4 class="mb-0 mt-1">Pedido #{{ order.id }} - {{ order.name }}</h4>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-{{ order.get_status_color }} fs-6">{{ order.get_status_display }}</span>
+        </div>
+    </div>
+
+    <div class="tasks-grid">
+        {% for item in order_items %}
+        <div class="task-card {% if item.completed_quantity >= item.quantity %}completed{% endif %}" 
+             id="task-{{ item.id }}" 
+             data-item-id="{{ item.id }}" 
+             data-total-qty="{{ item.quantity }}">
+            
+            <div class="task-header">
+                {% if item.variant.product.image %}
+                <img src="{{ item.variant.product.image.url }}" class="task-image" alt="">
+                {% else %}
+                <div class="task-image d-flex align-items-center justify-content-center">
+                    <i class="bi bi-image text-muted fs-2"></i>
+                </div>
+                {% endif %}
+                
+                <div class="task-info">
+                    <h5>{{ item.product_name }}</h5>
+                    <p>{{ item.variant_details }}</p>
+                    <div class="mt-2">
+                        <span class="badge bg-light text-dark">Total: {{ item.quantity }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-label">
+                    <span>Progreso</span>
+                    <span class="progress-text">{{ item.completed_quantity }} de {{ item.quantity }} hecho</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" 
+                         role="progressbar" 
+                         style="width: {% widthratio item.completed_quantity item.quantity 100 %}%"
+                         aria-valuenow="{{ item.completed_quantity }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="{{ item.quantity }}"></div>
+                </div>
+            </div>
+
+            <div class="task-controls">
+                <div class="qty-control">
+                    <button class="qty-btn" onclick="updateQty({{ item.id }}, -1)">
+                        <i class="bi bi-dash"></i>
+                    </button>
+                    <span class="qty-value" id="val-{{ item.id }}">{{ item.completed_quantity }}</span>
+                    <button class="qty-btn" onclick="updateQty({{ item.id }}, 1)">
+                        <i class="bi bi-plus"></i>
+                    </button>
+                </div>
+                
+                <button class="btn btn-jema-teal complete-btn" onclick="markAllComplete({{ item.id }})">
+                    <i class="bi bi-check2-all me-1"></i> Completar
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Mobile Footer Summary -->
+<div class="mobile-footer">
+    <div class="stats-summary">
+        Total Referencias: <strong id="global-progress-count">{{ order_items.count }}</strong><br>
+        Hechas: <strong id="global-completed-count">0</strong>
+    </div>
+    <button class="btn btn-jema-primary" onclick="window.location.reload()">
+        <i class="bi bi-arrow-clockwise"></i> Actualizar
+    </button>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Inicializar estadísticas
+    document.addEventListener('DOMContentLoaded', () => {
+        updateGlobalStats();
+    });
+
+    /**
+     * Actualiza la cantidad completada de un item via AJAX
+     */
+    async function updateTaskProgress(itemId, newQty) {
+        const card = document.getElementById(`task-${itemId}`);
+        const totalQty = parseInt(card.dataset.totalQty);
+
+        // Validar limites
+        if (newQty < 0) newQty = 0;
+        if (newQty > totalQty) newQty = totalQty;
+
+        try {
+            const response = await fetch('{% url "api_update_task" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    item_id: itemId,
+                    completed_quantity: newQty
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'ok') {
+                // Actualizar UI
+                const valSpan = document.getElementById(`val-${itemId}`);
+                valSpan.innerText = data.item.completed_quantity;
+                
+                const progressText = card.querySelector('.progress-text');
+                progressText.innerText = `${data.item.completed_quantity} de ${totalQty} hecho`;
+                
+                const progressBar = card.querySelector('.progress-bar');
+                const percent = (data.item.completed_quantity / totalQty) * 100;
+                progressBar.style.width = `${percent}%`;
+                
+                if (data.item.is_completed) {
+                    card.classList.add('completed');
+                } else {
+                    card.classList.remove('completed');
+                }
+
+                updateGlobalStats();
+            } else {
+                alert('Error al actualizar: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión');
+        }
+    }
+
+    function updateQty(itemId, delta) {
+        const valSpan = document.getElementById(`val-${itemId}`);
+        const currentQty = parseInt(valSpan.innerText);
+        updateTaskProgress(itemId, currentQty + delta);
+    }
+
+    function markAllComplete(itemId) {
+        const card = document.getElementById(`task-${itemId}`);
+        const totalQty = parseInt(card.dataset.totalQty);
+        updateTaskProgress(itemId, totalQty);
+    }
+
+    function updateGlobalStats() {
+        const completedCards = document.querySelectorAll('.task-card.completed').length;
+        document.getElementById('global-completed-count').innerText = completedCards;
+    }
+</script>
+{% endblock %}
