@@ -513,8 +513,15 @@
             <div class="account-card">
                 <div class="account-header">
                     <h5 class="account-name">{{ account.name }}</h5>
-                    <div class="account-icon">
-                        <i class="bi bi-wallet2"></i>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'accounting_account_update' account.id %}" class="btn btn-sm btn-light rounded-circle edit-account-btn" 
+                           style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; color: var(--jema-purple);"
+                           onclick="event.stopPropagation();">
+                            <i class="bi bi-pencil-fill"></i>
+                        </a>
+                        <div class="account-icon">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
                     </div>
                 </div>
 
