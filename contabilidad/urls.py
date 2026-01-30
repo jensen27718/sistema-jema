@@ -26,4 +26,19 @@ urlpatterns = [
     path('deudas/nueva/', views.debt_create_view, name='accounting_debt_create'),
     path('deudas/<int:debt_id>/', views.debt_detail_view, name='accounting_debt_detail'),
     path('deudas/<int:debt_id>/abonar/', views.payment_create_view, name='accounting_payment_create'),
+    # Facturas
+    path('facturas/', views.invoice_list_view, name='invoice_list'),
+    path('facturas/nueva/', views.invoice_create_view, name='invoice_create'),
+    path('facturas/<int:invoice_id>/', views.invoice_detail_view, name='invoice_detail'),
+    path('facturas/<int:invoice_id>/eliminar/', views.invoice_delete_view, name='invoice_delete'),
+    path('facturas/api/cliente/<int:client_id>/', views.api_client_address, name='api_client_address'),
+    # Guías de Envío
+    path('guias/', views.guide_list_view, name='guide_list'),
+    path('guias/nueva/', views.guide_create_view, name='guide_create'),
+    path('guias/imprimir/', views.guide_print_view, name='guide_print'),
+    path('guias/<int:guide_id>/', views.guide_detail_view, name='guide_detail'),
+    path('guias/<int:guide_id>/eliminar/', views.guide_delete_view, name='guide_delete'),
+    path('guias/api/cliente/<int:client_id>/', views.api_guide_client_data, name='api_guide_client_data'),
+    path('guias/api/observaciones/', views.api_observations, name='api_observations'),
+    path('guias/api/buscar-clientes/', views.api_search_clients, name='api_search_clients'),
 ]

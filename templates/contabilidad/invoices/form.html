@@ -1,0 +1,414 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Nueva Factura - Contabilidad{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'invoice_list' %}" class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Nueva Factura</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --jema-purple: #6B2D7B;
+        --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+    }
+
+    .btn-back-jema {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        color: var(--jema-purple);
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .form-card {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        border: 2px solid #f0f0f0;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #999;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control-jema {
+        border: 2px solid #eee;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-control-jema:focus {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 4px rgba(107, 45, 123, 0.1);
+    }
+
+    .btn-submit {
+        background: var(--jema-gradient);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 14px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(107, 45, 123, 0.4);
+        color: white;
+    }
+
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .items-table thead th {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #999;
+        letter-spacing: 0.5px;
+        padding: 0.75rem 0.5rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .items-table tbody td {
+        padding: 0.5rem;
+        vertical-align: middle;
+    }
+
+    .items-table .form-control {
+        border: 2px solid #eee;
+        border-radius: 10px;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .items-table .form-control:focus {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 3px rgba(107, 45, 123, 0.1);
+    }
+
+    .btn-remove-row {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: none;
+        background: rgba(220, 53, 69, 0.08);
+        color: #dc3545;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-remove-row:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-add-row {
+        background: rgba(107, 45, 123, 0.08);
+        color: var(--jema-purple);
+        border: 2px dashed rgba(107, 45, 123, 0.3);
+        border-radius: 10px;
+        padding: 0.6rem 1.25rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-add-row:hover {
+        background: rgba(107, 45, 123, 0.15);
+        border-color: var(--jema-purple);
+    }
+
+    .totals-box {
+        background: #fafafa;
+        border-radius: 14px;
+        padding: 1.25rem;
+    }
+
+    .total-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        font-size: 0.95rem;
+    }
+
+    .total-line.grand {
+        border-top: 2px solid #eee;
+        padding-top: 0.75rem;
+        margin-top: 0.25rem;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--jema-purple);
+    }
+
+    .section-divider {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--jema-purple);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 1.5rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    @media (max-width: 768px) {
+        .items-table thead { display: none; }
+        .items-table tbody tr {
+            display: block;
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .items-table tbody td {
+            display: block;
+            padding: 0.25rem 0;
+        }
+        .items-table tbody td::before {
+            content: attr(data-label);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: #999;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+    }
+</style>
+
+<form method="POST" id="invoiceForm">
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <!-- Left column: Client & Details -->
+        <div class="col-lg-7">
+            <div class="form-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">Datos de la Factura</h5>
+                    <span class="text-muted fw-bold">{{ next_number }}</span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="section-label">Cliente (opcional)</label>
+                        <select name="client_id" id="clientSelect" class="form-control form-control-jema">
+                            <option value="">-- Sin cliente --</option>
+                            {% for c in customers %}
+                            <option value="{{ c.id }}">{{ c.get_full_name|default:c.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="section-label">Nombre manual</label>
+                        <input type="text" name="client_name" id="clientName" class="form-control form-control-jema"
+                            placeholder="Nombre del cliente">
+                    </div>
+                    <div class="col-12">
+                        <label class="section-label">Dirección del cliente</label>
+                        <input type="text" name="client_address" id="clientAddress" class="form-control form-control-jema"
+                            placeholder="Dirección (opcional)">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="section-label">Fecha de emisión</label>
+                        <input type="date" name="date" class="form-control form-control-jema"
+                            value="{% now 'Y-m-d' %}" required>
+                    </div>
+                </div>
+
+                <div class="section-divider mt-4">Items de la factura</div>
+
+                <table class="items-table" id="itemsTable">
+                    <thead>
+                        <tr>
+                            <th style="width:45%">Descripción</th>
+                            <th style="width:15%">Cantidad</th>
+                            <th style="width:20%">P. Unitario</th>
+                            <th style="width:15%">Total</th>
+                            <th style="width:5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody">
+                        <tr class="item-row">
+                            <td data-label="Descripción">
+                                <input type="text" name="item_description" class="form-control" placeholder="Producto o servicio" required>
+                            </td>
+                            <td data-label="Cantidad">
+                                <input type="number" name="item_quantity" class="form-control item-qty" value="1" min="0.01" step="0.01" required>
+                            </td>
+                            <td data-label="P. Unitario">
+                                <input type="number" name="item_price" class="form-control item-price" value="0" min="0" step="0.01" required>
+                            </td>
+                            <td data-label="Total">
+                                <span class="item-total fw-bold">$0</span>
+                            </td>
+                            <td>
+                                <button type="button" class="btn-remove-row" onclick="removeRow(this)" title="Eliminar">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <button type="button" class="btn-add-row mt-3" onclick="addRow()">
+                    <i class="bi bi-plus-circle me-2"></i> Agregar Item
+                </button>
+            </div>
+        </div>
+
+        <!-- Right column: Totals & Notes -->
+        <div class="col-lg-5">
+            <div class="form-card mb-4">
+                <h6 class="fw-bold mb-3">Resumen</h6>
+                <div class="totals-box">
+                    <div class="total-line">
+                        <span>Subtotal</span>
+                        <span id="subtotalDisplay" class="fw-bold">$0</span>
+                    </div>
+                    <div class="total-line">
+                        <span>Descuento</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span>-$</span>
+                            <input type="number" name="discount" id="discountInput" class="form-control"
+                                value="0" min="0" step="0.01"
+                                style="width: 100px; border: 2px solid #eee; border-radius: 8px; padding: 0.4rem 0.5rem; text-align: right;">
+                        </div>
+                    </div>
+                    <div class="total-line grand">
+                        <span>TOTAL</span>
+                        <span id="totalDisplay">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-card mb-4">
+                <label class="section-label">Notas (opcional)</label>
+                <textarea name="notes" class="form-control form-control-jema" rows="3"
+                    placeholder="Notas adicionales para la factura..."></textarea>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-submit">
+                    <i class="bi bi-check-circle-fill me-2"></i> CREAR FACTURA
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add item row
+    function addRow() {
+        const tbody = document.getElementById('itemsBody');
+        const row = document.createElement('tr');
+        row.className = 'item-row';
+        row.innerHTML = `
+            <td data-label="Descripción">
+                <input type="text" name="item_description" class="form-control" placeholder="Producto o servicio" required>
+            </td>
+            <td data-label="Cantidad">
+                <input type="number" name="item_quantity" class="form-control item-qty" value="1" min="0.01" step="0.01" required>
+            </td>
+            <td data-label="P. Unitario">
+                <input type="number" name="item_price" class="form-control item-price" value="0" min="0" step="0.01" required>
+            </td>
+            <td data-label="Total">
+                <span class="item-total fw-bold">$0</span>
+            </td>
+            <td>
+                <button type="button" class="btn-remove-row" onclick="removeRow(this)" title="Eliminar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+        attachRowListeners(row);
+    }
+
+    // Remove item row
+    function removeRow(btn) {
+        const tbody = document.getElementById('itemsBody');
+        if (tbody.rows.length > 1) {
+            btn.closest('tr').remove();
+            recalculate();
+        }
+    }
+
+    // Attach change listeners to a row
+    function attachRowListeners(row) {
+        const inputs = row.querySelectorAll('.item-qty, .item-price');
+        inputs.forEach(input => {
+            input.addEventListener('input', recalculate);
+        });
+    }
+
+    // Recalculate totals
+    function recalculate() {
+        let subtotal = 0;
+        document.querySelectorAll('.item-row').forEach(row => {
+            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            const lineTotal = qty * price;
+            row.querySelector('.item-total').textContent = '$' + lineTotal.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+            subtotal += lineTotal;
+        });
+
+        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+        const total = subtotal - discount;
+
+        document.getElementById('subtotalDisplay').textContent = '$' + subtotal.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+        document.getElementById('totalDisplay').textContent = '$' + total.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+    }
+
+    // Client select -> auto-fill address
+    document.getElementById('clientSelect').addEventListener('change', function() {
+        const clientId = this.value;
+        if (!clientId) {
+            document.getElementById('clientName').value = '';
+            document.getElementById('clientAddress').value = '';
+            return;
+        }
+        fetch(`{% url 'invoice_list' %}api/cliente/${clientId}/`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('clientName').value = data.name;
+                    document.getElementById('clientAddress').value = data.address;
+                }
+            })
+            .catch(() => {});
+    });
+
+    // Init listeners
+    document.querySelectorAll('.item-row').forEach(attachRowListeners);
+    document.getElementById('discountInput').addEventListener('input', recalculate);
+</script>
+{% endblock %}

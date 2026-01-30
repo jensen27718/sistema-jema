@@ -12,6 +12,8 @@ class User(AbstractUser):
     
     # Aquí puedes agregar campos extras que todos tengan
     phone_number = models.CharField(max_length=15, blank=True, null=True)
+    cedula = models.CharField("Cédula", max_length=20, blank=True, null=True)
+    address = models.TextField("Dirección", blank=True, null=True)
 
     def save(self, *args, **kwargs):
         # Si es superusuario, forzar rol de ADMIN

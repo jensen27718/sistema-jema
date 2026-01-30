@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Sum
-from .models import Account, Transaction, TransactionCategory, Provider, Debt, Payment
+from .models import Account, Transaction, TransactionCategory, Provider, Debt, Payment, Invoice, InvoiceItem, ShippingGuide, ShippingObservation
 
 def is_staff(user):
     return user.is_staff or user.is_superuser
@@ -830,3 +830,341 @@ def account_detail_view(request, account_id):
         'date_to': date_to,
     }
     return render(request, 'contabilidad/account_detail.html', context)
+
+
+# ==========================
+# INVOICE MANAGEMENT VIEWS
+# ==========================
+
+@login_required
+@user_passes_test(is_staff)
+def invoice_list_view(request):
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+
+    invoices = Invoice.objects.all()
+
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        invoices = invoices.filter(
+            Q(number__icontains=search_query) |
+            Q(client_name__icontains=search_query) |
+            Q(notes__icontains=search_query)
+        )
+
+    paginator = Paginator(invoices, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'invoices': page_obj,
+        'page_obj': page_obj,
+        'search_query': search_query,
+    }
+    return render(request, 'contabilidad/invoices/list.html', context)
+
+
+@login_required
+@user_passes_test(is_staff)
+def invoice_create_view(request):
+    from decimal import Decimal, InvalidOperation
+    from users.models import User
+
+    if request.method == 'POST':
+        try:
+            from django.db import transaction as db_transaction
+
+            client_id = request.POST.get('client_id')
+            client_name = request.POST.get('client_name', '').strip()
+            client_address = request.POST.get('client_address', '').strip()
+            date = request.POST.get('date')
+            notes = request.POST.get('notes', '').strip()
+            discount = Decimal(request.POST.get('discount') or '0')
+
+            client = None
+            if client_id:
+                client = User.objects.filter(id=client_id, role=User.Role.CUSTOMER).first()
+                if client and not client_name:
+                    client_name = client.get_full_name() or client.username
+
+            # Collect items
+            descriptions = request.POST.getlist('item_description')
+            quantities = request.POST.getlist('item_quantity')
+            prices = request.POST.getlist('item_price')
+
+            if not descriptions or not any(d.strip() for d in descriptions):
+                messages.error(request, "Debe agregar al menos un item a la factura.")
+                raise ValueError("No items")
+
+            with db_transaction.atomic():
+                invoice = Invoice.objects.create(
+                    number=Invoice.get_next_number(),
+                    client=client,
+                    client_name=client_name,
+                    client_address=client_address,
+                    date=date,
+                    notes=notes,
+                    discount=discount,
+                )
+
+                for desc, qty, price in zip(descriptions, quantities, prices):
+                    if desc.strip():
+                        InvoiceItem.objects.create(
+                            invoice=invoice,
+                            description=desc.strip(),
+                            quantity=Decimal(qty or '1'),
+                            unit_price=Decimal(price or '0'),
+                        )
+
+            messages.success(request, f"Factura {invoice.number} creada exitosamente.")
+            return redirect('invoice_detail', invoice_id=invoice.id)
+
+        except (ValueError, InvalidOperation) as e:
+            if str(e) != "No items":
+                messages.error(request, f"Error en los datos ingresados: {str(e)}")
+        except Exception as e:
+            messages.error(request, f"Error al crear factura: {str(e)}")
+
+    customers = User.objects.filter(role=User.Role.CUSTOMER).order_by('first_name', 'last_name')
+    next_number = Invoice.get_next_number()
+
+    context = {
+        'customers': customers,
+        'next_number': next_number,
+    }
+    return render(request, 'contabilidad/invoices/form.html', context)
+
+
+@login_required
+@user_passes_test(is_staff)
+def invoice_detail_view(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    items = invoice.items.all()
+
+    context = {
+        'invoice': invoice,
+        'items': items,
+        'subtotal': invoice.get_subtotal(),
+        'total': invoice.get_total(),
+    }
+    return render(request, 'contabilidad/invoices/detail.html', context)
+
+
+@login_required
+@user_passes_test(is_staff)
+def invoice_delete_view(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    if request.method == 'POST':
+        number = invoice.number
+        invoice.delete()
+        messages.success(request, f"Factura {number} eliminada.")
+        return redirect('invoice_list')
+    return render(request, 'dashboard/categories/confirm_delete.html', {'object': invoice})
+
+
+@login_required
+@user_passes_test(is_staff)
+def api_client_address(request, client_id):
+    from django.http import JsonResponse
+    from users.models import User
+
+    try:
+        client = User.objects.get(id=client_id, role=User.Role.CUSTOMER)
+        return JsonResponse({
+            'success': True,
+            'address': client.address or '',
+            'name': client.get_full_name() or client.username,
+        })
+    except User.DoesNotExist:
+        return JsonResponse({'success': False}, status=404)
+
+
+# ==========================
+# SHIPPING GUIDE VIEWS
+# ==========================
+
+@login_required
+@user_passes_test(is_staff)
+def guide_list_view(request):
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+
+    guides = ShippingGuide.objects.all()
+
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        guides = guides.filter(
+            Q(number__icontains=search_query) |
+            Q(sender_name__icontains=search_query) |
+            Q(sender_lastname__icontains=search_query) |
+            Q(recipient_name__icontains=search_query) |
+            Q(recipient_lastname__icontains=search_query) |
+            Q(recipient_cedula__icontains=search_query) |
+            Q(recipient_city__icontains=search_query)
+        )
+
+    paginator = Paginator(guides, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'guides': page_obj,
+        'page_obj': page_obj,
+        'search_query': search_query,
+    }
+    return render(request, 'contabilidad/guides/list.html', context)
+
+
+@login_required
+@user_passes_test(is_staff)
+def guide_create_view(request):
+    from decimal import Decimal, InvalidOperation
+    from users.models import User
+
+    if request.method == 'POST':
+        try:
+            guide = ShippingGuide(
+                number=ShippingGuide.get_next_number(),
+                sender_name=request.POST.get('sender_name', ''),
+                sender_lastname=request.POST.get('sender_lastname', ''),
+                sender_cedula=request.POST.get('sender_cedula', ''),
+                sender_phone=request.POST.get('sender_phone', ''),
+                sender_department=request.POST.get('sender_department', ''),
+                sender_city=request.POST.get('sender_city', ''),
+                sender_address=request.POST.get('sender_address', ''),
+                recipient_name=request.POST.get('recipient_name', ''),
+                recipient_lastname=request.POST.get('recipient_lastname', ''),
+                recipient_cedula=request.POST.get('recipient_cedula', ''),
+                recipient_phone=request.POST.get('recipient_phone', ''),
+                recipient_department=request.POST.get('recipient_department', ''),
+                recipient_city=request.POST.get('recipient_city', ''),
+                recipient_address=request.POST.get('recipient_address', ''),
+                observation=request.POST.get('observation', ''),
+            )
+
+            client_id = request.POST.get('client_id')
+            if client_id:
+                guide.client = User.objects.filter(id=client_id).first()
+
+            try:
+                guide.collection_value = Decimal(request.POST.get('collection_value') or '0')
+            except InvalidOperation:
+                guide.collection_value = Decimal('0')
+
+            guide.save()
+            messages.success(request, f"Guía {guide.number} creada exitosamente.")
+            return redirect('guide_list')
+
+        except Exception as e:
+            messages.error(request, f"Error al crear guía: {str(e)}")
+
+    # Pre-llenar remitente con datos de la última guía
+    last_guide = ShippingGuide.objects.first()
+    observations = ShippingObservation.objects.all()
+
+    context = {
+        'last_guide': last_guide,
+        'observations': observations,
+        'next_number': ShippingGuide.get_next_number(),
+    }
+    return render(request, 'contabilidad/guides/form.html', context)
+
+
+@login_required
+@user_passes_test(is_staff)
+def guide_detail_view(request, guide_id):
+    guide = get_object_or_404(ShippingGuide, id=guide_id)
+    return render(request, 'contabilidad/guides/detail.html', {'guide': guide})
+
+
+@login_required
+@user_passes_test(is_staff)
+def guide_delete_view(request, guide_id):
+    guide = get_object_or_404(ShippingGuide, id=guide_id)
+    if request.method == 'POST':
+        number = guide.number
+        guide.delete()
+        messages.success(request, f"Guía {number} eliminada.")
+        return redirect('guide_list')
+    return render(request, 'dashboard/categories/confirm_delete.html', {'object': guide})
+
+
+@login_required
+@user_passes_test(is_staff)
+def guide_print_view(request):
+    ids_param = request.GET.get('ids', '')
+    if ids_param:
+        ids = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
+        guides = ShippingGuide.objects.filter(id__in=ids)
+    else:
+        guides = ShippingGuide.objects.none()
+
+    return render(request, 'contabilidad/guides/print.html', {'guides': guides})
+
+
+@login_required
+@user_passes_test(is_staff)
+def api_guide_client_data(request, client_id):
+    from django.http import JsonResponse
+    from users.models import User
+
+    try:
+        client = User.objects.get(id=client_id)
+        return JsonResponse({
+            'success': True,
+            'first_name': client.first_name or '',
+            'last_name': client.last_name or '',
+            'cedula': client.cedula or '',
+            'phone': client.phone_number or '',
+            'address': client.address or '',
+        })
+    except User.DoesNotExist:
+        return JsonResponse({'success': False}, status=404)
+
+
+@login_required
+@user_passes_test(is_staff)
+def api_observations(request):
+    from django.http import JsonResponse
+
+    if request.method == 'POST':
+        text = request.POST.get('text', '').strip()
+        if text:
+            obs, created = ShippingObservation.objects.get_or_create(text=text)
+            return JsonResponse({'success': True, 'id': obs.id, 'text': obs.text, 'created': created})
+        return JsonResponse({'success': False, 'error': 'Texto vacío'}, status=400)
+
+    observations = list(ShippingObservation.objects.values('id', 'text'))
+    return JsonResponse({'observations': observations})
+
+
+@login_required
+@user_passes_test(is_staff)
+def api_search_clients(request):
+    from django.http import JsonResponse
+    from django.db.models import Q
+    from users.models import User
+
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse({'clients': []})
+
+    clients = User.objects.filter(
+        Q(first_name__icontains=q) |
+        Q(last_name__icontains=q) |
+        Q(cedula__icontains=q) |
+        Q(phone_number__icontains=q) |
+        Q(username__icontains=q)
+    )[:10]
+
+    results = [{
+        'id': c.id,
+        'first_name': c.first_name or '',
+        'last_name': c.last_name or '',
+        'cedula': c.cedula or '',
+        'phone': c.phone_number or '',
+        'address': c.address or '',
+        'label': f"{c.first_name} {c.last_name}".strip() or c.username,
+    } for c in clients]
+
+    return JsonResponse({'clients': results})

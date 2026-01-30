@@ -1,0 +1,269 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Facturación - Contabilidad{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'accounting_dashboard' %}" class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Facturación</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --jema-purple: #6B2D7B;
+        --jema-purple-light: rgba(107, 45, 123, 0.08);
+        --jema-teal: #1A9A9A;
+    }
+
+    .btn-back-jema {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        color: var(--jema-purple);
+        font-size: 1.1rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-back-jema:hover {
+        background: var(--jema-purple-light);
+        border-color: var(--jema-purple);
+        transform: translateX(-3px);
+    }
+
+    .btn-add {
+        background: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(107, 45, 123, 0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .btn-add:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(107, 45, 123, 0.4);
+        color: white;
+    }
+
+    .invoice-table-card {
+        background: white;
+        border-radius: 20px;
+        border: 2px solid #f0f0f0;
+        overflow: hidden;
+    }
+
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .invoice-table thead th {
+        background: #fafafa;
+        padding: 1rem 1.25rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #999;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .invoice-table tbody td {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #f5f5f5;
+        vertical-align: middle;
+    }
+
+    .invoice-table tbody tr:hover {
+        background: var(--jema-purple-light);
+    }
+
+    .invoice-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .invoice-number {
+        font-weight: 700;
+        color: var(--jema-purple);
+    }
+
+    .invoice-total {
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: #222;
+    }
+
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: 2px solid #eee;
+        background: white;
+        color: #666;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-action:hover {
+        border-color: var(--jema-purple);
+        color: var(--jema-purple);
+        background: var(--jema-purple-light);
+    }
+
+    .btn-action.delete:hover {
+        border-color: #dc3545;
+        color: #dc3545;
+        background: rgba(220, 53, 69, 0.08);
+    }
+
+    .search-box {
+        border: 2px solid #eee;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s ease;
+        max-width: 300px;
+    }
+
+    .search-box:focus {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 4px rgba(107, 45, 123, 0.1);
+    }
+
+    @media (max-width: 768px) {
+        .invoice-table thead { display: none; }
+        .invoice-table tbody td {
+            display: block;
+            padding: 0.5rem 1.25rem;
+            border-bottom: none;
+        }
+        .invoice-table tbody td:first-child { padding-top: 1rem; }
+        .invoice-table tbody td:last-child {
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .invoice-table tbody td::before {
+            content: attr(data-label);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #999;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <form method="GET" class="d-flex align-items-center gap-2">
+                <input type="text" name="q" class="form-control search-box" placeholder="Buscar factura..."
+                    value="{{ search_query }}">
+                <button type="submit" class="btn btn-light border" style="border-radius: 12px; height: 48px;">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+            <a href="{% url 'invoice_create' %}" class="btn-add">
+                <i class="bi bi-plus-circle-fill"></i> Nueva Factura
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="invoice-table-card">
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td data-label="Número">
+                    <span class="invoice-number">{{ invoice.number }}</span>
+                </td>
+                <td data-label="Cliente">{{ invoice.client_name|default:"Sin cliente" }}</td>
+                <td data-label="Fecha">{{ invoice.date|date:"d/m/Y" }}</td>
+                <td data-label="Total">
+                    <span class="invoice-total">${{ invoice.get_total|intcomma }}</span>
+                </td>
+                <td data-label="Acciones" class="text-end">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'invoice_detail' invoice.id %}" class="btn-action" title="Ver detalle">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <form method="POST" action="{% url 'invoice_delete' invoice.id %}"
+                            onsubmit="return confirm('¿Eliminar factura {{ invoice.number }}?');" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action delete" title="Eliminar">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">
+                    <div class="text-center py-5">
+                        <i class="bi bi-receipt-cutoff fs-1 text-muted d-block mb-3" style="opacity: 0.3;"></i>
+                        <h5 class="text-muted">No hay facturas registradas</h5>
+                        <p class="text-muted">Comienza creando una nueva factura</p>
+                        <a href="{% url 'invoice_create' %}" class="btn-add mt-3">
+                            <i class="bi bi-plus-circle-fill"></i> Nueva Factura
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+<nav class="mt-4 d-flex justify-content-center">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}">&laquo;</a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}&q={{ search_query }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}">&raquo;</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

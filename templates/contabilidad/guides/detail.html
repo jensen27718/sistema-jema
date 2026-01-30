@@ -1,0 +1,138 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Guía {{ guide.number }}{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'guide_list' %}" class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Guía {{ guide.number }}</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .btn-back-jema {
+        width: 40px; height: 40px;
+        display: flex; align-items: center; justify-content: center;
+        background: white; border: 2px solid #eee; border-radius: 12px;
+        color: var(--jema-purple); font-size: 1.1rem;
+        transition: all 0.2s ease; text-decoration: none;
+    }
+    .btn-back-jema:hover {
+        background: rgba(107,45,123,0.08);
+        border-color: var(--jema-purple);
+        transform: translateX(-3px);
+    }
+    .guide-card {
+        background: white; border-radius: 20px;
+        border: 2px solid #f0f0f0; padding: 2rem;
+    }
+    .guide-header {
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 2px solid #f0f0f0; padding-bottom: 1rem; margin-bottom: 1.5rem;
+    }
+    .guide-number {
+        font-size: 1.5rem; font-weight: 800; color: var(--jema-purple);
+    }
+    .guide-date { color: #999; font-size: 0.9rem; }
+    .person-section { margin-bottom: 1.5rem; }
+    .person-title {
+        font-weight: 700; font-size: 0.85rem; text-transform: uppercase;
+        color: var(--jema-purple); letter-spacing: 0.5px; margin-bottom: 0.75rem;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .person-info { font-size: 0.95rem; line-height: 1.8; }
+    .person-info strong { color: #333; }
+    .info-label { color: #999; font-size: 0.8rem; font-weight: 600; }
+    .extras-section {
+        border-top: 2px solid #f0f0f0; padding-top: 1rem; margin-top: 1rem;
+    }
+    .collection-value {
+        font-size: 1.3rem; font-weight: 800; color: var(--jema-teal);
+    }
+    .btn-print-single {
+        background: linear-gradient(135deg, #1A9A9A 0%, #2ABABA 100%);
+        border: none; color: white; padding: 0.75rem 1.5rem;
+        border-radius: 12px; font-weight: 600;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    .btn-print-single:hover { transform: translateY(-2px); color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="guide-card">
+            <div class="guide-header">
+                <span class="guide-number">{{ guide.number }}</span>
+                <div class="text-end">
+                    <span class="guide-date">{{ guide.created_at|date:"d/m/Y H:i" }}</span>
+                    <div class="mt-2">
+                        <a href="{% url 'guide_print' %}?ids={{ guide.id }}" target="_blank" class="btn-print-single">
+                            <i class="bi bi-printer"></i> Imprimir
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Remitente -->
+                <div class="col-md-6">
+                    <div class="person-section">
+                        <div class="person-title"><i class="bi bi-person-fill"></i> Remitente</div>
+                        <div class="person-info">
+                            <span class="info-label">Nombre</span><br>
+                            <strong>{{ guide.sender_name }} {{ guide.sender_lastname }}</strong><br>
+                            <span class="info-label">Cédula</span><br>
+                            {{ guide.sender_cedula|default:"—" }}<br>
+                            <span class="info-label">Celular</span><br>
+                            {{ guide.sender_phone }}<br>
+                            <span class="info-label">Ciudad</span><br>
+                            {{ guide.sender_city }}<br>
+                            <span class="info-label">Dirección</span><br>
+                            {{ guide.sender_address }}
+                        </div>
+                    </div>
+                </div>
+                <!-- Destinatario -->
+                <div class="col-md-6">
+                    <div class="person-section">
+                        <div class="person-title"><i class="bi bi-person-check-fill"></i> Destinatario</div>
+                        <div class="person-info">
+                            <span class="info-label">Nombre</span><br>
+                            <strong>{{ guide.recipient_name }} {{ guide.recipient_lastname }}</strong><br>
+                            <span class="info-label">Cédula</span><br>
+                            {{ guide.recipient_cedula|default:"—" }}<br>
+                            <span class="info-label">Celular</span><br>
+                            {{ guide.recipient_phone }}<br>
+                            <span class="info-label">Ciudad</span><br>
+                            {{ guide.recipient_city }}<br>
+                            <span class="info-label">Dirección</span><br>
+                            {{ guide.recipient_address }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="extras-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <span class="info-label">Valor a Recaudar</span><br>
+                        <span class="collection-value">${{ guide.collection_value }}</span>
+                    </div>
+                    <div class="col-md-6">
+                        {% if guide.observation %}
+                        <span class="info-label">Observación</span><br>
+                        {{ guide.observation }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

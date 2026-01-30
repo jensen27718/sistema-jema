@@ -1,0 +1,300 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Nueva Guía de Envío{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'guide_list' %}" class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Nueva Guía de Envío — {{ next_number }}</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .btn-back-jema {
+        width: 40px; height: 40px;
+        display: flex; align-items: center; justify-content: center;
+        background: white; border: 2px solid #eee; border-radius: 12px;
+        color: var(--jema-purple); font-size: 1.1rem;
+        transition: all 0.2s ease; text-decoration: none;
+    }
+    .btn-back-jema:hover {
+        background: rgba(107,45,123,0.08);
+        border-color: var(--jema-purple);
+        transform: translateX(-3px);
+    }
+    .section-card {
+        background: white; border-radius: 20px;
+        border: 2px solid #f0f0f0; padding: 1.5rem;
+    }
+    .section-title {
+        font-weight: 700; font-size: 1rem;
+        color: var(--jema-purple); margin-bottom: 1rem;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .form-label-sm {
+        font-size: 0.8rem; font-weight: 600; color: #666;
+        margin-bottom: 0.25rem;
+    }
+    .form-control, .form-select {
+        border: 2px solid #eee; border-radius: 10px;
+        padding: 0.6rem 0.75rem; transition: all 0.2s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--jema-purple);
+        box-shadow: 0 0 0 3px rgba(107,45,123,0.1);
+    }
+    .btn-submit {
+        background: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+        border: none; color: white; padding: 1rem 2rem;
+        border-radius: 14px; font-weight: 700;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(107,45,123,0.3);
+    }
+    .btn-submit:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(107,45,123,0.4);
+        color: white;
+    }
+    .client-search-wrapper { position: relative; }
+    .client-results {
+        position: absolute; top: 100%; left: 0; right: 0;
+        background: white; border: 2px solid #eee; border-radius: 12px;
+        max-height: 200px; overflow-y: auto; z-index: 100;
+        display: none; box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .client-results .client-item {
+        padding: 0.75rem 1rem; cursor: pointer;
+        border-bottom: 1px solid #f5f5f5;
+        transition: background 0.15s;
+    }
+    .client-results .client-item:hover {
+        background: rgba(107,45,123,0.05);
+    }
+    .client-results .client-item:last-child { border-bottom: none; }
+    .obs-saved-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: rgba(26,154,154,0.1); color: #1A9A9A;
+        padding: 4px 10px; border-radius: 8px; font-size: 0.8rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="POST" id="guideForm">
+    {% csrf_token %}
+
+    <div class="row g-4 mb-4">
+        <!-- REMITENTE -->
+        <div class="col-lg-6">
+            <div class="section-card h-100">
+                <div class="section-title">
+                    <i class="bi bi-person-fill"></i> Remitente
+                </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label-sm">Nombre</label>
+                        <input type="text" name="sender_name" class="form-control" required
+                            value="{{ last_guide.sender_name|default:'' }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Apellido</label>
+                        <input type="text" name="sender_lastname" class="form-control" required
+                            value="{{ last_guide.sender_lastname|default:'' }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Cédula</label>
+                        <input type="text" name="sender_cedula" class="form-control"
+                            value="{{ last_guide.sender_cedula|default:'' }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Celular</label>
+                        <input type="text" name="sender_phone" class="form-control" required
+                            value="{{ last_guide.sender_phone|default:'' }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Ciudad</label>
+                        <input type="text" name="sender_city" class="form-control" required
+                            value="{{ last_guide.sender_city|default:'' }}" placeholder="Ej: Bogotá">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Dirección</label>
+                        <input type="text" name="sender_address" class="form-control" required
+                            value="{{ last_guide.sender_address|default:'' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DESTINATARIO -->
+        <div class="col-lg-6">
+            <div class="section-card h-100">
+                <div class="section-title">
+                    <i class="bi bi-person-check-fill"></i> Destinatario
+                </div>
+
+                <!-- Búsqueda de cliente -->
+                <div class="mb-3 client-search-wrapper">
+                    <label class="form-label-sm">Buscar cliente</label>
+                    <input type="text" id="clientSearch" class="form-control" placeholder="Nombre, cédula o teléfono..." autocomplete="off">
+                    <input type="hidden" name="client_id" id="clientId">
+                    <div class="client-results" id="clientResults"></div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label-sm">Nombre</label>
+                        <input type="text" name="recipient_name" id="r_name" class="form-control" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Apellido</label>
+                        <input type="text" name="recipient_lastname" id="r_lastname" class="form-control" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Cédula</label>
+                        <input type="text" name="recipient_cedula" id="r_cedula" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Celular</label>
+                        <input type="text" name="recipient_phone" id="r_phone" class="form-control" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Ciudad</label>
+                        <input type="text" name="recipient_city" id="r_city" class="form-control" required placeholder="Ej: Medellín">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label-sm">Dirección</label>
+                        <input type="text" name="recipient_address" id="r_address" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXTRAS -->
+    <div class="section-card mb-4">
+        <div class="section-title">
+            <i class="bi bi-info-circle-fill"></i> Información Adicional
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label-sm">Valor a Recaudar ($)</label>
+                <input type="number" name="collection_value" class="form-control" step="0.01" min="0" value="0">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label-sm">Observaciones Guardadas</label>
+                <select id="savedObs" class="form-select" onchange="loadObs(this)">
+                    <option value="">Seleccionar...</option>
+                    {% for obs in observations %}
+                    <option value="{{ obs.text }}">{{ obs.text }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100" style="border-radius: 10px; height: 42px;" onclick="saveNewObs()">
+                    <i class="bi bi-bookmark-plus"></i> Guardar Observación
+                </button>
+            </div>
+            <div class="col-12">
+                <label class="form-label-sm">Observación</label>
+                <textarea name="observation" id="obsText" class="form-control" rows="2" placeholder="Escriba una observación..."></textarea>
+                <span id="obsSavedMsg" class="obs-saved-badge mt-1" style="display:none;">
+                    <i class="bi bi-check-circle"></i> Guardada
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-end">
+        <a href="{% url 'guide_list' %}" class="btn btn-light me-2" style="border-radius: 12px; padding: 0.75rem 1.5rem;">Cancelar</a>
+        <button type="submit" class="btn-submit">
+            <i class="bi bi-check-circle-fill me-1"></i> Crear Guía
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Client search (AJAX)
+let searchTimer;
+const searchInput = document.getElementById('clientSearch');
+const resultsDiv = document.getElementById('clientResults');
+
+searchInput.addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    const q = this.value.trim();
+    if (q.length < 2) { resultsDiv.style.display = 'none'; return; }
+
+    searchTimer = setTimeout(() => {
+        fetch("{% url 'api_search_clients' %}?q=" + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(data => {
+            if (data.clients.length === 0) {
+                resultsDiv.innerHTML = '<div class="p-3 text-muted text-center">Sin resultados</div>';
+            } else {
+                resultsDiv.innerHTML = data.clients.map(c =>
+                    `<div class="client-item" onclick='selectClient(${JSON.stringify(c)})'>
+                        <strong>${c.label}</strong>
+                        <span class="text-muted ms-2">${c.cedula || ''} ${c.phone || ''}</span>
+                    </div>`
+                ).join('');
+            }
+            resultsDiv.style.display = 'block';
+        });
+    }, 300);
+});
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.client-search-wrapper')) resultsDiv.style.display = 'none';
+});
+
+function selectClient(c) {
+    document.getElementById('clientId').value = c.id;
+    document.getElementById('r_name').value = c.first_name;
+    document.getElementById('r_lastname').value = c.last_name;
+    document.getElementById('r_cedula').value = c.cedula;
+    document.getElementById('r_phone').value = c.phone;
+    document.getElementById('r_address').value = c.address;
+    searchInput.value = c.label;
+    resultsDiv.style.display = 'none';
+}
+
+// Observations
+function loadObs(sel) {
+    if (sel.value) document.getElementById('obsText').value = sel.value;
+}
+
+function saveNewObs() {
+    const text = document.getElementById('obsText').value.trim();
+    if (!text) return;
+
+    fetch("{% url 'api_observations' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: 'text=' + encodeURIComponent(text)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            if (data.created) {
+                const sel = document.getElementById('savedObs');
+                const opt = document.createElement('option');
+                opt.value = data.text;
+                opt.textContent = data.text;
+                sel.appendChild(opt);
+            }
+            const msg = document.getElementById('obsSavedMsg');
+            msg.style.display = 'inline-flex';
+            setTimeout(() => msg.style.display = 'none', 2000);
+        }
+    });
+}
+</script>
+{% endblock %}

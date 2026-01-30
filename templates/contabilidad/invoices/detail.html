@@ -1,0 +1,370 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Factura {{ invoice.number }} - Contabilidad{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'invoice_list' %}" class="btn-back-jema">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="fw-bold">Factura {{ invoice.number }}</span>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --jema-purple: #6B2D7B;
+        --jema-gradient: linear-gradient(135deg, #6B2D7B 0%, #E91E8C 100%);
+    }
+
+    .btn-back-jema {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        color: var(--jema-purple);
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .invoice-sheet {
+        background: white;
+        border-radius: 20px;
+        border: 2px solid #f0f0f0;
+        padding: 3rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 3px solid var(--jema-purple);
+    }
+
+    .company-info h2 {
+        font-size: 2rem;
+        font-weight: 800;
+        background: var(--jema-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.25rem;
+    }
+
+    .company-info p {
+        color: #888;
+        font-size: 0.85rem;
+        margin: 0;
+    }
+
+    .invoice-meta {
+        text-align: right;
+    }
+
+    .invoice-meta .invoice-number-display {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--jema-purple);
+    }
+
+    .invoice-meta .invoice-date {
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    .client-section {
+        background: #fafafa;
+        border-radius: 14px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .client-section .label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #999;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+
+    .client-section .client-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #222;
+    }
+
+    .client-section .client-address {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .items-table-detail {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2rem;
+    }
+
+    .items-table-detail thead th {
+        padding: 0.85rem 1rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #999;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .items-table-detail tbody td {
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid #f5f5f5;
+    }
+
+    .items-table-detail tbody tr:last-child td {
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .item-desc {
+        font-weight: 600;
+    }
+
+    .item-amount {
+        font-weight: 700;
+        text-align: right;
+    }
+
+    .totals-section {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .totals-box-detail {
+        width: 280px;
+    }
+
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.6rem 0;
+        font-size: 0.95rem;
+    }
+
+    .total-row.discount {
+        color: #dc3545;
+    }
+
+    .total-row.grand {
+        border-top: 3px solid var(--jema-purple);
+        padding-top: 0.85rem;
+        margin-top: 0.25rem;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--jema-purple);
+    }
+
+    .notes-section {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .notes-section .notes-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #999;
+        margin-bottom: 0.5rem;
+    }
+
+    .notes-section .notes-text {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .print-actions {
+        text-align: center;
+        margin-top: 2rem;
+    }
+
+    .btn-print {
+        background: var(--jema-purple);
+        color: white;
+        border: none;
+        padding: 0.85rem 2rem;
+        border-radius: 12px;
+        font-weight: 700;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .btn-print:hover {
+        background: #5a2469;
+        transform: translateY(-2px);
+    }
+
+    .btn-delete-invoice {
+        background: rgba(220, 53, 69, 0.08);
+        color: #dc3545;
+        border: 2px solid rgba(220, 53, 69, 0.2);
+        padding: 0.85rem 2rem;
+        border-radius: 12px;
+        font-weight: 700;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .btn-delete-invoice:hover {
+        background: #dc3545;
+        color: white;
+        border-color: #dc3545;
+    }
+
+    @media print {
+        .admin-sidebar, .admin-header, .print-actions, .btn-back-jema,
+        .sidebar-collapse-btn, .sidebar-overlay { display: none !important; }
+        .admin-content { margin-left: 0 !important; }
+        .admin-main { padding: 0 !important; }
+        .invoice-sheet {
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            border-radius: 0;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .invoice-sheet { padding: 1.5rem; }
+        .invoice-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .invoice-meta { text-align: left; }
+        .items-table-detail thead { display: none; }
+        .items-table-detail tbody td {
+            display: block;
+            padding: 0.4rem 0;
+            border-bottom: none;
+            text-align: left !important;
+        }
+        .items-table-detail tbody td::before {
+            content: attr(data-label);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: #999;
+            font-weight: 600;
+            display: block;
+        }
+        .items-table-detail tbody tr {
+            border-bottom: 2px solid #f0f0f0;
+            padding: 0.75rem 0;
+            display: block;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="invoice-sheet">
+    <!-- Header -->
+    <div class="invoice-header">
+        <div class="company-info">
+            <h2>JEMA</h2>
+            <p>Sistema de Facturación</p>
+        </div>
+        <div class="invoice-meta">
+            <div class="invoice-number-display">{{ invoice.number }}</div>
+            <div class="invoice-date">
+                <i class="bi bi-calendar3 me-1"></i>
+                {{ invoice.date|date:"d / m / Y" }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Client -->
+    {% if invoice.client_name or invoice.client_address %}
+    <div class="client-section">
+        <div class="label">Facturado a</div>
+        {% if invoice.client_name %}
+        <div class="client-name">{{ invoice.client_name }}</div>
+        {% endif %}
+        {% if invoice.client_address %}
+        <div class="client-address">{{ invoice.client_address }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Items Table -->
+    <table class="items-table-detail">
+        <thead>
+            <tr>
+                <th>Descripción</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-end">P. Unitario</th>
+                <th class="text-end">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td data-label="Descripción" class="item-desc">{{ item.description }}</td>
+                <td data-label="Cantidad" class="text-center">{{ item.quantity|floatformat:"-2" }}</td>
+                <td data-label="P. Unitario" class="text-end">${{ item.unit_price|intcomma }}</td>
+                <td data-label="Total" class="text-end item-amount">${{ item.get_total|intcomma }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="totals-section">
+        <div class="totals-box-detail">
+            <div class="total-row">
+                <span>Subtotal</span>
+                <span class="fw-bold">${{ subtotal|intcomma }}</span>
+            </div>
+            {% if invoice.discount > 0 %}
+            <div class="total-row discount">
+                <span>Descuento</span>
+                <span class="fw-bold">-${{ invoice.discount|intcomma }}</span>
+            </div>
+            {% endif %}
+            <div class="total-row grand">
+                <span>TOTAL</span>
+                <span>${{ total|intcomma }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes -->
+    {% if invoice.notes %}
+    <div class="notes-section">
+        <div class="notes-label">Notas</div>
+        <div class="notes-text">{{ invoice.notes|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Actions (hidden in print) -->
+<div class="print-actions">
+    <button onclick="window.print()" class="btn-print me-2">
+        <i class="bi bi-printer me-2"></i> Imprimir
+    </button>
+    <form method="POST" action="{% url 'invoice_delete' invoice.id %}" class="d-inline"
+        onsubmit="return confirm('¿Eliminar factura {{ invoice.number }}?');">
+        {% csrf_token %}
+        <button type="submit" class="btn-delete-invoice">
+            <i class="bi bi-trash3 me-2"></i> Eliminar
+        </button>
+    </form>
+</div>
+{% endblock %}
