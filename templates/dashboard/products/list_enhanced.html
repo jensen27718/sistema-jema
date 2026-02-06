@@ -27,6 +27,17 @@
             </li>
             <li><hr class="dropdown-divider"></li>
             <li>
+                <a class="dropdown-item" href="#" data-action="set_active">
+                    <i class="bi bi-check-circle text-success me-2"></i> Marcar como Activo
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#" data-action="set_inactive">
+                    <i class="bi bi-x-circle text-danger me-2"></i> Marcar como Inactivo
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
                 <a class="dropdown-item" href="#" data-action="add_categories">
                     <i class="bi bi-tag text-primary me-2"></i> Agregar Categorías
                 </a>
@@ -317,6 +328,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateField(this.dataset.productId, 'is_online', this.checked, this.nextElementSibling.querySelector('span'), false, true);
             });
         });
+
+        // 7. Toggle Active
+        document.querySelectorAll('.active-toggle').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                updateField(this.dataset.productId, 'is_active', this.checked, this.nextElementSibling.querySelector('span'), false, false, true);
+            });
+        });
     }
 
     // --- UTILS ---
@@ -329,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(btn2) btn2.disabled = selected === 0;
     }
 
-    function updateField(productId, field, value, uiElement, isHtml = false, isToggle = false) {
+    function updateField(productId, field, value, uiElement, isHtml = false, isOnlineToggle = false, isActiveToggle = false) {
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
         
         fetch('{% url "inline_edit_product" %}', {
@@ -348,13 +366,21 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if(data.status === 'ok') {
                 // UI Updates
-                if (isToggle) {
+                if (isOnlineToggle) {
                     if (value) {
                         uiElement.innerHTML = '<i class="bi bi-eye me-1"></i>En línea';
                         uiElement.className = 'text-success';
                     } else {
                         uiElement.innerHTML = '<i class="bi bi-eye-slash me-1"></i>Offline';
                         uiElement.className = 'text-muted';
+                    }
+                } else if (isActiveToggle) {
+                    if (value) {
+                        uiElement.innerHTML = '<i class="bi bi-check-circle me-1"></i>Activo';
+                        uiElement.className = 'text-success';
+                    } else {
+                        uiElement.innerHTML = '<i class="bi bi-x-circle me-1"></i>Inactivo';
+                        uiElement.className = 'text-danger';
                     }
                 } else if (field === 'description') {
                      uiElement.innerHTML = value || '<em class="text-muted">Sin descripción</em>';

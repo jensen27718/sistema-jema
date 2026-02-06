@@ -10,6 +10,7 @@
                 <th style="width: 30%;">Descripción</th> <!-- Nueva columna -->
                 <th>Categorías</th>
                 <th>Tipo</th>
+                <th style="width: 120px;">Catálogo</th>
                 <th style="width: 120px;">Estado</th>
                 <th class="pe-4" style="width: 120px;">Acciones</th>
             </tr>
@@ -72,6 +73,20 @@
                             <span class="text-success"><i class="bi bi-eye me-1"></i>En línea</span>
                             {% else %}
                             <span class="text-muted"><i class="bi bi-eye-slash me-1"></i>Offline</span>
+                            {% endif %}
+                        </label>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input active-toggle" type="checkbox"
+                               data-product-id="{{ product.id }}"
+                               {% if product.is_active %}checked{% endif %}>
+                        <label class="form-check-label small active-label">
+                            {% if product.is_active %}
+                            <span class="text-success"><i class="bi bi-check-circle me-1"></i>Activo</span>
+                            {% else %}
+                            <span class="text-danger"><i class="bi bi-x-circle me-1"></i>Inactivo</span>
                             {% endif %}
                         </label>
                     </div>

@@ -20,7 +20,7 @@ class AddressForm(forms.ModelForm):
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'categories', 'product_type', 'description', 'source_file', 'image']
+        fields = ['name', 'categories', 'product_type', 'description', 'source_file', 'image', 'is_online', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'categories': forms.CheckboxSelectMultiple(),  # Soporte para múltiples categorías
@@ -28,12 +28,17 @@ class ProductForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'source_file': forms.FileInput(attrs={'class': 'form-control'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
+            'is_online': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
             'categories': 'Categorías (selecciona una o más)',
+            'is_online': 'Visible en Catálogo Público',
+            'is_active': 'Producto Activo',
         }
         help_texts = {
             'categories': 'El producto aparecerá en todas las categorías seleccionadas',
+            'is_active': 'Si se desactiva, no aparecerá en ningún lado.',
         }
    
 

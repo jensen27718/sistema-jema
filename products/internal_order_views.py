@@ -243,9 +243,9 @@ def api_get_available_filters(request):
 
     product_type = data.get('product_type', '')
 
-    # 1. Base: Solo variantes de productos ONLINE (Soluciona productos borrados/viejos)
+    # 1. Base: Solo variantes de productos ACTIVOS
     # Usamos 'select_related' para optimizar
-    variants_query = ProductVariant.objects.filter(product__is_online=True)
+    variants_query = ProductVariant.objects.filter(product__is_active=True)
 
     # 2. Si hay tipo seleccionado, filtramos estrictamente
     if product_type:
@@ -300,7 +300,7 @@ def api_filter_variants(request):
     # 1. Base: Solo productos ONLINE (Evita productos viejos)
     variants = ProductVariant.objects.select_related(
         'product', 'size', 'material', 'color'
-    ).filter(product__is_online=True)
+    ).filter(product__is_active=True)
 
     # --- APLICACIÓN DE FILTROS ---
 
@@ -589,7 +589,7 @@ def api_internal_order_auto_select(request):
     # Construir query con filtros
     variants = ProductVariant.objects.select_related(
         'product', 'size', 'material', 'color'
-    ).filter(product__is_online=True)
+    ).filter(product__is_active=True)
 
     # Aplicar filtros
     product_type = data.get('product_type')

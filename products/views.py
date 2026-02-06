@@ -230,10 +230,11 @@ def catalogo_publico_view(request, type_slug, category_slug=None):
         # Si el slug no es válido, 404 o redirigir al default
         return redirect('catalogo_root')
 
-    # 1. Obtener productos base (solo del tipo actual y online)
+    # 1. Obtener productos base (solo del tipo actual, activos y online)
     products_query = Product.objects.filter(
         product_type=current_type_code,
         variants__isnull=False,
+        is_active=True,
         is_online=True
     ).distinct().order_by('-created_at')
 
@@ -254,6 +255,7 @@ def catalogo_publico_view(request, type_slug, category_slug=None):
     if not request.headers.get('x-requested-with') == 'XMLHttpRequest':
         categories = Category.objects.filter(
             products__product_type=current_type_code,
+            products__is_active=True,
             products__is_online=True
         ).distinct()
 
@@ -690,7 +692,7 @@ def product_list_enhanced_view(request):
     - Ordenamiento
     - Checkboxes para acciones masivas
     """
-    products = Product.objects.all().prefetch_related('categories', 'variants')
+    products = Product.objects.filter(is_active=True).prefetch_related('categories', 'variants')
 
     # Búsqueda
     search_query = request.GET.get('q', '')
@@ -790,6 +792,22 @@ def mass_edit_products_view(request):
             product_names = [p.name for p in products[:5]]  # Primeros 5
             products.delete()
             msg = f'✓ {count} producto(s) eliminado(s): {", ".join(product_names)}{"..." if count > 5 else ""}'
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'ok', 'message': msg})
+            messages.success(request, msg)
+            return redirect('panel_product_list')
+
+        elif action == 'set_active':
+            products.update(is_active=True)
+            msg = f'✓ {count} producto(s) marcados como ACTIVOS.'
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'ok', 'message': msg})
+            messages.success(request, msg)
+            return redirect('panel_product_list')
+
+        elif action == 'set_inactive':
+            products.update(is_active=False)
+            msg = f'✓ {count} producto(s) marcados como INACTIVOS (Ocultos de todo lado).'
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'status': 'ok', 'message': msg})
             messages.success(request, msg)
@@ -897,6 +915,11 @@ def inline_edit_product_api(request):
             
         elif field == 'description':
             product.description = value
+            product.save()
+            return JsonResponse({'status': 'ok', 'new_value': value})
+
+        elif field == 'is_active':
+            product.is_active = bool(value)
             product.save()
             return JsonResponse({'status': 'ok', 'new_value': value})
 

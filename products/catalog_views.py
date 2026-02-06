@@ -322,7 +322,7 @@ def generate_catalog_pdf_view(request):
     category_ids = request.POST.getlist('categories')
     phone = request.POST.get('phone', '321 216 5252')
 
-    products = Product.objects.all()
+    products = Product.objects.filter(is_active=True, is_online=True)
     if product_type:
         products = products.filter(product_type=product_type)
     if category_ids:

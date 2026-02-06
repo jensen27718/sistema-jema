@@ -68,6 +68,7 @@ class Product(models.Model):
         ('impreso_globo', 'Impreso para Globos'),
         ('cinta', 'Cinta Ramos'),
         ('logo', 'Stickers Logo'),
+        ('interno', 'Manejo Interno / Otros'),
     )
 
     name = models.CharField("Referencia / Nombre", max_length=200)
@@ -82,7 +83,10 @@ class Product(models.Model):
     image = models.ImageField("Imagen Catálogo", upload_to='products_img/', blank=True, null=True)
 
     # Control de visibilidad en catálogo público
-    is_online = models.BooleanField("Visible en Catálogo", default=True)
+    is_online = models.BooleanField("Visible en Catálogo Público", default=True)
+    
+    # Control de estado general (Activado/Desactivado)
+    is_active = models.BooleanField("Producto Activo (General)", default=True, help_text="Si se desactiva, no aparecerá ni en catálogo ni en pedidos internos.")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
