@@ -61,10 +61,14 @@ def api_create_cost_type(request):
     """Crear un nuevo tipo de costo"""
     try:
         data = json.loads(request.body)
+        val = data.get('default_unit_price')
+        if val in (None, ''):
+            val = 0
+            
         ct = CostType.objects.create(
             name=data.get('name', ''),
             unit=data.get('unit', 'unidad'),
-            default_unit_price=Decimal(str(data.get('default_unit_price', 0))),
+            default_unit_price=Decimal(str(val)),
             description=data.get('description', ''),
             is_active=data.get('is_active', True),
         )
@@ -283,6 +287,31 @@ def api_update_shipping(request):
         order.save(update_fields=['shipping_cost'])
 
         return JsonResponse({'ok': True, 'shipping_cost': str(shipping_cost)})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@user_passes_test(is_staff)
+@require_POST
+def api_update_discount(request):
+    """Actualizar descuento de un pedido"""
+    try:
+        data = json.loads(request.body)
+        order_type = data.get('order_type', 'internal')
+        order_id = data.get('order_id')
+        discount_amount = Decimal(str(data.get('discount_amount', 0)))
+
+        if order_type == 'internal':
+            order = get_object_or_404(InternalOrder, id=order_id)
+            order.discount_amount = discount_amount
+            order.recalculate_totals()
+        else:
+            order = get_object_or_404(Order, id=order_id)
+            order.discount_amount = discount_amount
+            order.save(update_fields=['discount_amount'])
+
+        return JsonResponse({'ok': True, 'discount_amount': str(discount_amount), 'total_estimated': str(order.total_estimated)})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=400)
 

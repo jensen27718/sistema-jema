@@ -510,6 +510,34 @@ def product_delete_view(request, product_id):
         return redirect('panel_product_list')
     # Reusamos la plantilla de borrar categorías para no crear otra
     return render(request, 'dashboard/categories/confirm_delete.html', {'object': product})
+    
+@login_required
+@user_passes_test(is_staff)
+def product_duplicate_view(request, product_id):
+    original_product = get_object_or_404(Product, id=product_id)
+    
+    # 1. Duplicate product
+    new_product = Product.objects.get(id=product_id)
+    new_product.pk = None
+    new_product.id = None
+    new_product.name = f"{original_product.name} (Copia)"
+    
+    # Prevenir que el save() automático de previews se ejecute si ya tenemos imagen
+    # Aunque super().save() se llama en el modelo
+    new_product.save()
+    
+    # 2. Copy categories (M2M)
+    new_product.categories.set(original_product.categories.all())
+    
+    # 3. Duplicate variants
+    for variant in original_product.variants.all():
+        variant.pk = None
+        variant.id = None
+        variant.product = new_product
+        variant.save()
+        
+    messages.success(request, f"Producto '{original_product.name}' duplicado correctamente.")
+    return redirect('panel_product_list')
 
 @login_required
 @user_passes_test(is_staff)

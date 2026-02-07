@@ -225,6 +225,7 @@ class Order(models.Model):
     
     total = models.DecimalField(max_digits=12, decimal_places=2)
     shipping_cost = models.DecimalField("Costo de envío", max_digits=10, decimal_places=2, default=0)
+    discount_amount = models.DecimalField("Descuento", max_digits=12, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False) # Mantenemos por compatibilidad
 

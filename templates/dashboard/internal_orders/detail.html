@@ -368,18 +368,29 @@
                 </table>
             </div>
 
-            <!-- Envío -->
+            <!-- Envío y Descuento -->
             <div class="border-top pt-3 mt-3">
-                <div class="row align-items-center">
-                    <div class="col-md-6">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold mb-0"><i class="bi bi-truck"></i> Costo de Envío</label>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text">$</span>
                             <input type="number" step="1" min="0" class="form-control"
                                 id="shippingCostInput" value="{{ order.shipping_cost|floatformat:0 }}"
                                 onchange="updateShipping()">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold mb-0 text-danger"><i class="bi bi-percent"></i> Descuento Especial</label>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="1" min="0" class="form-control text-danger fw-bold"
+                                id="discountInput" value="{{ order.discount_amount|floatformat:0 }}"
+                                onchange="updateDiscount()">
                         </div>
                     </div>
                 </div>
@@ -392,8 +403,8 @@
                     <span class="fw-bold" id="totalProduction">${{ total_production_cost|floatformat:0|default:"0" }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
-                    <span>Envío:</span>
-                    <span class="fw-bold" id="totalShipping">${{ order.shipping_cost|floatformat:0 }}</span>
+                    <span>Descuento:</span>
+                    <span class="fw-bold text-danger" id="totalDiscount">-${{ order.discount_amount|floatformat:0 }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1 border-top pt-2">
                     <span class="fw-bold">Total Costos:</span>
@@ -401,7 +412,7 @@
                 </div>
                 <div class="d-flex justify-content-between mb-1">
                     <span>Total Estimado (Venta):</span>
-                    <span class="fw-bold text-success">${{ order.total_estimated|floatformat:0 }}</span>
+                    <span class="fw-bold text-success" id="totalEstimatedDisplay">${{ order.total_estimated|floatformat:0 }}</span>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span class="fw-bold">Margen:</span>
@@ -528,6 +539,31 @@ function updateShipping() {
             const margin = totalEstimated - grandTotal;
             document.getElementById('grandTotal').textContent = '$' + grandTotal.toLocaleString();
             document.getElementById('marginDisplay').textContent = '$' + margin.toLocaleString();
+            document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
+        }
+    });
+}
+
+function updateDiscount() {
+    const val = document.getElementById('discountInput').value || 0;
+    fetch('{% url "api_update_discount" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({order_type: 'internal', order_id: orderId, discount_amount: val})
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.ok) {
+            document.getElementById('totalDiscount').textContent = '-$' + parseInt(val).toLocaleString();
+            document.getElementById('totalEstimatedDisplay').textContent = '$' + parseInt(res.total_estimated).toLocaleString();
+            
+            // Recalcular margen
+            const totalEstimated = parseFloat(res.total_estimated);
+            const grandTotalText = document.getElementById('grandTotal').textContent.replace(/[$,]/g, '');
+            const grandTotal = parseFloat(grandTotalText) || 0;
+            const margin = totalEstimated - grandTotal;
+            
+            document.getElementById('marginDisplay').textContent = '$' + Math.round(margin).toLocaleString();
             document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
         }
     });

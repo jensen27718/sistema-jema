@@ -101,6 +101,11 @@
                             class="btn btn-sm btn-light text-jema-teal" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
+                        <a href="{% url 'panel_product_duplicate' product.id %}"
+                            class="btn btn-sm btn-light text-primary" title="Duplicar"
+                            onclick="return confirm('¿Duplicar este producto?')">
+                            <i class="bi bi-files"></i>
+                        </a>
                         <a href="{% url 'panel_product_delete' product.id %}"
                            class="btn btn-sm btn-light text-danger" title="Eliminar"
                            onclick="return confirm('¿Eliminar este producto?')">

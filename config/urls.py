@@ -33,6 +33,7 @@ urlpatterns = [
     path('panel/productos/', views_products.product_list_enhanced_view, name='panel_product_list'),  # Reemplazada con vista mejorada
     path('panel/productos/crear/', views_products.product_create_view, name='panel_product_create'),
     path('panel/productos/editar/<int:product_id>/', views_products.product_update_view, name='panel_product_update'),
+    path('panel/productos/duplicar/<int:product_id>/', views_products.product_duplicate_view, name='panel_product_duplicate'),
     path('panel/productos/eliminar/<int:product_id>/', views_products.product_delete_view, name='panel_product_delete'),
     path('panel/productos/variantes/<int:product_id>/', views_products.product_variants_view, name='panel_product_variants'),
 
@@ -127,6 +128,7 @@ urlpatterns = [
     path('api/orders/calculate-costs/', views_costs.api_calculate_costs, name='api_calculate_costs'),
     path('api/orders/update-manual-cost/', views_costs.api_update_manual_cost, name='api_update_manual_cost'),
     path('api/orders/update-shipping/', views_costs.api_update_shipping, name='api_update_shipping'),
+    path('api/orders/update-discount/', views_costs.api_update_discount, name='api_update_discount'),
     path('api/variants/update-dimensions/', views_costs.api_update_variant_dimensions, name='api_update_variant_dimensions'),
 
     # ...

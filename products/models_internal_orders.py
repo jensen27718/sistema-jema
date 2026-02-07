@@ -41,6 +41,12 @@ class InternalOrder(models.Model):
         decimal_places=2,
         default=0
     )
+    discount_amount = models.DecimalField(
+        "Descuento especial",
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
 
     class Meta:
         ordering = ['-created_at']
@@ -71,7 +77,8 @@ class InternalOrder(models.Model):
         )
 
         self.total_items = aggregates['total_qty'] or 0
-        self.total_estimated = aggregates['total_price'] or 0
+        total_price = aggregates['total_price'] or 0
+        self.total_estimated = total_price - (self.discount_amount or 0)
         self.save(update_fields=['total_items', 'total_estimated'])
 
 
