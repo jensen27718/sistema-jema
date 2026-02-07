@@ -1,0 +1,177 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Semana {{ week.week_number }}/{{ week.year }} - Job Costing{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'job_costing_dashboard' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    Semana {{ week.week_number }}/{{ week.year }}
+    <span class="badge {% if week.status == 'closed' %}bg-success{% else %}bg-warning text-dark{% endif %} fs-6">
+        {{ week.get_status_display }}
+    </span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Summary Cards -->
+    <div class="col-md-2">
+        <div class="jema-card p-3 text-center">
+            <div class="small text-muted fw-bold">Ventas</div>
+            <h5 class="fw-bold mb-0">${{ week.total_sales|floatformat:0|intcomma }}</h5>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="jema-card p-3 text-center">
+            <div class="small text-muted fw-bold">Costos Dir.</div>
+            <h5 class="fw-bold mb-0 text-danger">${{ week.total_direct_costs|floatformat:0|intcomma }}</h5>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="jema-card p-3 text-center">
+            <div class="small text-muted fw-bold">Gastos Fijos</div>
+            <h5 class="fw-bold mb-0 text-warning">${{ week.total_fixed_costs|floatformat:0|intcomma }}</h5>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="jema-card p-3 text-center">
+            <div class="small text-muted fw-bold">Overhead</div>
+            <h5 class="fw-bold mb-0">{{ week.overhead_percentage|floatformat:2 }}%</h5>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="jema-card p-3 text-center">
+            <div class="small text-muted fw-bold">Utilidad</div>
+            <h5 class="fw-bold mb-0 {% if week.total_net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                ${{ week.total_net_profit|floatformat:0|intcomma }}
+            </h5>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="jema-card p-3 text-center">
+            <div class="small text-muted fw-bold">Pedidos</div>
+            <h5 class="fw-bold mb-0">{{ week.orders_count }}</h5>
+        </div>
+    </div>
+
+    <!-- Ahorro / Distribución -->
+    <div class="col-md-6">
+        <div class="jema-card p-3 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted small fw-bold">Ahorro Empresa (5%)</span>
+            </div>
+            <h5 class="fw-bold mb-0 jema-text-gradient">${{ week.savings_amount|floatformat:0|intcomma }}</h5>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="jema-card p-3 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted small fw-bold">Distribuible Socios (95%)</span>
+            </div>
+            <h5 class="fw-bold mb-0 text-primary">${{ week.distributable_amount|floatformat:0|intcomma }}</h5>
+        </div>
+    </div>
+
+    <!-- Tabla: Snapshots de Pedidos -->
+    <div class="col-12">
+        <div class="jema-card p-4">
+            <h6 class="text-muted fw-bold small text-uppercase mb-3">Rentabilidad por Pedido</h6>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Pedido</th>
+                            <th class="text-end">Venta</th>
+                            <th class="text-end">Costos Dir.</th>
+                            <th class="text-end">Envio</th>
+                            <th class="text-end">Overhead ({{ week.overhead_percentage|floatformat:2 }}%)</th>
+                            <th class="text-end">Utilidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for snap in snapshots %}
+                        <tr>
+                            <td class="fw-medium">{{ snap.financial_status.order_ref }}</td>
+                            <td class="text-end">${{ snap.sale_amount|floatformat:0|intcomma }}</td>
+                            <td class="text-end text-danger">${{ snap.direct_costs|floatformat:0|intcomma }}</td>
+                            <td class="text-end">${{ snap.shipping_cost|floatformat:0|intcomma }}</td>
+                            <td class="text-end text-warning">${{ snap.overhead_amount|floatformat:0|intcomma }}</td>
+                            <td class="text-end fw-bold {% if snap.net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                ${{ snap.net_profit|floatformat:0|intcomma }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-3">Sin snapshots</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distribuciones a Socios -->
+    <div class="col-12">
+        <div class="jema-card p-4">
+            <h6 class="text-muted fw-bold small text-uppercase mb-3">Distribuciones a Socios</h6>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Socio</th>
+                            <th class="text-end">%</th>
+                            <th class="text-end">Monto</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dist in distributions %}
+                        <tr>
+                            <td class="fw-medium">{{ dist.partner.name }}</td>
+                            <td class="text-end">{{ dist.share_percentage }}%</td>
+                            <td class="text-end fw-bold">${{ dist.gross_amount|floatformat:0|intcomma }}</td>
+                            <td class="text-center">
+                                {% if dist.status == 'paid' %}
+                                    <span class="badge bg-success">Pagado</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if dist.status == 'pending' %}
+                                <form method="POST" action="{% url 'job_costing_pay_distribution' dist.id %}" class="d-inline" onsubmit="return confirm('Registrar pago de ${{ dist.gross_amount|floatformat:0 }} a {{ dist.partner.name }}?')">
+                                    {% csrf_token %}
+                                    <div class="input-group input-group-sm d-inline-flex" style="width: auto;">
+                                        <select name="account_id" class="form-select form-select-sm" style="width: 140px;" required>
+                                            <option value="">Cuenta...</option>
+                                            {% for acc in accounts %}
+                                            <option value="{{ acc.id }}">{{ acc.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-lg"></i> Pagar
+                                        </button>
+                                    </div>
+                                </form>
+                                {% else %}
+                                    <small class="text-muted">{{ dist.paid_at|date:"d/m H:i" }}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">Sin distribuciones</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

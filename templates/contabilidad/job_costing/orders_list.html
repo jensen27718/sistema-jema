@@ -1,0 +1,152 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Pedidos Financieros - Job Costing{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'job_costing_dashboard' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    Pedidos — Estado Financiero
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Filtros -->
+    <div class="col-12">
+        <div class="jema-card p-3">
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{% url 'job_costing_orders' %}" class="btn btn-sm {% if not state_filter %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                    Todos
+                </a>
+                {% for code, label in state_choices %}
+                <a href="{% url 'job_costing_orders' %}?state={{ code }}"
+                   class="btn btn-sm {% if state_filter == code %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                    {{ label }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="col-12">
+        <div class="jema-card p-4">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Ref</th>
+                            <th>Tipo</th>
+                            <th class="text-end">Venta</th>
+                            <th class="text-center">Estado Financiero</th>
+                            <th>Fecha</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fs in statuses %}
+                        <tr>
+                            <td class="fw-medium">{{ fs.order_ref }}</td>
+                            <td>
+                                {% if fs.order %}
+                                    <span class="badge bg-light text-dark">Catalogo</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">Interno</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-bold">${{ fs.sale_amount|floatformat:0|intcomma }}</td>
+                            <td class="text-center">
+                                <span class="badge {{ fs.get_state_badge_class }}">{{ fs.get_state_display }}</span>
+                            </td>
+                            <td class="small text-muted">{{ fs.created_at|date:"d/m/Y" }}</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    {% if fs.state == 'creado' %}
+                                    <button class="btn btn-outline-primary btn-sm" onclick="transitionState({{ fs.id }}, 'enviado')" title="Marcar Enviado">
+                                        <i class="bi bi-truck"></i>
+                                    </button>
+                                    {% endif %}
+                                    {% if fs.state == 'enviado' %}
+                                    <button class="btn btn-outline-success btn-sm" onclick="transitionState({{ fs.id }}, 'cobrado')" title="Marcar Cobrado">
+                                        <i class="bi bi-cash-coin"></i>
+                                    </button>
+                                    {% endif %}
+                                    {% if fs.state != 'cancelado' %}
+                                    <button class="btn btn-outline-danger btn-sm" onclick="transitionState({{ fs.id }}, 'cancelado')" title="Cancelar">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p class="mb-0 mt-2">No hay pedidos con este filtro</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginacion -->
+            {% if statuses.has_other_pages %}
+            <nav class="mt-3">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    {% if statuses.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ statuses.previous_page_number }}{% if state_filter %}&state={{ state_filter }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% for num in statuses.paginator.page_range %}
+                    <li class="page-item {% if statuses.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% if state_filter %}&state={{ state_filter }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    {% if statuses.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ statuses.next_page_number }}{% if state_filter %}&state={{ state_filter }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function transitionState(fsId, newState) {
+    const labels = {enviado: 'Enviado', cobrado: 'Cobrado', cancelado: 'Cancelado'};
+    if (!confirm('Cambiar estado a ' + labels[newState] + '?')) return;
+
+    fetch('{% url "api_jc_transition" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({financial_status_id: fsId, new_state: newState})
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.ok) {
+            location.reload();
+        } else {
+            alert(res.message || 'Error');
+        }
+    })
+    .catch(() => alert('Error de conexion'));
+}
+</script>
+{% endblock %}

@@ -95,6 +95,8 @@ def internal_order_create_view(request):
 import csv
 from django.http import HttpResponse
 
+@login_required
+@user_passes_test(is_staff)
 def internal_order_export_csv_view(request, order_id):
     """Exporta el pedido a CSV"""
     order = get_object_or_404(InternalOrder, id=order_id)
@@ -173,9 +175,30 @@ def internal_order_detail_view(request, order_id):
         'variant__color'
     )
 
+    # Costos de producción
+    from products.models_costs import OrderCostBreakdown
+    from decimal import Decimal
+    cost_breakdowns = OrderCostBreakdown.objects.filter(
+        internal_order=order
+    ).select_related('cost_type').order_by('product_type', 'cost_type__name')
+
+    total_production_cost = sum(b.total for b in cost_breakdowns)
+    shipping = order.shipping_cost or Decimal('0')
+    grand_total_cost = total_production_cost + shipping
+    margin = (order.total_estimated or Decimal('0')) - grand_total_cost
+
+    # Estado financiero (Job Costing)
+    from contabilidad.job_costing_services import ensure_financial_status
+    financial_status = ensure_financial_status(internal_order=order)
+
     context = {
         'order': order,
         'order_items': order_items,
+        'cost_breakdowns': cost_breakdowns,
+        'total_production_cost': total_production_cost,
+        'grand_total_cost': grand_total_cost,
+        'margin': margin,
+        'financial_status': financial_status,
     }
     return render(request, 'dashboard/internal_orders/detail.html', context)
 

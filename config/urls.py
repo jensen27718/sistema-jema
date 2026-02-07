@@ -8,6 +8,7 @@ from users import views
 from products import views as views_products
 from products import catalog_views as views_catalogs
 from products import internal_order_views as views_internal_orders  # Pedidos internos
+from products import cost_views as views_costs  # Costos de producción
 
 urlpatterns = [
     path('admin-django/', admin.site.urls),
@@ -79,7 +80,9 @@ urlpatterns = [
 
     # --- RUTAS DE CATÁLOGOS PDF (NUEVAS) ---
     path('panel/catalogos/', views_catalogs.catalog_selection_view, name='catalog_selection'),
+    path('panel/catalogos/editor/', views_catalogs.catalog_editor_view, name='catalog_editor'),
     path('panel/catalogos/generar/', views_catalogs.generate_catalog_pdf_view, name='generate_catalog_pdf'),
+    path('api/catalog/filter-products/', views_catalogs.api_catalog_filter_products, name='api_catalog_filter_products'),
 
     # === RUTAS DE PEDIDOS INTERNOS (DRAG & DROP) ===
     path('panel/pedidos-internos/', views_internal_orders.internal_orders_list_view, name='internal_orders_list'),
@@ -102,6 +105,29 @@ urlpatterns = [
     path('api/internal-orders/clear/', views_internal_orders.api_internal_order_clear, name='api_clear_order'),
     path('api/internal-orders/update-info/', views_internal_orders.api_internal_order_update_info, name='api_update_order_info'),
     path('api/internal-orders/update-task/', views_internal_orders.api_internal_order_update_task, name='api_update_task'),
+
+    # === CRUD TAMAÑOS, MATERIALES, COLORES ===
+    path('panel/tipos-producto/', views_products.product_types_dashboard_view, name='product_types_dashboard'),
+    path('panel/tamanos/nuevo/', views_products.size_create_update_view, name='size_create'),
+    path('panel/tamanos/<int:size_id>/editar/', views_products.size_create_update_view, name='size_update'),
+    path('panel/tamanos/<int:size_id>/eliminar/', views_products.size_delete_view, name='size_delete'),
+    path('panel/materiales/nuevo/', views_products.material_create_update_view, name='material_create'),
+    path('panel/materiales/<int:material_id>/editar/', views_products.material_create_update_view, name='material_update'),
+    path('panel/materiales/<int:material_id>/eliminar/', views_products.material_delete_view, name='material_delete'),
+    path('panel/colores/nuevo/', views_products.color_create_update_view, name='color_create'),
+    path('panel/colores/<int:color_id>/editar/', views_products.color_create_update_view, name='color_update'),
+    path('panel/colores/<int:color_id>/eliminar/', views_products.color_delete_view, name='color_delete'),
+
+    # === COSTOS DE PRODUCCIÓN ===
+    path('panel/configuracion-costos/', views_costs.cost_config_view, name='cost_config'),
+    path('api/cost-types/create/', views_costs.api_create_cost_type, name='api_create_cost_type'),
+    path('api/cost-types/update/', views_costs.api_update_cost_type, name='api_update_cost_type'),
+    path('api/cost-types/delete/', views_costs.api_delete_cost_type, name='api_delete_cost_type'),
+    path('api/product-type-costs/save/', views_costs.api_save_product_type_cost, name='api_save_product_type_cost'),
+    path('api/orders/calculate-costs/', views_costs.api_calculate_costs, name='api_calculate_costs'),
+    path('api/orders/update-manual-cost/', views_costs.api_update_manual_cost, name='api_update_manual_cost'),
+    path('api/orders/update-shipping/', views_costs.api_update_shipping, name='api_update_shipping'),
+    path('api/variants/update-dimensions/', views_costs.api_update_variant_dimensions, name='api_update_variant_dimensions'),
 
     # ...
     path('checkout/', views_products.checkout_process_view, name='checkout_process'),

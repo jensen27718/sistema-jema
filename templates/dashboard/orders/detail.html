@@ -43,6 +43,69 @@
                 <h3 class="jema-text-gradient fw-bold mb-0">${{ order.total|intcomma }}</h3>
             </div>
         </div>
+
+        <!-- Costos de Producción -->
+        <div class="jema-card p-4 mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-muted fw-bold small text-uppercase mb-0">Costos de Producción</h6>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-jema-primary" onclick="calculateCosts()" id="btnCalcCosts">
+                        <i class="bi bi-calculator"></i> Calcular
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="costsBody">
+                        {% for breakdown in cost_breakdowns %}
+                        <tr>
+                            <td>{{ breakdown.cost_type.name }}</td>
+                            <td>{{ breakdown.description }}</td>
+                            <td class="text-end fw-bold">${{ breakdown.total|floatformat:0 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-2">
+                                Sin costos calculados
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="border-top pt-3 mt-3">
+                <div class="row align-items-center mb-2">
+                    <div class="col-6"><small class="text-muted">Envío</small></div>
+                    <div class="col-6">
+                        <div class="input-group input-group-sm" style="max-width: 150px; margin-left: auto;">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="1" min="0" class="form-control"
+                                id="shippingCostInput" value="{{ order.shipping_cost|floatformat:0 }}"
+                                onchange="updateShipping()">
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="fw-bold">Total Costos:</span>
+                    <span class="fw-bold text-danger" id="grandTotal">${{ grand_total_cost|floatformat:0|default:"0" }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Margen:</span>
+                    <span class="fw-bold {% if margin >= 0 %}text-success{% else %}text-danger{% endif %}" id="marginDisplay">
+                        ${{ margin|floatformat:0|default:"0" }}
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Columna Derecha: Estado y Cliente -->
@@ -74,6 +137,46 @@
                     </button>
                 </div>
             </form>
+        </div>
+
+        <!-- Card de Estado Financiero -->
+        <div class="jema-card p-4 mb-4" id="financialStatusCard">
+            <h6 class="text-muted fw-bold small mb-3 text-uppercase">Estado Financiero</h6>
+            {% if financial_status %}
+            <div class="text-center py-2 rounded-3 mb-3" id="fsBadgeContainer">
+                <span class="badge {{ financial_status.get_state_badge_class }} fs-6" id="fsBadge">
+                    {{ financial_status.get_state_display }}
+                </span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap mb-3">
+                {% if financial_status.state == 'creado' %}
+                <button class="btn btn-sm btn-outline-primary flex-fill" onclick="transitionFinancialState({{ financial_status.id }}, 'enviado')">
+                    <i class="bi bi-truck"></i> Enviado
+                </button>
+                {% endif %}
+                {% if financial_status.state == 'enviado' %}
+                <button class="btn btn-sm btn-outline-success flex-fill" onclick="transitionFinancialState({{ financial_status.id }}, 'cobrado')">
+                    <i class="bi bi-cash-coin"></i> Cobrado
+                </button>
+                {% endif %}
+                {% if financial_status.state != 'cancelado' %}
+                <button class="btn btn-sm btn-outline-danger" onclick="transitionFinancialState({{ financial_status.id }}, 'cancelado')">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                {% endif %}
+            </div>
+            <!-- Rentabilidad Preview -->
+            <div class="border-top pt-3" id="profitPreview">
+                <small class="text-muted fw-bold d-block mb-2">RENTABILIDAD ESTIMADA</small>
+                <div id="profitData" class="text-center text-muted small">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadProfitability({{ financial_status.id }})">
+                        <i class="bi bi-calculator"></i> Calcular
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">Sin estado financiero asignado.</p>
+            {% endif %}
         </div>
 
         <!-- Card de Cliente -->
@@ -110,4 +213,100 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+const orderId = {{ order.id }};
+
+function calculateCosts() {
+    const btn = document.getElementById('btnCalcCosts');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch('{% url "api_calculate_costs" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({order_type: 'catalog', order_id: orderId})
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Recalcular';
+
+        if (!res.ok) { alert('Error: ' + res.error); return; }
+
+        const tbody = document.getElementById('costsBody');
+        tbody.innerHTML = '';
+
+        if (res.breakdowns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-2">Sin costos configurados</td></tr>';
+        } else {
+            res.breakdowns.forEach(b => {
+                tbody.innerHTML += `<tr><td>${b.cost_type_name}</td><td>${b.description}</td><td class="text-end fw-bold">$${parseInt(b.total).toLocaleString()}</td></tr>`;
+            });
+        }
+
+        const shipping = parseFloat(document.getElementById('shippingCostInput').value) || 0;
+        const totalProd = parseFloat(res.total_production) + parseFloat(res.total_manual);
+        const grandTotal = totalProd + shipping;
+        const orderTotal = {{ order.total|default:"0" }};
+        const margin = orderTotal - grandTotal;
+
+        document.getElementById('grandTotal').textContent = '$' + Math.round(grandTotal).toLocaleString();
+        document.getElementById('marginDisplay').textContent = '$' + Math.round(margin).toLocaleString();
+        document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
+    });
+}
+
+function updateShipping() {
+    const val = document.getElementById('shippingCostInput').value || 0;
+    fetch('{% url "api_update_shipping" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({order_type: 'catalog', order_id: orderId, shipping_cost: val})
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.ok) location.reload();
+    });
+}
+
+function transitionFinancialState(fsId, newState) {
+    const labels = {enviado: 'Enviado', cobrado: 'Cobrado', cancelado: 'Cancelado'};
+    if (!confirm('Cambiar estado financiero a ' + labels[newState] + '?')) return;
+
+    fetch('{% url "api_jc_transition" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({financial_status_id: fsId, new_state: newState})
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.ok) location.reload();
+        else alert(res.message || 'Error');
+    })
+    .catch(() => alert('Error de conexion'));
+}
+
+function loadProfitability(fsId) {
+    fetch('{% url "api_jc_profitability" %}?financial_status_id=' + fsId)
+    .then(r => r.json())
+    .then(res => {
+        if (!res.ok) { alert(res.error); return; }
+        const el = document.getElementById('profitData');
+        const profit = parseFloat(res.net_profit);
+        const cls = profit >= 0 ? 'text-success' : 'text-danger';
+        el.innerHTML = `
+            <div class="d-flex justify-content-between mb-1"><small>Venta:</small><small class="fw-bold">$${parseInt(res.sale_amount).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Costos:</small><small class="text-danger">-$${parseInt(res.direct_costs).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Envio:</small><small>-$${parseInt(res.shipping_cost).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Overhead (${parseFloat(res.overhead_percentage).toFixed(2)}%):</small><small class="text-warning">-$${parseInt(res.overhead_amount).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between border-top pt-1 mt-1"><small class="fw-bold">Utilidad:</small><small class="fw-bold ${cls}">$${parseInt(res.net_profit).toLocaleString()}</small></div>
+        `;
+    })
+    .catch(() => alert('Error de conexion'));
+}
+</script>
 {% endblock %}

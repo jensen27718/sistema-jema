@@ -1,0 +1,103 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Configuracion Job Costing - JEMA{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'job_costing_dashboard' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    Configuracion Job Costing
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="jema-card p-4">
+            <form method="POST">
+                {% csrf_token %}
+
+                <h6 class="text-muted fw-bold small text-uppercase mb-3">Distribucion de Utilidades</h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">% AHORRO EMPRESA</label>
+                        <div class="input-group">
+                            <input type="number" name="savings_percentage" class="form-control"
+                                step="0.01" min="0" max="100" value="{{ config.savings_percentage }}">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">% DISTRIBUCION SOCIOS</label>
+                        <div class="input-group">
+                            <input type="number" name="distribution_percentage" class="form-control"
+                                step="0.01" min="0" max="100" value="{{ config.distribution_percentage }}">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h6 class="text-muted fw-bold small text-uppercase mb-3">Cuentas (Bolsas)</h6>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">CUENTA PRINCIPAL (Ingresos)</label>
+                    <select name="cuenta_principal" class="form-select">
+                        <option value="">— Sin asignar —</option>
+                        {% for acc in accounts %}
+                        <option value="{{ acc.id }}" {% if config.cuenta_principal_id == acc.id %}selected{% endif %}>
+                            {{ acc.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">CUENTA RESERVA COSTOS</label>
+                    <select name="cuenta_costos" class="form-select">
+                        <option value="">— Sin asignar —</option>
+                        {% for acc in accounts %}
+                        <option value="{{ acc.id }}" {% if config.cuenta_costos_id == acc.id %}selected{% endif %}>
+                            {{ acc.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">CUENTA AHORRO EMPRESA</label>
+                    <select name="cuenta_ahorro" class="form-select">
+                        <option value="">— Sin asignar —</option>
+                        {% for acc in accounts %}
+                        <option value="{{ acc.id }}" {% if config.cuenta_ahorro_id == acc.id %}selected{% endif %}>
+                            {{ acc.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">CUENTA DISTRIBUCION SOCIOS</label>
+                    <select name="cuenta_distribucion" class="form-select">
+                        <option value="">— Sin asignar —</option>
+                        {% for acc in accounts %}
+                        <option value="{{ acc.id }}" {% if config.cuenta_distribucion_id == acc.id %}selected{% endif %}>
+                            {{ acc.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-jema-primary py-2 fw-bold rounded-3">
+                        <i class="bi bi-save me-2"></i> GUARDAR CONFIGURACION
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

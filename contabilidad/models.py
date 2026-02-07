@@ -22,7 +22,9 @@ class TransactionCategory(models.Model):
     )
     name = models.CharField("Nombre de Categoría", max_length=100) # Ej: Ventas, Arriendo, Inventario
     transaction_type = models.CharField("Tipo", max_length=20, choices=TYPE_CHOICES)
-    
+    is_fixed_cost = models.BooleanField("Es Gasto Fijo (Overhead)", default=False,
+        help_text="Marcar si este gasto se incluye en el cálculo de overhead semanal")
+
     def __str__(self):
         return f"{self.name} ({self.get_transaction_type_display()})"
 
@@ -58,7 +60,13 @@ class Transaction(models.Model):
     
     # Vinculación opcional con Pedidos
     related_order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='accounting_entries')
-    
+
+    # Vinculación con semana financiera (transacciones auto-generadas por Job Costing)
+    financial_week = models.ForeignKey(
+        'contabilidad.FinancialWeek', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='transactions'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
@@ -256,3 +264,10 @@ class InvoiceItem(models.Model):
 
     def __str__(self):
         return f"{self.description} x{self.quantity}"
+
+
+# --- MODELOS DE JOB COSTING ---
+from contabilidad.models_job_costing import (
+    JobCostingConfig, Partner, FinancialStatus,
+    FinancialWeek, OrderFinancialSnapshot, PartnerDistribution
+)

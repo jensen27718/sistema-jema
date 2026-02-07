@@ -8,7 +8,8 @@
       "Bash(python:*)",
       "Bash(ls -la \"C:\\\\Users\\\\USER\\\\Documents\\\\sistema_jema\\\\templates\\\\dashboard\"\" 2>/dev/null || echo \"Directory not found \")",
       "Bash(venvScriptspython.exe manage.py makemigrations)",
-      "Bash(./venv/Scripts/python.exe manage.py:*)"
+      "Bash(./venv/Scripts/python.exe manage.py:*)",
+      "Bash(echo.)"
     ]
   }
 }

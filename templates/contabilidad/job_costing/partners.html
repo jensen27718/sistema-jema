@@ -1,0 +1,76 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Socios - Job Costing{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'job_costing_dashboard' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    Socios del Negocio
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        {% if total_pct != 100 %}
+        <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+                Los porcentajes de socios activos suman <strong>{{ total_pct }}%</strong>.
+                Deben sumar exactamente <strong>100%</strong> para que la distribucion sea correcta.
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="jema-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-muted fw-bold small text-uppercase mb-0">Socios Registrados</h6>
+                <a href="{% url 'job_costing_partner_create' %}" class="btn btn-sm btn-jema-primary">
+                    <i class="bi bi-plus-lg"></i> Nuevo Socio
+                </a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th class="text-end">% del Distribuible</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in partners %}
+                        <tr>
+                            <td class="fw-medium">{{ p.name }}</td>
+                            <td class="text-end">{{ p.share_percentage }}%</td>
+                            <td class="text-center">
+                                {% if p.is_active %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'job_costing_partner_update' p.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">
+                                No hay socios registrados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from contabilidad import job_costing_views as views_jc
 
 urlpatterns = [
     path('', views.accounting_dashboard_view, name='accounting_dashboard'),
@@ -41,4 +42,16 @@ urlpatterns = [
     path('guias/api/cliente/<int:client_id>/', views.api_guide_client_data, name='api_guide_client_data'),
     path('guias/api/observaciones/', views.api_observations, name='api_observations'),
     path('guias/api/buscar-clientes/', views.api_search_clients, name='api_search_clients'),
+    # Job Costing
+    path('job-costing/', views_jc.job_costing_dashboard_view, name='job_costing_dashboard'),
+    path('job-costing/config/', views_jc.job_costing_config_view, name='job_costing_config'),
+    path('job-costing/ordenes/', views_jc.financial_orders_list_view, name='job_costing_orders'),
+    path('job-costing/semana/<int:year>/<int:week_number>/', views_jc.financial_week_detail_view, name='job_costing_week_detail'),
+    path('job-costing/semana/cerrar/', views_jc.close_week_view, name='job_costing_close_week'),
+    path('job-costing/socios/', views_jc.partner_list_view, name='job_costing_partners'),
+    path('job-costing/socios/nuevo/', views_jc.partner_create_update_view, name='job_costing_partner_create'),
+    path('job-costing/socios/<int:partner_id>/editar/', views_jc.partner_create_update_view, name='job_costing_partner_update'),
+    path('job-costing/distribucion/<int:distribution_id>/pagar/', views_jc.pay_distribution_view, name='job_costing_pay_distribution'),
+    path('api/job-costing/transition/', views_jc.api_transition_financial_state, name='api_jc_transition'),
+    path('api/job-costing/profitability/', views_jc.api_order_profitability, name='api_jc_profitability'),
 ]

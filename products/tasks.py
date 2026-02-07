@@ -2,13 +2,16 @@
 Funciones de procesamiento para carga masiva de productos.
 TODO SÍNCRONO - Sin Celery para compatibilidad con PythonAnywhere.
 """
+import logging
+import os
 from django.utils import timezone
 from .models import Product
 from .ai_services import (
     extract_product_name_from_file
 )
 from .services import generar_variantes_vinilo, generar_variantes_impresos
-import os
+
+logger = logging.getLogger(__name__)
 
 
 def process_single_upload_item(item, product_type):
@@ -22,7 +25,7 @@ def process_single_upload_item(item, product_type):
     """
     # 1. Extraer nombre del producto desde nombre de archivo
     product_name = extract_product_name_from_file(item.original_filename)
-    print(f"[Bulk] Procesando: {product_name} como {product_type}")
+    logger.info("Bulk procesando: %s como %s", product_name, product_type)
 
     # 2. Descripción en blanco (como solicitó el usuario)
     ai_description = ""
@@ -50,8 +53,7 @@ def process_single_upload_item(item, product_type):
     except:
         pass
 
-    print(f"[Bulk] Producto creado: #{product.id} - {product.name}")
-    print(f"[Bulk] Imagen generada: {product.image.name if product.image else 'NO GENERADA'}")
+    logger.info("Bulk producto creado: #%d - %s", product.id, product.name)
 
     # 4. Generar variantes según tipo
     if product_type == 'vinilo_corte':
@@ -61,12 +63,10 @@ def process_single_upload_item(item, product_type):
     else:
         count = 0
 
-    print(f"[Bulk] {count} variantes generadas")
+    logger.info("Bulk %d variantes generadas para %s", count, product.name)
 
     # 5. Vincular item con producto
     item.product = product
     item.status = 'completed'
     item.processed_at = timezone.now()
     item.save()
-
-    print(f"[Bulk] Completado: {product.name}")

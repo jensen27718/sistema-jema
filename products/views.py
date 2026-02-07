@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 # Importa TANTO Product COMO Category
-from .models import Product, Category, ProductVariant,Cart, CartItem
+from .models import Product, Category, ProductVariant, Cart, CartItem, Size, Material, Color
 from .forms import ProductForm, CategoryForm
 from .services import generar_variantes_vinilo, generar_variantes_impresos # <--- Importamos la magia
 from django.db.models import Min, Q
@@ -407,7 +407,31 @@ def panel_order_detail_view(request, order_id):
             messages.success(request, f"Estado actualizado a {order.status.name}")
             return redirect('panel_order_detail', order_id=order.id)
             
-    return render(request, 'dashboard/orders/detail.html', {'order': order, 'statuses': statuses})
+    # Costos de producción
+    from products.models_costs import OrderCostBreakdown
+    from decimal import Decimal
+    cost_breakdowns = OrderCostBreakdown.objects.filter(
+        order=order
+    ).select_related('cost_type').order_by('product_type', 'cost_type__name')
+
+    total_production_cost = sum(b.total for b in cost_breakdowns)
+    shipping = order.shipping_cost or Decimal('0')
+    grand_total_cost = total_production_cost + shipping
+    margin = (order.total or Decimal('0')) - grand_total_cost
+
+    # Estado financiero (Job Costing)
+    from contabilidad.job_costing_services import ensure_financial_status
+    financial_status = ensure_financial_status(order=order)
+
+    return render(request, 'dashboard/orders/detail.html', {
+        'order': order,
+        'statuses': statuses,
+        'cost_breakdowns': cost_breakdowns,
+        'total_production_cost': total_production_cost,
+        'grand_total_cost': grand_total_cost,
+        'margin': margin,
+        'financial_status': financial_status,
+    })
 
 
 # --- 5. VISTAS DE GESTIÓN DE CARRITOS (ADMIN) ---
@@ -760,7 +784,6 @@ def mass_edit_products_view(request):
         product_ids = request.POST.getlist('selected_products')
         action = request.POST.get('action')
 
-        print(f"[Mass Edit] Products: {product_ids}, Action: {action}")  # Debug
 
         if not product_ids:
             messages.error(request, 'No has seleccionado ningún producto.')
@@ -935,3 +958,144 @@ def inline_edit_product_api(request):
         return JsonResponse({'status': 'error', 'message': 'Campo no válido'}, status=400)
 
     return JsonResponse({'status': 'error'}, status=400)
+
+
+# =================================================================================
+# CRUD TAMAÑOS, MATERIALES, COLORES
+# =================================================================================
+
+@login_required
+@user_passes_test(is_staff)
+def product_types_dashboard_view(request):
+    """Dashboard con las 3 secciones: Tamaños, Materiales, Colores"""
+    sizes = Size.objects.all().order_by('name')
+    materials = Material.objects.all().order_by('name')
+    colors = Color.objects.all().order_by('name')
+    return render(request, 'dashboard/products/types_dashboard.html', {
+        'sizes': sizes,
+        'materials': materials,
+        'colors': colors,
+    })
+
+
+@login_required
+@user_passes_test(is_staff)
+def size_create_update_view(request, size_id=None):
+    instance = get_object_or_404(Size, id=size_id) if size_id else None
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        dimensions = request.POST.get('dimensions', '').strip()
+        if not name:
+            messages.error(request, 'El nombre es obligatorio.')
+            return render(request, 'dashboard/products/size_form.html', {
+                'object': instance, 'title': 'Editar Tamaño' if instance else 'Nuevo Tamaño'
+            })
+        if instance:
+            instance.name = name
+            instance.dimensions = dimensions
+            instance.save()
+            messages.success(request, 'Tamaño actualizado.')
+        else:
+            Size.objects.create(name=name, dimensions=dimensions)
+            messages.success(request, 'Tamaño creado.')
+        return redirect('product_types_dashboard')
+    return render(request, 'dashboard/products/size_form.html', {
+        'object': instance,
+        'title': 'Editar Tamaño' if instance else 'Nuevo Tamaño',
+    })
+
+
+@login_required
+@user_passes_test(is_staff)
+def size_delete_view(request, size_id):
+    size = get_object_or_404(Size, id=size_id)
+    if request.method == 'POST':
+        try:
+            size.delete()
+            messages.success(request, 'Tamaño eliminado.')
+        except Exception:
+            messages.error(request, 'No se puede eliminar: hay variantes usando este tamaño.')
+        return redirect('product_types_dashboard')
+    return render(request, 'dashboard/categories/confirm_delete.html', {'object': size})
+
+
+@login_required
+@user_passes_test(is_staff)
+def material_create_update_view(request, material_id=None):
+    instance = get_object_or_404(Material, id=material_id) if material_id else None
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        is_special = request.POST.get('is_special') == 'on'
+        if not name:
+            messages.error(request, 'El nombre es obligatorio.')
+            return render(request, 'dashboard/products/material_form.html', {
+                'object': instance, 'title': 'Editar Material' if instance else 'Nuevo Material'
+            })
+        if instance:
+            instance.name = name
+            instance.is_special = is_special
+            instance.save()
+            messages.success(request, 'Material actualizado.')
+        else:
+            Material.objects.create(name=name, is_special=is_special)
+            messages.success(request, 'Material creado.')
+        return redirect('product_types_dashboard')
+    return render(request, 'dashboard/products/material_form.html', {
+        'object': instance,
+        'title': 'Editar Material' if instance else 'Nuevo Material',
+    })
+
+
+@login_required
+@user_passes_test(is_staff)
+def material_delete_view(request, material_id):
+    material = get_object_or_404(Material, id=material_id)
+    if request.method == 'POST':
+        try:
+            material.delete()
+            messages.success(request, 'Material eliminado.')
+        except Exception:
+            messages.error(request, 'No se puede eliminar: hay variantes usando este material.')
+        return redirect('product_types_dashboard')
+    return render(request, 'dashboard/categories/confirm_delete.html', {'object': material})
+
+
+@login_required
+@user_passes_test(is_staff)
+def color_create_update_view(request, color_id=None):
+    instance = get_object_or_404(Color, id=color_id) if color_id else None
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        hex_code = request.POST.get('hex_code', '#000000').strip()
+        if not name:
+            messages.error(request, 'El nombre es obligatorio.')
+            return render(request, 'dashboard/products/color_form.html', {
+                'object': instance, 'title': 'Editar Color' if instance else 'Nuevo Color'
+            })
+        if instance:
+            instance.name = name
+            instance.hex_code = hex_code
+            instance.save()
+            messages.success(request, 'Color actualizado.')
+        else:
+            Color.objects.create(name=name, hex_code=hex_code)
+            messages.success(request, 'Color creado.')
+        return redirect('product_types_dashboard')
+    return render(request, 'dashboard/products/color_form.html', {
+        'object': instance,
+        'title': 'Editar Color' if instance else 'Nuevo Color',
+    })
+
+
+@login_required
+@user_passes_test(is_staff)
+def color_delete_view(request, color_id):
+    color = get_object_or_404(Color, id=color_id)
+    if request.method == 'POST':
+        try:
+            color.delete()
+            messages.success(request, 'Color eliminado.')
+        except Exception:
+            messages.error(request, 'No se puede eliminar: hay variantes usando este color.')
+        return redirect('product_types_dashboard')
+    return render(request, 'dashboard/categories/confirm_delete.html', {'object': color})

@@ -1,0 +1,168 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Tamaños, Materiales y Colores - JEMA{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <i class="bi bi-palette2"></i> Tamaños, Materiales y Colores
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .type-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+    }
+    .type-section h5 {
+        font-weight: 700;
+        margin-bottom: 16px;
+        color: var(--jema-purple);
+    }
+    .color-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-block;
+        border: 2px solid #ddd;
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Tamaños -->
+    <div class="type-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5><i class="bi bi-rulers me-2"></i>Tamaños</h5>
+            <a href="{% url 'size_create' %}" class="btn btn-sm btn-jema-primary">
+                <i class="bi bi-plus-lg"></i> Nuevo Tamaño
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Dimensiones</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for size in sizes %}
+                    <tr>
+                        <td class="fw-medium">{{ size.name }}</td>
+                        <td>{{ size.dimensions }}</td>
+                        <td>
+                            <a href="{% url 'size_update' size.id %}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'size_delete' size.id %}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">No hay tamaños creados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Materiales -->
+    <div class="type-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5><i class="bi bi-layers me-2"></i>Materiales</h5>
+            <a href="{% url 'material_create' %}" class="btn btn-sm btn-jema-primary">
+                <i class="bi bi-plus-lg"></i> Nuevo Material
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Especial</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mat in materials %}
+                    <tr>
+                        <td class="fw-medium">{{ mat.name }}</td>
+                        <td>
+                            {% if mat.is_special %}
+                            <span class="badge bg-warning text-dark">Especial</span>
+                            {% else %}
+                            <span class="badge bg-light text-muted">Normal</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'material_update' mat.id %}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'material_delete' mat.id %}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">No hay materiales creados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Colores -->
+    <div class="type-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5><i class="bi bi-palette me-2"></i>Colores</h5>
+            <a href="{% url 'color_create' %}" class="btn btn-sm btn-jema-primary">
+                <i class="bi bi-plus-lg"></i> Nuevo Color
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Color</th>
+                        <th>Nombre</th>
+                        <th>Hex</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for color in colors %}
+                    <tr>
+                        <td><span class="color-dot" style="background-color: {{ color.hex_code }};"></span></td>
+                        <td class="fw-medium">{{ color.name }}</td>
+                        <td><code>{{ color.hex_code }}</code></td>
+                        <td>
+                            <a href="{% url 'color_update' color.id %}" class="btn btn-sm btn-outline-primary me-1">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'color_delete' color.id %}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">No hay colores creados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -274,6 +274,145 @@
         </div>
     </div>
 
+    <!-- Estado Financiero -->
+    <div class="card mb-4 no-print">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Estado Financiero</h5>
+        </div>
+        <div class="card-body">
+            {% if financial_status %}
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="badge {{ financial_status.get_state_badge_class }} fs-6" id="fsBadge">
+                    {{ financial_status.get_state_display }}
+                </span>
+                <div class="d-flex gap-2">
+                    {% if financial_status.state == 'creado' %}
+                    <button class="btn btn-sm btn-outline-primary" onclick="transitionFinancialState({{ financial_status.id }}, 'enviado')">
+                        <i class="bi bi-truck"></i> Marcar Enviado
+                    </button>
+                    {% endif %}
+                    {% if financial_status.state == 'enviado' %}
+                    <button class="btn btn-sm btn-outline-success" onclick="transitionFinancialState({{ financial_status.id }}, 'cobrado')">
+                        <i class="bi bi-cash-coin"></i> Marcar Cobrado
+                    </button>
+                    {% endif %}
+                    {% if financial_status.state != 'cancelado' %}
+                    <button class="btn btn-sm btn-outline-danger" onclick="transitionFinancialState({{ financial_status.id }}, 'cancelado')">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="ms-auto">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadProfitability({{ financial_status.id }})">
+                        <i class="bi bi-calculator"></i> Ver Rentabilidad
+                    </button>
+                </div>
+            </div>
+            <div id="profitData" class="mt-3" style="display: none;">
+                <div class="row g-2">
+                    <div class="col-md-2"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Venta</small><strong id="pSale">—</strong></div></div>
+                    <div class="col-md-2"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Costos</small><strong id="pCosts" class="text-danger">—</strong></div></div>
+                    <div class="col-md-2"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Envio</small><strong id="pShipping">—</strong></div></div>
+                    <div class="col-md-3"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Overhead</small><strong id="pOverhead" class="text-warning">—</strong></div></div>
+                    <div class="col-md-3"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Utilidad</small><strong id="pProfit">—</strong></div></div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Sin estado financiero asignado.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Costos de Producción -->
+    <div class="card mb-4 no-print" id="costsSection">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-calculator"></i> Costos de Producción</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-jema-primary" onclick="calculateCosts()" id="btnCalcCosts">
+                    <i class="bi bi-calculator"></i> Calcular Costos
+                </button>
+                <a href="{% url 'cost_config' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-gear"></i> Configuración
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0" id="costsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Tipo de Costo</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Cantidad</th>
+                            <th class="text-end">Precio Unit.</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="costsBody">
+                        {% for breakdown in cost_breakdowns %}
+                        <tr>
+                            <td>{{ breakdown.cost_type.name }}</td>
+                            <td>{{ breakdown.description }}</td>
+                            <td class="text-end">{{ breakdown.calculated_quantity }}</td>
+                            <td class="text-end">${{ breakdown.unit_price|floatformat:0 }}</td>
+                            <td class="text-end fw-bold">${{ breakdown.total|floatformat:0 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr id="noCostsRow">
+                            <td colspan="5" class="text-center text-muted py-3">
+                                <i class="bi bi-info-circle"></i> No hay costos calculados. Presiona "Calcular Costos".
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Envío -->
+            <div class="border-top pt-3 mt-3">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold mb-0"><i class="bi bi-truck"></i> Costo de Envío</label>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="1" min="0" class="form-control"
+                                id="shippingCostInput" value="{{ order.shipping_cost|floatformat:0 }}"
+                                onchange="updateShipping()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Totales -->
+            <div class="border-top pt-3 mt-3" id="costsTotals">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Total Costos Producción:</span>
+                    <span class="fw-bold" id="totalProduction">${{ total_production_cost|floatformat:0|default:"0" }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Envío:</span>
+                    <span class="fw-bold" id="totalShipping">${{ order.shipping_cost|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1 border-top pt-2">
+                    <span class="fw-bold">Total Costos:</span>
+                    <span class="fw-bold text-danger" id="grandTotal">${{ grand_total_cost|floatformat:0|default:"0" }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Total Estimado (Venta):</span>
+                    <span class="fw-bold text-success">${{ order.total_estimated|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="fw-bold">Margen:</span>
+                    <span class="fw-bold {% if margin >= 0 %}text-success{% else %}text-danger{% endif %}" id="marginDisplay">
+                        ${{ margin|floatformat:0|default:"0" }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Print Summary -->
     <div class="print-section" style="display: none;">
         <h5>Resumen de Pedido</h5>
@@ -306,4 +445,127 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+const orderId = {{ order.id }};
+
+function calculateCosts() {
+    const btn = document.getElementById('btnCalcCosts');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculando...';
+
+    fetch('{% url "api_calculate_costs" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({order_type: 'internal', order_id: orderId})
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Recalcular';
+
+        if (!res.ok) {
+            alert('Error: ' + res.error);
+            return;
+        }
+
+        const tbody = document.getElementById('costsBody');
+        tbody.innerHTML = '';
+
+        if (res.breakdowns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No se encontraron costos configurados para los productos de este pedido.</td></tr>';
+        } else {
+            res.breakdowns.forEach(b => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${b.cost_type_name}</td>
+                    <td>${b.description}</td>
+                    <td class="text-end">${parseFloat(b.quantity).toFixed(2)}</td>
+                    <td class="text-end">$${parseInt(b.unit_price).toLocaleString()}</td>
+                    <td class="text-end fw-bold">$${parseInt(b.total).toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        const shipping = parseFloat(document.getElementById('shippingCostInput').value) || 0;
+        const totalProd = parseFloat(res.total_production) + parseFloat(res.total_manual);
+        const grandTotal = totalProd + shipping;
+        const totalEstimated = {{ order.total_estimated|default:"0" }};
+        const margin = totalEstimated - grandTotal;
+
+        document.getElementById('totalProduction').textContent = '$' + Math.round(totalProd).toLocaleString();
+        document.getElementById('totalShipping').textContent = '$' + Math.round(shipping).toLocaleString();
+        document.getElementById('grandTotal').textContent = '$' + Math.round(grandTotal).toLocaleString();
+        document.getElementById('marginDisplay').textContent = '$' + Math.round(margin).toLocaleString();
+        document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-calculator"></i> Calcular Costos';
+        alert('Error de conexión');
+    });
+}
+
+function updateShipping() {
+    const val = document.getElementById('shippingCostInput').value || 0;
+    fetch('{% url "api_update_shipping" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({order_type: 'internal', order_id: orderId, shipping_cost: val})
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.ok) {
+            document.getElementById('totalShipping').textContent = '$' + parseInt(val).toLocaleString();
+            const totalProdText = document.getElementById('totalProduction').textContent.replace(/[$,]/g, '');
+            const totalProd = parseInt(totalProdText) || 0;
+            const grandTotal = totalProd + parseInt(val);
+            const totalEstimated = {{ order.total_estimated|default:"0" }};
+            const margin = totalEstimated - grandTotal;
+            document.getElementById('grandTotal').textContent = '$' + grandTotal.toLocaleString();
+            document.getElementById('marginDisplay').textContent = '$' + margin.toLocaleString();
+            document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
+        }
+    });
+}
+
+function transitionFinancialState(fsId, newState) {
+    const labels = {enviado: 'Enviado', cobrado: 'Cobrado', cancelado: 'Cancelado'};
+    if (!confirm('Cambiar estado financiero a ' + labels[newState] + '?')) return;
+
+    fetch('{% url "api_jc_transition" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({financial_status_id: fsId, new_state: newState})
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.ok) location.reload();
+        else alert(res.message || 'Error');
+    })
+    .catch(() => alert('Error de conexion'));
+}
+
+function loadProfitability(fsId) {
+    fetch('{% url "api_jc_profitability" %}?financial_status_id=' + fsId)
+    .then(r => r.json())
+    .then(res => {
+        if (!res.ok) { alert(res.error); return; }
+        document.getElementById('profitData').style.display = 'block';
+        document.getElementById('pSale').textContent = '$' + parseInt(res.sale_amount).toLocaleString();
+        document.getElementById('pCosts').textContent = '-$' + parseInt(res.direct_costs).toLocaleString();
+        document.getElementById('pShipping').textContent = '-$' + parseInt(res.shipping_cost).toLocaleString();
+        document.getElementById('pOverhead').textContent = '-$' + parseInt(res.overhead_amount).toLocaleString() + ' (' + parseFloat(res.overhead_percentage).toFixed(2) + '%)';
+        const profit = parseFloat(res.net_profit);
+        const el = document.getElementById('pProfit');
+        el.textContent = '$' + parseInt(res.net_profit).toLocaleString();
+        el.className = profit >= 0 ? 'text-success' : 'text-danger';
+    })
+    .catch(() => alert('Error de conexion'));
+}
+</script>
 {% endblock %}

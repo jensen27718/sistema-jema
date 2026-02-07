@@ -1,8 +1,11 @@
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Sum
 from .models import Account, Transaction, TransactionCategory, Provider, Debt, Payment, Invoice, InvoiceItem, ShippingGuide, ShippingObservation
+
+logger = logging.getLogger(__name__)
 
 def is_staff(user):
     return user.is_staff or user.is_superuser
@@ -194,13 +197,11 @@ def transaction_create_view(request):
                     account.current_balance -= amount
                 account.save()
                 
-                # Log para debug
-                print(f"[CONTABILIDAD] Movimiento #{new_transaction.id} creado")
-                print(f"  - Cuenta: {account.name}")
-                print(f"  - Tipo: {category.transaction_type}")
-                print(f"  - Monto: ${amount}")
-                print(f"  - Balance anterior: ${old_balance}")
-                print(f"  - Balance nuevo: ${account.current_balance}")
+                logger.info(
+                    "Movimiento #%d creado - Cuenta: %s, Tipo: %s, Monto: $%s, Balance: $%s -> $%s",
+                    new_transaction.id, account.name, category.transaction_type,
+                    amount, old_balance, account.current_balance
+                )
             
             messages.success(request, f"✅ Movimiento registrado. Nuevo saldo: ${account.current_balance:,.2f}")
             return redirect('accounting_dashboard')
@@ -210,8 +211,7 @@ def transaction_create_view(request):
         except Account.DoesNotExist:
             messages.error(request, "❌ Error: Cuenta no encontrada.")
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            logger.exception("Error al registrar movimiento")
             messages.error(request, f"❌ Error al registrar: {str(e)}")
             
     # Contexto para el formulario
@@ -398,7 +398,8 @@ def category_create_view(request):
         name = request.POST.get('name')
         transaction_type = request.POST.get('transaction_type')
         
-        TransactionCategory.objects.create(name=name, transaction_type=transaction_type)
+        is_fixed_cost = request.POST.get('is_fixed_cost') == 'on'
+        TransactionCategory.objects.create(name=name, transaction_type=transaction_type, is_fixed_cost=is_fixed_cost)
         messages.success(request, f"Categoría '{name}' creada.")
         return redirect('accounting_category_list')
 
@@ -412,6 +413,7 @@ def category_update_view(request, category_id):
     if request.method == 'POST':
         category.name = request.POST.get('name')
         category.transaction_type = request.POST.get('transaction_type')
+        category.is_fixed_cost = request.POST.get('is_fixed_cost') == 'on'
         category.save()
         messages.success(request, f"Categoría actualizada.")
         return redirect('accounting_category_list')

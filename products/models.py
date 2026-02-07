@@ -185,7 +185,11 @@ class ProductVariant(models.Model):
     
     price = models.DecimalField("Precio", max_digits=10, decimal_places=2)
     stock = models.IntegerField(default=100)
-    
+
+    # Medidas físicas del producto
+    height_cm = models.DecimalField("Alto (cm)", max_digits=6, decimal_places=2, null=True, blank=True)
+    width_cm = models.DecimalField("Ancho (cm)", max_digits=6, decimal_places=2, null=True, blank=True)
+
     def __str__(self):
         return f"{self.product.name} - {self.size.name} - ${self.price}"
 
@@ -220,6 +224,7 @@ class Order(models.Model):
     status = models.ForeignKey(OrderStatus, on_delete=models.PROTECT, null=True, blank=True)
     
     total = models.DecimalField(max_digits=12, decimal_places=2)
+    shipping_cost = models.DecimalField("Costo de envío", max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False) # Mantenemos por compatibilidad
 
@@ -302,3 +307,6 @@ class BulkUploadItem(models.Model):
 
 # --- MODELOS DE PEDIDOS INTERNOS ---
 from products.models_internal_orders import InternalOrder, InternalOrderItem, InternalOrderGroup
+
+# --- MODELOS DE COSTOS DE PRODUCCIÓN ---
+from products.models_costs import CostType, ProductTypeCostConfig, OrderCostBreakdown

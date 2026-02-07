@@ -1,0 +1,563 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Editor de Catálogo - JEMA{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <i class="bi bi-grid-3x3-gap"></i> Editor de Catálogo Personalizado
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .catalog-editor-wrapper {
+        display: flex;
+        gap: 16px;
+        min-height: calc(100vh - 200px);
+    }
+
+    .filters-column {
+        width: 260px;
+        flex-shrink: 0;
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: var(--shadow-md);
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+        max-height: calc(100vh - 140px);
+        overflow-y: auto;
+    }
+
+    .products-column {
+        flex: 1;
+        min-width: 0;
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .selected-column {
+        width: 340px;
+        flex-shrink: 0;
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+        max-height: calc(100vh - 140px);
+    }
+
+    @media (max-width: 1400px) {
+        .filters-column { width: 220px; }
+        .selected-column { width: 300px; }
+    }
+
+    @media (max-width: 1100px) {
+        .catalog-editor-wrapper { flex-direction: column; }
+        .filters-column, .selected-column {
+            width: 100%;
+            position: relative;
+            top: 0;
+            max-height: none;
+        }
+    }
+
+    .filter-section {
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+    }
+    .filter-section:last-of-type { border-bottom: none; }
+    .filter-section h6 {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+
+    /* Product cards grid */
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+
+    .product-card {
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 8px;
+        cursor: grab;
+        transition: all 0.2s;
+        background: white;
+        text-align: center;
+    }
+    .product-card:hover {
+        border-color: var(--jema-teal);
+        box-shadow: var(--shadow-sm);
+    }
+    .product-card.dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+    .product-card.selected {
+        border-color: var(--jema-purple);
+        background: rgba(107, 45, 123, 0.05);
+    }
+    .product-card img {
+        width: 100%;
+        height: 100px;
+        object-fit: contain;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        background: #f8f8f8;
+    }
+    .product-card .no-img {
+        width: 100%;
+        height: 100px;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        background: #f0edf2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted-foreground);
+    }
+    .product-card .card-name {
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.3;
+        max-height: 2.6em;
+        overflow: hidden;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+        min-height: 200px;
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        padding: 8px;
+        transition: all 0.3s;
+        flex: 1;
+        overflow-y: auto;
+    }
+    .drop-zone.drag-over {
+        border-color: var(--jema-teal);
+        background: rgba(26, 154, 154, 0.05);
+    }
+    .drop-zone .empty-msg {
+        text-align: center;
+        color: var(--muted-foreground);
+        padding: 40px 16px;
+        font-size: 14px;
+    }
+
+    /* Selected items */
+    .selected-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 6px;
+        background: white;
+        cursor: grab;
+        transition: all 0.2s;
+    }
+    .selected-item:hover { background: #faf8fc; }
+    .selected-item.dragging { opacity: 0.4; }
+    .selected-item img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        border-radius: 6px;
+        background: #f8f8f8;
+    }
+    .selected-item .item-name {
+        flex: 1;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .selected-item .item-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--jema-purple);
+        color: white;
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .selected-item .btn-remove {
+        border: none;
+        background: none;
+        color: #dc3545;
+        cursor: pointer;
+        padding: 2px;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .selected-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    .selected-count {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--jema-purple);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="catalog-editor-wrapper">
+    <!-- Columna Izquierda: Filtros -->
+    <div class="filters-column">
+        <div class="filter-section">
+            <h6><i class="bi bi-search me-1"></i> Buscar</h6>
+            <input type="text" id="searchInput" class="form-control form-control-sm"
+                   placeholder="Nombre de referencia..." autocomplete="off">
+        </div>
+
+        <div class="filter-section">
+            <h6><i class="bi bi-tag me-1"></i> Tipo</h6>
+            <select id="filterType" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for code, label in product_types %}
+                <option value="{{ code }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-section">
+            <h6><i class="bi bi-bookmark me-1"></i> Categoría</h6>
+            <select id="filterCategory" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button class="btn btn-sm btn-outline-secondary w-100 mt-2" onclick="clearFilters()">
+            <i class="bi bi-x-circle me-1"></i> Limpiar Filtros
+        </button>
+    </div>
+
+    <!-- Columna Central: Productos Disponibles -->
+    <div class="products-column">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0"><i class="bi bi-grid me-1"></i> Productos Disponibles</h6>
+            <span id="productsCount" class="badge bg-light text-dark">0</span>
+        </div>
+        <div class="products-grid" id="productsGrid">
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-arrow-left fs-3 d-block mb-2"></i>
+                Usa los filtros para buscar productos
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Seleccionados + Formulario -->
+    <div class="selected-column">
+        <div class="selected-header">
+            <h6 class="fw-bold mb-0"><i class="bi bi-check2-square me-1"></i> Seleccionados</h6>
+            <span class="selected-count" id="selectedCount">0 productos</span>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="empty-msg" id="emptyMsg">
+                <i class="bi bi-hand-index d-block fs-3 mb-2"></i>
+                Haz clic o arrastra productos aquí
+            </div>
+        </div>
+
+        <hr>
+
+        <form action="{% url 'generate_catalog_pdf' %}" method="POST" target="_blank" id="catalogForm">
+            {% csrf_token %}
+            <div id="hiddenInputs"></div>
+
+            <div class="mb-2">
+                <label class="form-label fw-medium small">Nombre del Catálogo</label>
+                <input type="text" name="catalog_name" class="form-control form-control-sm"
+                       placeholder="Ej: Catálogo Navidad" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium small">Teléfono</label>
+                <input type="text" name="phone" class="form-control form-control-sm" value="321 216 5252">
+            </div>
+
+            <button type="submit" class="btn btn-jema-primary w-100" id="generateBtn" disabled>
+                <i class="bi bi-file-earmark-pdf me-1"></i> Generar Catálogo
+            </button>
+        </form>
+
+        <a href="{% url 'catalog_selection' %}" class="btn btn-outline-secondary btn-sm w-100 mt-2">
+            <i class="bi bi-arrow-left me-1"></i> Volver
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+let selectedProducts = []; // [{id, name, image_url}, ...]
+let searchTimeout = null;
+
+// === FILTROS ===
+const searchInput = document.getElementById('searchInput');
+const filterType = document.getElementById('filterType');
+const filterCategory = document.getElementById('filterCategory');
+
+searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(loadProducts, 300);
+});
+filterType.addEventListener('change', loadProducts);
+filterCategory.addEventListener('change', loadProducts);
+
+function clearFilters() {
+    searchInput.value = '';
+    filterType.value = '';
+    filterCategory.value = '';
+    loadProducts();
+}
+
+function loadProducts() {
+    const data = {
+        search: searchInput.value.trim(),
+        product_type: filterType.value,
+        category_id: filterCategory.value,
+    };
+
+    fetch('{% url "api_catalog_filter_products" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.ok) renderProducts(res.products);
+    });
+}
+
+function renderProducts(products) {
+    const grid = document.getElementById('productsGrid');
+    document.getElementById('productsCount').textContent = products.length;
+
+    if (products.length === 0) {
+        grid.innerHTML = '<div class="text-center text-muted py-5">No se encontraron productos</div>';
+        return;
+    }
+
+    const selectedIds = new Set(selectedProducts.map(p => p.id));
+
+    grid.innerHTML = products.map(p => {
+        const isSelected = selectedIds.has(p.id);
+        const imgHtml = p.image_url
+            ? `<img src="${p.image_url}" alt="${p.name}" draggable="false">`
+            : `<div class="no-img"><i class="bi bi-image fs-4"></i></div>`;
+        return `
+            <div class="product-card ${isSelected ? 'selected' : ''}"
+                 draggable="true"
+                 data-id="${p.id}"
+                 data-name="${p.name.replace(/"/g, '&quot;')}"
+                 data-image="${p.image_url || ''}"
+                 onclick="toggleProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.image_url || ''}')"
+                 ondragstart="onDragStart(event)">
+                ${imgHtml}
+                <div class="card-name">${p.name}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// === DRAG & DROP ===
+function onDragStart(e) {
+    const card = e.target.closest('.product-card');
+    if (!card) return;
+    card.classList.add('dragging');
+    e.dataTransfer.setData('application/json', JSON.stringify({
+        id: parseInt(card.dataset.id),
+        name: card.dataset.name,
+        image_url: card.dataset.image,
+    }));
+    e.dataTransfer.effectAllowed = 'copy';
+}
+
+document.addEventListener('dragend', (e) => {
+    document.querySelectorAll('.product-card.dragging').forEach(c => c.classList.remove('dragging'));
+});
+
+const dropZone = document.getElementById('dropZone');
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+
+    // Try product from grid first
+    const jsonData = e.dataTransfer.getData('application/json');
+    if (jsonData) {
+        try {
+            const data = JSON.parse(jsonData);
+            if (data.id) addProduct(data);
+        } catch(err) {}
+    }
+});
+
+// === SELECCIÓN ===
+function toggleProduct(id, name, image_url) {
+    const idx = selectedProducts.findIndex(p => p.id === id);
+    if (idx >= 0) {
+        removeProduct(id);
+    } else {
+        addProduct({id, name, image_url});
+    }
+}
+
+function addProduct(data) {
+    if (selectedProducts.find(p => p.id === data.id)) return;
+    selectedProducts.push({
+        id: data.id,
+        name: data.name,
+        image_url: data.image_url,
+    });
+    renderSelected();
+    markProductCards();
+}
+
+function removeProduct(id) {
+    selectedProducts = selectedProducts.filter(p => p.id !== id);
+    renderSelected();
+    markProductCards();
+}
+
+function markProductCards() {
+    const selectedIds = new Set(selectedProducts.map(p => p.id));
+    document.querySelectorAll('.product-card').forEach(card => {
+        const cid = parseInt(card.dataset.id);
+        card.classList.toggle('selected', selectedIds.has(cid));
+    });
+}
+
+function renderSelected() {
+    const zone = document.getElementById('dropZone');
+    const emptyMsg = document.getElementById('emptyMsg');
+    const countEl = document.getElementById('selectedCount');
+    const generateBtn = document.getElementById('generateBtn');
+    const hiddenInputs = document.getElementById('hiddenInputs');
+
+    countEl.textContent = `${selectedProducts.length} producto${selectedProducts.length !== 1 ? 's' : ''}`;
+    generateBtn.disabled = selectedProducts.length === 0;
+
+    // Hidden inputs
+    hiddenInputs.innerHTML = selectedProducts.map(p =>
+        `<input type="hidden" name="product_ids" value="${p.id}">`
+    ).join('');
+
+    if (selectedProducts.length === 0) {
+        zone.innerHTML = `<div class="empty-msg" id="emptyMsg">
+            <i class="bi bi-hand-index d-block fs-3 mb-2"></i>
+            Haz clic o arrastra productos aquí
+        </div>`;
+        return;
+    }
+
+    zone.innerHTML = selectedProducts.map((p, idx) => {
+        const imgHtml = p.image_url
+            ? `<img src="${p.image_url}" alt="${p.name}" draggable="false">`
+            : `<div style="width:40px;height:40px;border-radius:6px;background:#f0edf2;display:flex;align-items:center;justify-content:center;"><i class="bi bi-image"></i></div>`;
+        return `
+            <div class="selected-item" draggable="true" data-idx="${idx}"
+                 ondragstart="onSelectedDragStart(event, ${idx})"
+                 ondragover="onSelectedDragOver(event, ${idx})"
+                 ondrop="onSelectedDrop(event, ${idx})">
+                <span class="item-num">${idx + 1}</span>
+                ${imgHtml}
+                <span class="item-name" title="${p.name}">${p.name}</span>
+                <button class="btn-remove" onclick="removeProduct(${p.id})" title="Quitar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+// === REORDENAR EN ZONA SELECCIONADOS ===
+let dragSelectedIdx = null;
+
+function onSelectedDragStart(e, idx) {
+    dragSelectedIdx = idx;
+    e.target.closest('.selected-item').classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', idx.toString());
+}
+
+function onSelectedDragOver(e, idx) {
+    e.preventDefault();
+}
+
+function onSelectedDrop(e, targetIdx) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Check if it's a new product from the grid
+    const jsonData = e.dataTransfer.getData('application/json');
+    if (jsonData) {
+        try {
+            const data = JSON.parse(jsonData);
+            if (data.id) {
+                addProduct(data);
+                return;
+            }
+        } catch(err) {}
+    }
+
+    // Otherwise it's a reorder within selected items
+    if (dragSelectedIdx === null || dragSelectedIdx === targetIdx) return;
+
+    const [moved] = selectedProducts.splice(dragSelectedIdx, 1);
+    selectedProducts.splice(targetIdx, 0, moved);
+    dragSelectedIdx = null;
+    renderSelected();
+}
+
+document.addEventListener('dragend', () => {
+    document.querySelectorAll('.selected-item.dragging').forEach(el => el.classList.remove('dragging'));
+    dragSelectedIdx = null;
+});
+
+// Load products on page load
+loadProducts();
+</script>
+{% endblock %}

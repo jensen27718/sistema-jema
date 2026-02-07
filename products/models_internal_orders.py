@@ -35,6 +35,12 @@ class InternalOrder(models.Model):
         decimal_places=2,
         default=0
     )
+    shipping_cost = models.DecimalField(
+        "Costo de envío",
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
 
     class Meta:
         ordering = ['-created_at']

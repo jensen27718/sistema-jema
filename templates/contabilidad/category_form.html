@@ -23,7 +23,7 @@
                         value="{{ category.name|default:'' }}" required>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="form-label text-muted small fw-bold">TIPO DE MOVIMIENTO</label>
                     <select name="transaction_type" class="form-select" required>
                         <option value="ingreso" {% if category.transaction_type == 'ingreso' %}selected{% endif %}>Ingreso
@@ -31,6 +31,17 @@
                         <option value="egreso" {% if category.transaction_type == 'egreso' %}selected{% endif %}>Gasto /
                             Egreso</option>
                     </select>
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input type="checkbox" name="is_fixed_cost" class="form-check-input" id="isFixedCost"
+                            {% if category.is_fixed_cost %}checked{% endif %}>
+                        <label class="form-check-label" for="isFixedCost">
+                            Es Gasto Fijo (Overhead)
+                        </label>
+                        <div class="form-text">Marcar si este gasto se incluye en el calculo de overhead semanal (Job Costing).</div>
+                    </div>
                 </div>
 
                 <div class="d-grid">

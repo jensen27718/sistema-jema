@@ -1,7 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.generic import TemplateView
 from products.models import Product
+
+
+def is_staff(user):
+    return user.is_staff or user.is_superuser
 # --- VISTAS PÚBLICAS ---
 
 def home_view(request):
@@ -15,6 +19,7 @@ def home_view(request):
 # --- VISTAS PRIVADAS (DASHBOARD) ---
 
 @login_required
+@user_passes_test(is_staff)
 def dashboard_home_view(request):
     from products.models import Order, Product, ShippingAddress
     from contabilidad.models import Transaction
@@ -76,14 +81,17 @@ def dashboard_home_view(request):
     return render(request, 'dashboard/home.html', context)
 
 @login_required
+@user_passes_test(is_staff)
 def dashboard_pedidos_view(request):
     return render(request, 'dashboard/pedidos.html')
 
 @login_required
+@user_passes_test(is_staff)
 def dashboard_tareas_view(request):
     return render(request, 'dashboard/tareas.html')
 
 @login_required
+@user_passes_test(is_staff)
 def quick_client_create_view(request):
     """
     Crea un usuario rápido con rol de CUSTOMER desde la contabilidad u otras partes del panel.
@@ -148,6 +156,7 @@ def quick_client_create_view(request):
                 
     return render(request, 'dashboard/quick_client_form.html')
 @login_required
+@user_passes_test(is_staff)
 def client_list_view(request):
     """
     Lista todos los usuarios con el rol CUSTOMER.
@@ -157,6 +166,7 @@ def client_list_view(request):
     return render(request, 'dashboard/clients/list.html', {'clients': clients})
 
 @login_required
+@user_passes_test(is_staff)
 def client_update_view(request, user_id):
     """
     Permite editar la información de un cliente.
@@ -180,6 +190,7 @@ def client_update_view(request, user_id):
     return render(request, 'dashboard/clients/form.html', {'client': client, 'is_edit': True})
 
 @login_required
+@user_passes_test(is_staff)
 def client_delete_view(request, user_id):
     """
     Elimina un cliente tras confirmación.

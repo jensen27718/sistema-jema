@@ -1,12 +1,14 @@
 import os
 import io
+import json
 import math
 import requests as http_requests
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
 from .models import Product, Category
 
 # ── Constantes de diseño ──────────────────────────────────────────────
@@ -322,12 +324,20 @@ def generate_catalog_pdf_view(request):
     category_ids = request.POST.getlist('categories')
     phone = request.POST.get('phone', '321 216 5252')
 
-    products = Product.objects.filter(is_active=True, is_online=True)
-    if product_type:
-        products = products.filter(product_type=product_type)
-    if category_ids:
-        products = products.filter(categories__id__in=category_ids).distinct()
-    products = list(products.order_by('name'))
+    # Si vienen product_ids (del editor D&D), usar esos en ese orden
+    product_ids = request.POST.getlist('product_ids')
+    if product_ids:
+        products_qs = Product.objects.filter(id__in=product_ids, is_active=True)
+        # Preservar el orden del editor
+        id_order = {int(pid): idx for idx, pid in enumerate(product_ids)}
+        products = sorted(list(products_qs), key=lambda p: id_order.get(p.id, 999))
+    else:
+        products_qs = Product.objects.filter(is_active=True)
+        if product_type:
+            products_qs = products_qs.filter(product_type=product_type)
+        if category_ids:
+            products_qs = products_qs.filter(categories__id__in=category_ids).distinct()
+        products = list(products_qs.order_by('name'))
 
     type_label = "General"
     if product_type:
@@ -360,3 +370,49 @@ def generate_catalog_pdf_view(request):
     response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+@login_required
+@user_passes_test(is_staff)
+def catalog_editor_view(request):
+    """Editor drag & drop para catálogos personalizados"""
+    categories = Category.objects.all()
+    product_types = Product.TYPE_CHOICES
+    return render(request, 'dashboard/catalogs/editor.html', {
+        'categories': categories,
+        'product_types': product_types,
+    })
+
+
+@login_required
+@user_passes_test(is_staff)
+@require_POST
+def api_catalog_filter_products(request):
+    """API para filtrar productos activos y retornar JSON"""
+    data = json.loads(request.body)
+    search = data.get('search', '').strip()
+    product_type = data.get('product_type', '')
+    category_id = data.get('category_id', '')
+
+    products = Product.objects.filter(is_active=True)
+    if search:
+        products = products.filter(name__icontains=search)
+    if product_type:
+        products = products.filter(product_type=product_type)
+    if category_id:
+        products = products.filter(categories__id=category_id)
+
+    products = products.distinct().order_by('name')[:100]
+
+    results = []
+    for p in products:
+        cats = [c.name for c in p.categories.all()]
+        results.append({
+            'id': p.id,
+            'name': p.name,
+            'image_url': p.image.url if p.image else None,
+            'categories': cats,
+            'product_type': p.get_product_type_display(),
+        })
+
+    return JsonResponse({'ok': True, 'products': results})

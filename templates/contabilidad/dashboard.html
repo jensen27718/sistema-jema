@@ -509,39 +509,39 @@
 <div class="row g-4 mb-5">
     {% for account in accounts %}
     <div class="col-md-6 col-xl-4">
-        <a href="{% url 'accounting_account_detail' account.id %}" class="text-decoration-none">
-            <div class="account-card">
-                <div class="account-header">
-                    <h5 class="account-name">{{ account.name }}</h5>
-                    <div class="d-flex gap-2">
-                        <a href="{% url 'accounting_account_update' account.id %}" class="btn btn-sm btn-light rounded-circle edit-account-btn" 
-                           style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; color: var(--jema-purple);"
-                           onclick="event.stopPropagation();">
-                            <i class="bi bi-pencil-fill"></i>
-                        </a>
-                        <div class="account-icon">
-                            <i class="bi bi-wallet2"></i>
-                        </div>
+        <div class="account-card">
+            <!-- Stretched link for the whole card -->
+            <a href="{% url 'accounting_account_detail' account.id %}" class="stretched-link"></a>
+            
+            <div class="account-header">
+                <h5 class="account-name">{{ account.name }}</h5>
+                <div class="d-flex gap-2 position-relative" style="z-index: 10;">
+                    <a href="{% url 'accounting_account_update' account.id %}" class="btn btn-sm btn-light rounded-circle edit-account-btn" 
+                       style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; color: var(--jema-purple);">
+                        <i class="bi bi-pencil-fill"></i>
+                    </a>
+                    <div class="account-icon">
+                        <i class="bi bi-wallet2"></i>
                     </div>
                 </div>
-
-                <div class="account-balance">${{ account.current_balance|intcomma }}</div>
-
-                {% if account.limit_amount > 0 %}
-                {% widthratio account.monthly_income account.limit_amount 100 as pct %}
-                <div class="progress-info">
-                    <span>Ingresos: ${{ account.monthly_income|intcomma }}</span>
-                    <span>Meta: ${{ account.limit_amount|intcomma }} ({{ pct }}%)</span>
-                </div>
-                <div class="progress-bar-wrapper">
-                    <div class="progress-fill {% if pct|add:0 > 90 %}high{% elif pct|add:0 > 50 %}mid{% else %}low{% endif %}"
-                        style="width: {{ pct }}%"></div>
-                </div>
-                {% else %}
-                <div class="no-goal">Click para ver movimientos</div>
-                {% endif %}
             </div>
-        </a>
+
+            <div class="account-balance">${{ account.current_balance|intcomma }}</div>
+
+            {% if account.limit_amount > 0 %}
+            {% widthratio account.monthly_income account.limit_amount 100 as pct %}
+            <div class="progress-info">
+                <span>Ingresos: ${{ account.monthly_income|intcomma }}</span>
+                <span>Meta: ${{ account.limit_amount|intcomma }} ({{ pct }}%)</span>
+            </div>
+            <div class="progress-bar-wrapper">
+                <div class="progress-fill {% if pct|add:0 > 90 %}high{% elif pct|add:0 > 50 %}mid{% else %}low{% endif %}"
+                    style="width: {{ pct }}%"></div>
+            </div>
+            {% else %}
+            <div class="no-goal">Click para ver movimientos</div>
+            {% endif %}
+        </div>
     </div>
     {% endfor %}
 

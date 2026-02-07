@@ -1,0 +1,51 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}{% if partner %}Editar{% else %}Nuevo{% endif %} Socio - Job Costing{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <a href="{% url 'job_costing_partners' %}" class="btn btn-sm btn-light rounded-circle"
+        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    {% if partner %}Editar Socio{% else %}Nuevo Socio{% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="jema-card p-4">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">NOMBRE</label>
+                    <input type="text" name="name" class="form-control" placeholder="Nombre del socio"
+                        value="{{ partner.name|default:'' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">PORCENTAJE DEL DISTRIBUIBLE (%)</label>
+                    <input type="number" name="share_percentage" class="form-control" step="0.01" min="0" max="100"
+                        value="{{ partner.share_percentage|default:'50' }}">
+                    <div class="form-text">Porcentaje del 95% distribuible que le corresponde a este socio.</div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input type="checkbox" name="is_active" class="form-check-input" id="isActive"
+                            {% if partner.is_active or not partner %}checked{% endif %}>
+                        <label class="form-check-label" for="isActive">Socio Activo</label>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-jema-primary py-2 fw-bold rounded-3">
+                        <i class="bi bi-save me-2"></i> GUARDAR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

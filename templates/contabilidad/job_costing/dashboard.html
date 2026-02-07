@@ -1,0 +1,166 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+
+{% block title %}Job Costing - JEMA{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-3">
+    <i class="bi bi-graph-up-arrow" style="font-size: 1.4rem;"></i>
+    Job Costing — Dashboard
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Hero: Overhead de la Semana -->
+    <div class="col-12">
+        <div class="p-4 rounded-4 text-white" style="background: linear-gradient(135deg, var(--jema-purple) 0%, var(--jema-teal) 100%);">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h6 class="opacity-75 mb-1">Semana {{ week.week_number }}/{{ week.year }}</h6>
+                    <p class="mb-0 small opacity-75">{{ week.start_date|date:"d M" }} — {{ week.end_date|date:"d M Y" }}</p>
+                    <h2 class="fw-bold mt-2 mb-0" style="font-size: 2.5rem;">
+                        {{ preview.overhead_percentage|floatformat:2 }}%
+                    </h2>
+                    <span class="opacity-75">Overhead Actual</span>
+                </div>
+                <div class="text-end">
+                    {% if not preview.is_closed %}
+                        <span class="badge bg-light text-dark fs-6 mb-2">Semana Abierta</span>
+                        <form method="POST" action="{% url 'job_costing_close_week' %}" class="d-block mt-2" onsubmit="return confirm('Cerrar esta semana? Esta acción no se puede deshacer.')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-light btn-sm fw-bold">
+                                <i class="bi bi-lock"></i> Cerrar Semana
+                            </button>
+                        </form>
+                    {% else %}
+                        <span class="badge bg-light text-success fs-6">Semana Cerrada</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="col-md-3">
+        <div class="jema-card p-4 text-center">
+            <div class="small text-muted fw-bold text-uppercase mb-1">Ventas Semana</div>
+            <h3 class="fw-bold mb-0">${{ preview.total_sales|floatformat:0|intcomma }}</h3>
+            <small class="text-muted">{{ preview.orders_count }} pedido{{ preview.orders_count|pluralize:"s" }} cobrado{{ preview.orders_count|pluralize:"s" }}</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="jema-card p-4 text-center">
+            <div class="small text-muted fw-bold text-uppercase mb-1">Gastos Fijos</div>
+            <h3 class="fw-bold mb-0 text-danger">${{ preview.fixed_costs|floatformat:0|intcomma }}</h3>
+            <small class="text-muted">Overhead {{ preview.overhead_percentage|floatformat:2 }}%</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="jema-card p-4 text-center">
+            <div class="small text-muted fw-bold text-uppercase mb-1">Utilidad Estimada</div>
+            <h3 class="fw-bold mb-0 {% if preview.total_net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                ${{ preview.total_net_profit|floatformat:0|intcomma }}
+            </h3>
+            <small class="text-muted">Neta (post-overhead)</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="jema-card p-4 text-center">
+            <div class="small text-muted fw-bold text-uppercase mb-1">Ahorro Acumulado</div>
+            <h3 class="fw-bold mb-0 jema-text-gradient">${{ total_savings|floatformat:0|intcomma }}</h3>
+            <small class="text-muted">Todas las semanas</small>
+        </div>
+    </div>
+
+    <!-- Tabla: Pedidos cobrados de la semana -->
+    <div class="col-lg-8">
+        <div class="jema-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-muted fw-bold small text-uppercase mb-0">Pedidos Cobrados esta Semana</h6>
+                <a href="{% url 'job_costing_orders' %}" class="btn btn-sm btn-outline-secondary">
+                    Ver Todos <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
+            {% if preview.order_details %}
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Pedido</th>
+                            <th class="text-end">Venta</th>
+                            <th class="text-end">Costos</th>
+                            <th class="text-end">Overhead</th>
+                            <th class="text-end">Utilidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for od in preview.order_details %}
+                        <tr>
+                            <td class="fw-medium">{{ od.financial_status.order_ref }}</td>
+                            <td class="text-end">${{ od.sale_amount|floatformat:0|intcomma }}</td>
+                            <td class="text-end text-danger">${{ od.direct_costs|floatformat:0|intcomma }}</td>
+                            <td class="text-end text-warning">${{ od.overhead_amount|floatformat:0|intcomma }}</td>
+                            <td class="text-end fw-bold {% if od.net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                ${{ od.net_profit|floatformat:0|intcomma }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                <p class="mt-2 mb-0">No hay pedidos cobrados esta semana</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar: Semanas cerradas + Socios -->
+    <div class="col-lg-4">
+        <!-- Semanas Cerradas -->
+        <div class="jema-card p-4 mb-4">
+            <h6 class="text-muted fw-bold small text-uppercase mb-3">Semanas Cerradas</h6>
+            {% if closed_weeks %}
+            <div class="d-flex flex-column gap-2">
+                {% for cw in closed_weeks %}
+                <a href="{% url 'job_costing_week_detail' cw.year cw.week_number %}" class="d-flex justify-content-between align-items-center p-2 rounded bg-light text-decoration-none">
+                    <span class="text-dark small fw-medium">Sem {{ cw.week_number }}/{{ cw.year }}</span>
+                    <span class="small text-success fw-bold">${{ cw.total_net_profit|floatformat:0|intcomma }}</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">Ninguna semana cerrada aun.</p>
+            {% endif %}
+        </div>
+
+        <!-- Socios -->
+        <div class="jema-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-muted fw-bold small text-uppercase mb-0">Socios</h6>
+                <a href="{% url 'job_costing_partners' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-gear"></i>
+                </a>
+            </div>
+            {% for p in partners %}
+            <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                <span class="fw-medium">{{ p.name }}</span>
+                <span class="badge bg-light text-dark">{{ p.share_percentage }}%</span>
+            </div>
+            {% empty %}
+            <p class="text-muted small mb-0">Sin socios configurados.</p>
+            {% endfor %}
+        </div>
+
+        <!-- Config -->
+        <div class="mt-4 d-grid">
+            <a href="{% url 'job_costing_config' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-gear me-1"></i> Configuracion Job Costing
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
