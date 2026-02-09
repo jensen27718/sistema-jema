@@ -146,27 +146,35 @@ def get_shipping_cost_for_order(financial_status):
     return Decimal('0')
 
 
-def calculate_weekly_overhead(week):
+def calculate_weekly_overhead(week, cutoff_date=None):
     """
     Calcula overhead semanal:
     overhead_% = gastos_fijos / ventas_cobradas
+
+    cutoff_date:
+        - None: usa toda la semana (lunes a domingo)
+        - date: usa semana acumulada hasta esa fecha
     """
     from contabilidad.models import Transaction, TransactionCategory
     from contabilidad.models_job_costing import FinancialStatus
+
+    period_end = week.end_date
+    if cutoff_date:
+        period_end = min(week.end_date, cutoff_date)
 
     # Gastos fijos de la semana
     fixed_costs = Transaction.objects.filter(
         category__is_fixed_cost=True,
         category__transaction_type='egreso',
         date__gte=week.start_date,
-        date__lte=week.end_date,
+        date__lte=period_end,
     ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
     # Ventas cobradas en la semana
     collected_statuses = FinancialStatus.objects.filter(
         state='cobrado',
         collected_at__date__gte=week.start_date,
-        collected_at__date__lte=week.end_date,
+        collected_at__date__lte=period_end,
     )
     total_sales = collected_statuses.aggregate(
         total=Sum('sale_amount')
@@ -342,7 +350,9 @@ def get_live_overhead_preview():
             'orders_count': week.orders_count,
         }
 
-    overhead_data = calculate_weekly_overhead(week)
+    # Live diario: acumula desde lunes hasta hoy (no hasta domingo)
+    today = date.today()
+    overhead_data = calculate_weekly_overhead(week, cutoff_date=today)
     collected_statuses = overhead_data['collected_statuses']
 
     # Calcular utilidad estimada
@@ -362,6 +372,7 @@ def get_live_overhead_preview():
         'overhead_percentage': overhead_data['overhead_percentage'],
         'total_sales': overhead_data['total_sales'],
         'fixed_costs': overhead_data['fixed_costs'],
+        'as_of_date': today,
         'total_net_profit': total_net_profit,
         'orders_count': collected_statuses.count(),
         'order_details': order_details,

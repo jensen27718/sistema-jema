@@ -399,15 +399,23 @@
             <!-- Totales -->
             <div class="border-top pt-3 mt-3" id="costsTotals">
                 <div class="d-flex justify-content-between mb-1">
-                    <span>Total Costos Producción:</span>
+                    <span>Producción Automática:</span>
                     <span class="fw-bold" id="totalProduction">${{ total_production_cost|floatformat:0|default:"0" }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
-                    <span>Descuento:</span>
+                    <span>Costos Manuales:</span>
+                    <span class="fw-bold" id="totalManual">$0</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Costo de Envío:</span>
+                    <span class="fw-bold" id="totalShipping">${{ order.shipping_cost|floatformat:0|default:"0" }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Descuento Especial:</span>
                     <span class="fw-bold text-danger" id="totalDiscount">-${{ order.discount_amount|floatformat:0 }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1 border-top pt-2">
-                    <span class="fw-bold">Total Costos:</span>
+                    <span class="fw-bold">Total General Costos:</span>
                     <span class="fw-bold text-danger" id="grandTotal">${{ grand_total_cost|floatformat:0|default:"0" }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
@@ -503,21 +511,27 @@ function calculateCosts() {
         }
 
         const shipping = parseFloat(document.getElementById('shippingCostInput').value) || 0;
-        const totalProd = parseFloat(res.total_production) + parseFloat(res.total_manual);
+        const totalAuto = parseFloat(res.total_production) || 0;
+        const totalManual = parseFloat(res.total_manual) || 0;
+        const totalProd = totalAuto + totalManual;
         const grandTotal = totalProd + shipping;
         const totalEstimated = {{ order.total_estimated|default:"0" }};
         const margin = totalEstimated - grandTotal;
 
-        document.getElementById('totalProduction').textContent = '$' + Math.round(totalProd).toLocaleString();
-        document.getElementById('totalShipping').textContent = '$' + Math.round(shipping).toLocaleString();
+        document.getElementById('totalProduction').textContent = '$' + Math.round(totalAuto).toLocaleString();
+        document.getElementById('totalManual').textContent = '$' + Math.round(totalManual).toLocaleString();
+        if (document.getElementById('totalShipping')) {
+            document.getElementById('totalShipping').textContent = '$' + Math.round(shipping).toLocaleString();
+        }
         document.getElementById('grandTotal').textContent = '$' + Math.round(grandTotal).toLocaleString();
         document.getElementById('marginDisplay').textContent = '$' + Math.round(margin).toLocaleString();
         document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
     })
     .catch(err => {
+        console.error('Error calculating costs:', err);
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-calculator"></i> Calcular Costos';
-        alert('Error de conexión');
+        alert('Error de conexión al calcular costos');
     });
 }
 
@@ -531,14 +545,21 @@ function updateShipping() {
     .then(r => r.json())
     .then(res => {
         if (res.ok) {
-            document.getElementById('totalShipping').textContent = '$' + parseInt(val).toLocaleString();
-            const totalProdText = document.getElementById('totalProduction').textContent.replace(/[$,]/g, '');
-            const totalProd = parseInt(totalProdText) || 0;
-            const grandTotal = totalProd + parseInt(val);
+            const shippingVal = parseInt(val) || 0;
+            if (document.getElementById('totalShipping')) {
+                document.getElementById('totalShipping').textContent = '$' + shippingVal.toLocaleString();
+            }
+            
+            const totalProdAutoText = document.getElementById('totalProduction').textContent.replace(/[$,]/g, '') || '0';
+            const totalManualText = document.getElementById('totalManual').textContent.replace(/[$,]/g, '') || '0';
+            const totalProd = parseInt(totalProdAutoText) + parseInt(totalManualText);
+            
+            const grandTotal = totalProd + shippingVal;
             const totalEstimated = {{ order.total_estimated|default:"0" }};
             const margin = totalEstimated - grandTotal;
-            document.getElementById('grandTotal').textContent = '$' + grandTotal.toLocaleString();
-            document.getElementById('marginDisplay').textContent = '$' + margin.toLocaleString();
+            
+            document.getElementById('grandTotal').textContent = '$' + Math.round(grandTotal).toLocaleString();
+            document.getElementById('marginDisplay').textContent = '$' + Math.round(margin).toLocaleString();
             document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
         }
     });

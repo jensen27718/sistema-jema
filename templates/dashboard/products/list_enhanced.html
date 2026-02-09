@@ -180,14 +180,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- FUNCIONES AJAX ---
 
-    function fetchProducts(url = null) {
+    function fetchProducts(url = null, options = {}) {
+        const preservePage = options.preservePage === true;
         spinner.classList.remove('d-none');
         
         // Construir URL con parámetros
-        const formData = new FormData(filterForm);
-        const params = new URLSearchParams(formData);
-        
-        let fetchUrl = url || `${window.location.pathname}?${params.toString()}`;
+        let fetchUrl = url;
+        if (!fetchUrl) {
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams(formData);
+            const currentPage = new URLSearchParams(window.location.search).get('page');
+            if (preservePage && currentPage) {
+                params.set('page', currentPage);
+            } else {
+                params.delete('page');
+            }
+            fetchUrl = `${window.location.pathname}?${params.toString()}`;
+        }
 
         fetch(fetchUrl, {
             headers: {
@@ -211,7 +220,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- EVENT LISTENERS FILTROS ---
 
-    filterForm.addEventListener('change', () => fetchProducts());
+    filterForm.addEventListener('change', (event) => {
+        const keepCurrentPage = event.target && event.target.name === 'category';
+        fetchProducts(null, { preservePage: keepCurrentPage });
+    });
     
     // Búsqueda con debounce para no saturar
     filterForm.querySelector('input[name="q"]').addEventListener('input', function() {
