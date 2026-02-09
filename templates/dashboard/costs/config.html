@@ -1,4 +1,5 @@
 {% extends 'base_admin.html' %}
+{% load l10n %}
 
 {% block title %}Configuración de Costos - JEMA{% endblock %}
 {% block page_title %}
@@ -94,7 +95,7 @@
                             <div class="input-group input-group-sm" style="max-width: 130px;">
                                 <span class="input-group-text">$</span>
                                 <input type="number" step="0.01" class="form-control"
-                                    value="{{ ct.default_unit_price }}" data-field="default_unit_price"
+                                    value="{{ ct.default_unit_price|unlocalize }}" data-field="default_unit_price"
                                     data-id="{{ ct.id }}" onchange="updateCostType(this)">
                             </div>
                         </td>
@@ -102,7 +103,7 @@
                             <div class="input-group input-group-sm" style="max-width: 130px;">
                                 <span class="input-group-text">$</span>
                                 <input type="number" step="0.01" class="form-control"
-                                    value="{{ ct.special_material_price }}" data-field="special_material_price"
+                                    value="{{ ct.special_material_price|unlocalize }}" data-field="special_material_price"
                                     data-id="{{ ct.id }}" onchange="updateCostType(this)"
                                     title="Precio para materiales especiales (Metalizado, Mailan)">
                             </div>

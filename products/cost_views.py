@@ -68,7 +68,7 @@ def api_create_cost_type(request):
         ct = CostType.objects.create(
             name=data.get('name', ''),
             unit=data.get('unit', 'unidad'),
-            default_unit_price=Decimal(str(val)),
+            default_unit_price=Decimal(str(val).replace(',', '.')),
             description=data.get('description', ''),
             is_active=data.get('is_active', True),
         )
@@ -98,13 +98,15 @@ def api_update_cost_type(request):
         if 'unit' in data:
             ct.unit = data['unit']
         if 'default_unit_price' in data:
-            ct.default_unit_price = Decimal(str(data['default_unit_price']))
+            val = data['default_unit_price']
+            ct.default_unit_price = Decimal(str(val).replace(',', '.')) if val not in (None, '') else 0
         if 'description' in data:
             ct.description = data['description']
         if 'is_active' in data:
             ct.is_active = data['is_active']
         if 'special_material_price' in data:
-            ct.special_material_price = Decimal(str(data['special_material_price']))
+            val = data['special_material_price']
+            ct.special_material_price = Decimal(str(val).replace(',', '.')) if val not in (None, '') else 0
         ct.save()
         return JsonResponse({
             'ok': True,
@@ -161,7 +163,7 @@ def api_save_product_type_cost(request):
             cost_type=cost_type,
             defaults={
                 'calculation_method': data.get('calculation_method', 'per_unit'),
-                'material_width_cm': Decimal(str(data['material_width_cm'])) if data.get('material_width_cm') else None,
+                'material_width_cm': Decimal(str(data['material_width_cm']).replace(',', '.')) if data.get('material_width_cm') else None,
                 'position': data.get('position', 0),
             }
         )
@@ -245,11 +247,14 @@ def api_update_manual_cost(request):
         breakdown = get_object_or_404(OrderCostBreakdown, id=breakdown_id)
 
         if 'unit_price' in data:
-            breakdown.unit_price = Decimal(str(data['unit_price']))
+            val = data['unit_price']
+            breakdown.unit_price = Decimal(str(val).replace(',', '.')) if val not in (None, '') else 0
         if 'calculated_quantity' in data:
-            breakdown.calculated_quantity = Decimal(str(data['calculated_quantity']))
+            val = data['calculated_quantity']
+            breakdown.calculated_quantity = Decimal(str(val).replace(',', '.')) if val not in (None, '') else 0
         if 'total' in data:
-            breakdown.total = Decimal(str(data['total']))
+            val = data['total']
+            breakdown.total = Decimal(str(val).replace(',', '.')) if val not in (None, '') else 0
         else:
             breakdown.total = breakdown.calculated_quantity * breakdown.unit_price
         if 'notes' in data:
@@ -276,7 +281,8 @@ def api_update_shipping(request):
         data = json.loads(request.body)
         order_type = data.get('order_type', 'internal')
         order_id = data.get('order_id')
-        shipping_cost = Decimal(str(data.get('shipping_cost', 0)))
+        val = data.get('shipping_cost', 0)
+        shipping_cost = Decimal(str(val).replace(',', '.')) if val not in (None, '') else 0
 
         if order_type == 'internal':
             order = get_object_or_404(InternalOrder, id=order_id)
@@ -300,7 +306,8 @@ def api_update_discount(request):
         data = json.loads(request.body)
         order_type = data.get('order_type', 'internal')
         order_id = data.get('order_id')
-        discount_amount = Decimal(str(data.get('discount_amount', 0)))
+        val = data.get('discount_amount', 0)
+        discount_amount = Decimal(str(val).replace(',', '.')) if val not in (None, '') else 0
 
         if order_type == 'internal':
             order = get_object_or_404(InternalOrder, id=order_id)
@@ -332,10 +339,10 @@ def api_update_variant_dimensions(request):
 
         if 'height_cm' in data:
             val = data['height_cm']
-            variant.height_cm = Decimal(str(val)) if val not in (None, '', 'null') else None
+            variant.height_cm = Decimal(str(val).replace(',', '.')) if val not in (None, '', 'null') else None
         if 'width_cm' in data:
             val = data['width_cm']
-            variant.width_cm = Decimal(str(val)) if val not in (None, '', 'null') else None
+            variant.width_cm = Decimal(str(val).replace(',', '.')) if val not in (None, '', 'null') else None
 
         variant.save(update_fields=['height_cm', 'width_cm'])
 
