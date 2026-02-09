@@ -20,14 +20,19 @@ def calculate_order_costs(order, order_type='internal'):
         dict con resumen de costos calculados
     """
     # 1. Obtener items del pedido
-    items = order.items.select_related('variant__product', 'variant__size', 'variant__material').all()
+    if order_type == 'internal':
+        items = order.items.select_related('variant__product', 'variant__size', 'variant__material').all()
+    else:
+        # OrderItem (catalogo) no tiene FK a variant
+        items = order.items.select_related('product').all()
 
     # 2. Agrupar items por product_type
     items_by_type = defaultdict(list)
     for item in items:
-        if item.variant and item.variant.product:
-            ptype = item.variant.product.product_type
-            items_by_type[ptype].append(item)
+        variant = getattr(item, 'variant', None)
+        product = variant.product if variant and variant.product else getattr(item, 'product', None)
+        if product and product.product_type:
+            items_by_type[product.product_type].append(item)
 
     # 3. Borrar breakdowns anteriores (recalcular)
     if order_type == 'internal':
@@ -107,8 +112,12 @@ def _calculate_cost(config, items):
     has_special_pricing = special_price and special_price > 0
 
     if has_special_pricing and method in ('linear_meters', 'per_unit'):
-        normal_items = [i for i in items if not (i.variant and i.variant.material and i.variant.material.is_special)]
-        special_items = [i for i in items if i.variant and i.variant.material and i.variant.material.is_special]
+        def _is_special(item):
+            variant = getattr(item, 'variant', None)
+            return bool(variant and variant.material and variant.material.is_special)
+
+        normal_items = [i for i in items if not _is_special(i)]
+        special_items = [i for i in items if _is_special(i)]
 
         results = []
         if normal_items:
@@ -116,7 +125,8 @@ def _calculate_cost(config, items):
             if r:
                 results.append(r)
         if special_items:
-            mat_name = special_items[0].variant.material.name if special_items[0].variant.material else "Especial"
+            first_variant = getattr(special_items[0], 'variant', None)
+            mat_name = first_variant.material.name if first_variant and first_variant.material else "Especial"
             r = _calc_single(method, cost_type, special_items, special_price, config.material_width_cm, f" ({mat_name})")
             if r:
                 results.append(r)
@@ -171,7 +181,7 @@ def _calc_linear_meters(cost_type, items, unit_price, material_width_cm):
     # Agrupar items por dimensiones de variante
     groups = defaultdict(lambda: Decimal('0'))
     for item in items:
-        v = item.variant
+        v = getattr(item, 'variant', None)
         if v and v.height_cm and v.width_cm:
             key = (v.height_cm, v.width_cm)
             groups[key] += Decimal(str(item.quantity))
@@ -206,7 +216,7 @@ def _calc_square_meters(cost_type, items, unit_price):
     total_area_cm2 = Decimal('0')
 
     for item in items:
-        v = item.variant
+        v = getattr(item, 'variant', None)
         if v and v.height_cm and v.width_cm:
             area = v.height_cm * v.width_cm * Decimal(str(item.quantity))
             total_area_cm2 += area
