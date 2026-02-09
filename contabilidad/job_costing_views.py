@@ -2,7 +2,7 @@
 Vistas para Job Costing — Dashboard, Semanas, Pedidos, Socios, Config
 """
 import json
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -174,21 +174,29 @@ def job_costing_config_view(request):
     accounts = Account.objects.all()
 
     if request.method == 'POST':
-        config.savings_percentage = Decimal(request.POST.get('savings_percentage', '5'))
-        config.distribution_percentage = Decimal(request.POST.get('distribution_percentage', '95'))
+        # Obtener valores limpiando posibles espacios
+        savings_str = request.POST.get('savings_percentage', '0').replace(',', '.')
+        dist_str = request.POST.get('distribution_percentage', '0').replace(',', '.')
+        
+        try:
+            config.savings_percentage = Decimal(savings_str)
+            config.distribution_percentage = Decimal(dist_str)
+        except (TypeError, ValueError, InvalidOperation):
+            messages.error(request, "Los porcentajes deben ser números válidos.")
+            return redirect('job_costing_config')
 
         cuenta_principal_id = request.POST.get('cuenta_principal')
         cuenta_costos_id = request.POST.get('cuenta_costos')
         cuenta_ahorro_id = request.POST.get('cuenta_ahorro')
         cuenta_distribucion_id = request.POST.get('cuenta_distribucion')
 
-        config.cuenta_principal_id = cuenta_principal_id if cuenta_principal_id else None
-        config.cuenta_costos_id = cuenta_costos_id if cuenta_costos_id else None
-        config.cuenta_ahorro_id = cuenta_ahorro_id if cuenta_ahorro_id else None
-        config.cuenta_distribucion_id = cuenta_distribucion_id if cuenta_distribucion_id else None
+        config.cuenta_principal_id = int(cuenta_principal_id) if cuenta_principal_id and cuenta_principal_id.isdigit() else None
+        config.cuenta_costos_id = int(cuenta_costos_id) if cuenta_costos_id and cuenta_costos_id.isdigit() else None
+        config.cuenta_ahorro_id = int(cuenta_ahorro_id) if cuenta_ahorro_id and cuenta_ahorro_id.isdigit() else None
+        config.cuenta_distribucion_id = int(cuenta_distribucion_id) if cuenta_distribucion_id and cuenta_distribucion_id.isdigit() else None
 
         config.save()
-        messages.success(request, "Configuración actualizada.")
+        messages.success(request, "Configuración actualizada correctamente.")
         return redirect('job_costing_config')
 
     context = {
