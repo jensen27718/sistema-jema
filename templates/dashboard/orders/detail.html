@@ -14,7 +14,6 @@
 
 {% block content %}
 <div class="row g-4">
-    <!-- Columna Izquierda: Items y Detalles -->
     <div class="col-lg-8">
         <div class="jema-card p-4 h-100">
             <h6 class="text-muted fw-bold small mb-3 text-uppercase">Productos del Pedido</h6>
@@ -44,15 +43,12 @@
             </div>
         </div>
 
-        <!-- Costos de Producción -->
         <div class="jema-card p-4 mt-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="text-muted fw-bold small text-uppercase mb-0">Costos de Producción</h6>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-jema-primary" onclick="calculateCosts()" id="btnCalcCosts">
-                        <i class="bi bi-calculator"></i> Calcular
-                    </button>
-                </div>
+                <h6 class="text-muted fw-bold small text-uppercase mb-0">Costos del Pedido</h6>
+                <button class="btn btn-sm btn-jema-primary" onclick="openCostModal()">
+                    <i class="bi bi-plus-lg"></i> Agregar gasto
+                </button>
             </div>
 
             <div class="table-responsive">
@@ -60,21 +56,57 @@
                     <thead class="bg-light">
                         <tr>
                             <th>Tipo</th>
-                            <th>Descripción</th>
+                            <th>Descripcion</th>
+                            <th>Estado Contable</th>
                             <th class="text-end">Total</th>
+                            <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="costsBody">
                         {% for breakdown in cost_breakdowns %}
-                        <tr>
+                        <tr data-breakdown-id="{{ breakdown.id }}">
                             <td>{{ breakdown.cost_type.name }}</td>
-                            <td>{{ breakdown.description }}</td>
+                            <td>
+                                <div class="fw-medium">{{ breakdown.description }}</div>
+                                {% if breakdown.notes %}
+                                <small class="text-muted">{{ breakdown.notes }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if breakdown.accounting_status == 'posted' %}
+                                <span class="badge bg-success">Registrado</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                                {% if breakdown.accounting_category %}
+                                <div><small class="text-muted">{{ breakdown.accounting_category.name }}</small></div>
+                                {% endif %}
+                            </td>
                             <td class="text-end fw-bold">${{ breakdown.total|floatformat:0 }}</td>
+                            <td class="text-end">
+                                {% if breakdown.accounting_status == 'posted' %}
+                                    {% if breakdown.accounting_transaction_id %}
+                                    <a class="btn btn-sm btn-outline-success" href="{% url 'accounting_transaction_update' breakdown.accounting_transaction_id %}">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                    {% endif %}
+                                {% else %}
+                                <button class="btn btn-sm btn-outline-secondary" onclick="openCostModal({{ breakdown.id }})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="openPostModal({{ breakdown.id }})">
+                                    <i class="bi bi-cash-coin"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCost({{ breakdown.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% empty %}
-                        <tr>
-                            <td colspan="3" class="text-center text-muted py-2">
-                                Sin costos calculados
+                        <tr id="noCostsRow">
+                            <td colspan="5" class="text-center text-muted py-2">
+                                Sin gastos registrados
                             </td>
                         </tr>
                         {% endfor %}
@@ -84,7 +116,7 @@
 
             <div class="border-top pt-3 mt-3">
                 <div class="row align-items-center mb-2">
-                    <div class="col-6"><small class="text-muted">Envío</small></div>
+                    <div class="col-6"><small class="text-muted">Envio</small></div>
                     <div class="col-6">
                         <div class="input-group input-group-sm" style="max-width: 150px; margin-left: auto;">
                             <span class="input-group-text">$</span>
@@ -108,9 +140,7 @@
         </div>
     </div>
 
-    <!-- Columna Derecha: Estado y Cliente -->
     <div class="col-lg-4">
-        <!-- Card de Estado -->
         <div class="jema-card p-4 mb-4">
             <h6 class="text-muted fw-bold small mb-3 text-uppercase">Estado Actual</h6>
 
@@ -139,7 +169,6 @@
             </form>
         </div>
 
-        <!-- Card de Estado Financiero -->
         <div class="jema-card p-4 mb-4" id="financialStatusCard">
             <h6 class="text-muted fw-bold small mb-3 text-uppercase">Estado Financiero</h6>
             {% if financial_status %}
@@ -165,7 +194,6 @@
                 </button>
                 {% endif %}
             </div>
-            <!-- Rentabilidad Preview -->
             <div class="border-top pt-3" id="profitPreview">
                 <small class="text-muted fw-bold d-block mb-2">RENTABILIDAD ESTIMADA</small>
                 <div id="profitData" class="text-center text-muted small">
@@ -179,9 +207,8 @@
             {% endif %}
         </div>
 
-        <!-- Card de Cliente -->
         <div class="jema-card p-4">
-            <h6 class="text-muted fw-bold small mb-3 text-uppercase">Datos de Envío</h6>
+            <h6 class="text-muted fw-bold small mb-3 text-uppercase">Datos de Envio</h6>
 
             <div class="mb-3">
                 <label class="d-block small text-muted">Cliente</label>
@@ -189,14 +216,14 @@
             </div>
 
             <div class="mb-3">
-                <label class="d-block small text-muted">Teléfono</label>
+                <label class="d-block small text-muted">Telefono</label>
                 <a href="https://wa.me/57{{ order.address.phone }}" target="_blank" class="text-decoration-none">
                     <i class="bi bi-whatsapp text-success me-1"></i> {{ order.address.phone }}
                 </a>
             </div>
 
             <div class="mb-3">
-                <label class="d-block small text-muted">Dirección</label>
+                <label class="d-block small text-muted">Direccion</label>
                 <div>{{ order.address.address_line }}</div>
                 <div class="small text-muted">{{ order.address.neighborhood }}</div>
                 <div class="fw-medium">{{ order.address.city }} - {{ order.address.department }}</div>
@@ -213,59 +240,359 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="costModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="costModalTitle">Agregar gasto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="costBreakdownId">
+                <div class="mb-3">
+                    <label class="form-label">Tipo de gasto</label>
+                    <select id="costTypeInput" class="form-select">
+                        {% for ct in cost_types %}
+                        <option value="{{ ct.id }}" data-default-category="{{ ct.accounting_category_id|default:'' }}">{{ ct.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descripcion</label>
+                    <input type="text" class="form-control" id="costDescriptionInput" placeholder="Ej: Descartonado frente">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Total</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" min="0" step="1" class="form-control" id="costTotalInput">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Categoria contable sugerida</label>
+                    <select id="costAccountingCategoryInput" class="form-select">
+                        <option value="">Sin categoria</option>
+                        {% for category in accounting_categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-0">
+                    <label class="form-label">Notas</label>
+                    <textarea id="costNotesInput" class="form-control" rows="2" placeholder="Opcional"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-jema-primary" onclick="saveCost()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="postCostModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar pago en contabilidad</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="postBreakdownId">
+                <div class="alert alert-light border mb-3" id="postBreakdownLabel"></div>
+                <div class="mb-3">
+                    <label class="form-label">Cuenta</label>
+                    <select id="postAccountInput" class="form-select">
+                        {% for account in accounting_accounts %}
+                        <option value="{{ account.id }}">{{ account.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Categoria contable</label>
+                    <select id="postCategoryInput" class="form-select">
+                        <option value="">Usar categoria del gasto</option>
+                        {% for category in accounting_categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" id="postDateInput" class="form-control">
+                </div>
+                <div class="mb-0">
+                    <label class="form-label">Descripcion movimiento</label>
+                    <input type="text" id="postDescriptionInput" class="form-control" placeholder="Opcional">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="postCostToAccounting()">Registrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 const csrfToken = '{{ csrf_token }}';
 const orderId = {{ order.id }};
+let costsCache = {};
 
-function calculateCosts() {
-    const btn = document.getElementById('btnCalcCosts');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+const costTypeDefaults = {
+    {% for ct in cost_types %}
+    {{ ct.id }}: {
+        name: '{{ ct.name|escapejs }}',
+        defaultCategory: '{{ ct.accounting_category_id|default:"" }}'
+    },
+    {% endfor %}
+};
 
-    fetch('{% url "api_calculate_costs" %}', {
+const costModal = new bootstrap.Modal(document.getElementById('costModal'));
+const postCostModal = new bootstrap.Modal(document.getElementById('postCostModal'));
+const transactionUrlTemplate = '{% url "accounting_transaction_update" 0 %}';
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function currency(value) {
+    const num = parseFloat(value || 0);
+    return '$' + Math.round(num).toLocaleString();
+}
+
+function toDateInputValue(today = new Date()) {
+    const offset = today.getTimezoneOffset();
+    const adjusted = new Date(today.getTime() - (offset * 60 * 1000));
+    return adjusted.toISOString().split('T')[0];
+}
+
+function accountingUrl(id) {
+    return transactionUrlTemplate.replace('/0/', '/' + id + '/');
+}
+
+function refreshTotals(payload) {
+    document.getElementById('grandTotal').textContent = currency(payload.grand_total);
+    const margin = parseFloat(payload.margin || 0);
+    const marginEl = document.getElementById('marginDisplay');
+    marginEl.textContent = currency(margin);
+    marginEl.className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
+}
+
+function renderCosts(breakdowns) {
+    const tbody = document.getElementById('costsBody');
+    costsCache = {};
+
+    if (!breakdowns || breakdowns.length === 0) {
+        tbody.innerHTML = `
+            <tr id="noCostsRow">
+                <td colspan="5" class="text-center text-muted py-2">Sin gastos registrados</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = '';
+    breakdowns.forEach((b) => {
+        costsCache[b.id] = b;
+        const statusBadge = b.accounting_status === 'posted'
+            ? '<span class="badge bg-success">Registrado</span>'
+            : '<span class="badge bg-warning text-dark">Pendiente</span>';
+        const categoryText = b.accounting_category_name ? `<div><small class="text-muted">${escapeHtml(b.accounting_category_name)}</small></div>` : '';
+
+        let actions = '';
+        if (b.accounting_status === 'posted') {
+            if (b.accounting_transaction_id) {
+                actions = `<a class="btn btn-sm btn-outline-success" href="${accountingUrl(b.accounting_transaction_id)}"><i class="bi bi-box-arrow-up-right"></i></a>`;
+            }
+        } else {
+            actions = `
+                <button class="btn btn-sm btn-outline-secondary" onclick="openCostModal(${b.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-primary" onclick="openPostModal(${b.id})"><i class="bi bi-cash-coin"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteCost(${b.id})"><i class="bi bi-trash"></i></button>
+            `;
+        }
+
+        const notes = b.notes ? `<small class="text-muted">${escapeHtml(b.notes)}</small>` : '';
+        tbody.innerHTML += `
+            <tr data-breakdown-id="${b.id}">
+                <td>${escapeHtml(b.cost_type_name)}</td>
+                <td>
+                    <div class="fw-medium">${escapeHtml(b.description)}</div>
+                    ${notes}
+                </td>
+                <td>${statusBadge}${categoryText}</td>
+                <td class="text-end fw-bold">${currency(b.total)}</td>
+                <td class="text-end">${actions}</td>
+            </tr>
+        `;
+    });
+}
+
+function fetchCosts() {
+    fetch('{% url "api_get_order_costs" %}', {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify({order_type: 'catalog', order_id: orderId})
     })
-    .then(r => r.json())
-    .then(res => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Recalcular';
-
-        if (!res.ok) { alert('Error: ' + res.error); return; }
-        const diagnostics = res.diagnostics || {};
-        console.log('Diagnostico costos catalogo:', diagnostics);
-
-        const tbody = document.getElementById('costsBody');
-        tbody.innerHTML = '';
-
-        if (res.breakdowns.length === 0) {
-            let msg = 'Sin costos configurados';
-            if ((diagnostics.items_total || 0) > 0 && (diagnostics.items_grouped || 0) === 0) {
-                msg = 'No se pudo identificar el tipo de producto de los items del pedido.';
-            } else if ((diagnostics.types_detected || []).length > 0) {
-                msg = 'Hay reglas de costo, pero no generaron resultado (revisa metodo y dimensiones de variantes).';
-            }
-            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-2">${msg}</td></tr>`;
-        } else {
-            res.breakdowns.forEach(b => {
-                tbody.innerHTML += `<tr><td>${b.cost_type_name}</td><td>${b.description}</td><td class="text-end fw-bold">$${parseInt(b.total).toLocaleString()}</td></tr>`;
-            });
+    .then((r) => r.json())
+    .then((res) => {
+        if (!res.ok) {
+            alert(res.error || 'No se pudieron cargar los costos');
+            return;
         }
+        renderCosts(res.breakdowns || []);
+        refreshTotals(res);
+    })
+    .catch(() => alert('Error de conexion al cargar costos'));
+}
 
-        const shipping = parseFloat(document.getElementById('shippingCostInput').value) || 0;
-        const totalProd = parseFloat(res.total_production) + parseFloat(res.total_manual);
-        const grandTotal = totalProd + shipping;
-        const orderTotal = {{ order.total|default:"0" }};
-        const margin = orderTotal - grandTotal;
+function openCostModal(breakdownId = null) {
+    document.getElementById('costBreakdownId').value = breakdownId || '';
+    const costTypeInput = document.getElementById('costTypeInput');
+    const descriptionInput = document.getElementById('costDescriptionInput');
+    const totalInput = document.getElementById('costTotalInput');
+    const notesInput = document.getElementById('costNotesInput');
+    const accountingCategoryInput = document.getElementById('costAccountingCategoryInput');
 
-        document.getElementById('grandTotal').textContent = '$' + Math.round(grandTotal).toLocaleString();
-        document.getElementById('marginDisplay').textContent = '$' + Math.round(margin).toLocaleString();
-        document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
-    });
+    if (!breakdownId) {
+        document.getElementById('costModalTitle').textContent = 'Agregar gasto';
+        if (costTypeInput.options.length > 0) {
+            costTypeInput.selectedIndex = 0;
+            const selectedCostType = costTypeInput.value;
+            descriptionInput.value = costTypeDefaults[selectedCostType]?.name || '';
+            accountingCategoryInput.value = costTypeDefaults[selectedCostType]?.defaultCategory || '';
+        } else {
+            descriptionInput.value = '';
+            accountingCategoryInput.value = '';
+        }
+        totalInput.value = '';
+        notesInput.value = '';
+    } else {
+        const breakdown = costsCache[breakdownId];
+        if (!breakdown) {
+            alert('No se encontro el gasto seleccionado.');
+            return;
+        }
+        document.getElementById('costModalTitle').textContent = 'Editar gasto';
+        costTypeInput.value = breakdown.cost_type_id;
+        descriptionInput.value = breakdown.description;
+        totalInput.value = parseFloat(breakdown.total || 0);
+        notesInput.value = breakdown.notes || '';
+        accountingCategoryInput.value = breakdown.accounting_category_id || '';
+    }
+
+    costModal.show();
+}
+
+function onCostTypeChange() {
+    const costTypeInput = document.getElementById('costTypeInput');
+    const descriptionInput = document.getElementById('costDescriptionInput');
+    const accountingCategoryInput = document.getElementById('costAccountingCategoryInput');
+    const selected = costTypeInput.value;
+
+    if (!document.getElementById('costBreakdownId').value && !descriptionInput.value.trim()) {
+        descriptionInput.value = costTypeDefaults[selected]?.name || '';
+    }
+    if (!accountingCategoryInput.value) {
+        accountingCategoryInput.value = costTypeDefaults[selected]?.defaultCategory || '';
+    }
+}
+
+function saveCost() {
+    const breakdownId = document.getElementById('costBreakdownId').value;
+    const payload = {
+        order_type: 'catalog',
+        order_id: orderId,
+        cost_type_id: document.getElementById('costTypeInput').value,
+        description: document.getElementById('costDescriptionInput').value,
+        total: document.getElementById('costTotalInput').value || 0,
+        notes: document.getElementById('costNotesInput').value,
+        accounting_category_id: document.getElementById('costAccountingCategoryInput').value || null
+    };
+
+    const url = breakdownId ? '{% url "api_update_order_cost" %}' : '{% url "api_create_order_cost" %}';
+    if (breakdownId) {
+        payload.breakdown_id = parseInt(breakdownId, 10);
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify(payload)
+    })
+    .then((r) => r.json())
+    .then((res) => {
+        if (!res.ok) {
+            alert(res.error || 'No se pudo guardar el gasto');
+            return;
+        }
+        costModal.hide();
+        fetchCosts();
+    })
+    .catch(() => alert('Error de conexion al guardar gasto'));
+}
+
+function deleteCost(breakdownId) {
+    if (!confirm('Eliminar este gasto del pedido?')) return;
+    fetch('{% url "api_delete_order_cost" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({breakdown_id: breakdownId})
+    })
+    .then((r) => r.json())
+    .then((res) => {
+        if (!res.ok) {
+            alert(res.error || 'No se pudo eliminar el gasto');
+            return;
+        }
+        fetchCosts();
+    })
+    .catch(() => alert('Error de conexion al eliminar gasto'));
+}
+
+function openPostModal(breakdownId) {
+    document.getElementById('postBreakdownId').value = breakdownId;
+    document.getElementById('postBreakdownLabel').textContent = costsCache[breakdownId]?.description || 'Gasto';
+    document.getElementById('postCategoryInput').value = '';
+    document.getElementById('postDescriptionInput').value = '';
+    document.getElementById('postDateInput').value = toDateInputValue();
+    postCostModal.show();
+}
+
+function postCostToAccounting() {
+    const breakdownId = document.getElementById('postBreakdownId').value;
+    const payload = {
+        breakdown_id: parseInt(breakdownId, 10),
+        account_id: document.getElementById('postAccountInput').value,
+        category_id: document.getElementById('postCategoryInput').value || null,
+        date: document.getElementById('postDateInput').value,
+        description: document.getElementById('postDescriptionInput').value
+    };
+
+    fetch('{% url "api_post_order_cost_to_accounting" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify(payload)
+    })
+    .then((r) => r.json())
+    .then((res) => {
+        if (!res.ok) {
+            alert(res.error || 'No se pudo registrar el gasto en contabilidad');
+            return;
+        }
+        postCostModal.hide();
+        fetchCosts();
+    })
+    .catch(() => alert('Error de conexion al registrar en contabilidad'));
 }
 
 function updateShipping() {
@@ -275,10 +602,15 @@ function updateShipping() {
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify({order_type: 'catalog', order_id: orderId, shipping_cost: val})
     })
-    .then(r => r.json())
-    .then(res => {
-        if (res.ok) location.reload();
-    });
+    .then((r) => r.json())
+    .then((res) => {
+        if (!res.ok) {
+            alert(res.error || 'No se pudo actualizar envio');
+            return;
+        }
+        fetchCosts();
+    })
+    .catch(() => alert('Error de conexion al actualizar envio'));
 }
 
 function transitionFinancialState(fsId, newState) {
@@ -290,8 +622,8 @@ function transitionFinancialState(fsId, newState) {
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify({financial_status_id: fsId, new_state: newState})
     })
-    .then(r => r.json())
-    .then(res => {
+    .then((r) => r.json())
+    .then((res) => {
         if (res.ok) location.reload();
         else alert(res.message || 'Error');
     })
@@ -300,21 +632,24 @@ function transitionFinancialState(fsId, newState) {
 
 function loadProfitability(fsId) {
     fetch('{% url "api_jc_profitability" %}?financial_status_id=' + fsId)
-    .then(r => r.json())
-    .then(res => {
+    .then((r) => r.json())
+    .then((res) => {
         if (!res.ok) { alert(res.error); return; }
         const el = document.getElementById('profitData');
         const profit = parseFloat(res.net_profit);
         const cls = profit >= 0 ? 'text-success' : 'text-danger';
         el.innerHTML = `
-            <div class="d-flex justify-content-between mb-1"><small>Venta:</small><small class="fw-bold">$${parseInt(res.sale_amount).toLocaleString()}</small></div>
-            <div class="d-flex justify-content-between mb-1"><small>Costos:</small><small class="text-danger">-$${parseInt(res.direct_costs).toLocaleString()}</small></div>
-            <div class="d-flex justify-content-between mb-1"><small>Envio:</small><small>-$${parseInt(res.shipping_cost).toLocaleString()}</small></div>
-            <div class="d-flex justify-content-between mb-1"><small>Overhead (${parseFloat(res.overhead_percentage).toFixed(2)}%):</small><small class="text-warning">-$${parseInt(res.overhead_amount).toLocaleString()}</small></div>
-            <div class="d-flex justify-content-between border-top pt-1 mt-1"><small class="fw-bold">Utilidad:</small><small class="fw-bold ${cls}">$${parseInt(res.net_profit).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Venta:</small><small class="fw-bold">$${parseInt(res.sale_amount, 10).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Costos:</small><small class="text-danger">-$${parseInt(res.direct_costs, 10).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Envio:</small><small>-$${parseInt(res.shipping_cost, 10).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Overhead (${parseFloat(res.overhead_percentage).toFixed(2)}%):</small><small class="text-warning">-$${parseInt(res.overhead_amount, 10).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between border-top pt-1 mt-1"><small class="fw-bold">Utilidad:</small><small class="fw-bold ${cls}">$${parseInt(res.net_profit, 10).toLocaleString()}</small></div>
         `;
     })
     .catch(() => alert('Error de conexion'));
 }
+
+document.getElementById('costTypeInput')?.addEventListener('change', onCostTypeChange);
+fetchCosts();
 </script>
 {% endblock %}

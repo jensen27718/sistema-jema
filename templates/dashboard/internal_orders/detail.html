@@ -3,221 +3,37 @@
 {% block title %}Pedido #{{ order.id }} - JEMA{% endblock %}
 {% block page_title %}Detalle de Pedido{% endblock %}
 
-{% block extra_css %}
-<style>
-    .detail-header {
-        background: linear-gradient(135deg, var(--jema-purple) 0%, var(--jema-teal) 100%);
-        border-radius: 16px;
-        padding: 24px;
-        color: white;
-        margin-bottom: 24px;
-    }
-
-    .detail-header h3 {
-        margin: 0;
-        font-weight: 700;
-    }
-
-    .detail-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 16px;
-        margin-top: 20px;
-    }
-
-    .detail-stat {
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 12px;
-        padding: 16px;
-        text-align: center;
-    }
-
-    .detail-stat h4 {
-        font-size: 28px;
-        margin: 0;
-        font-weight: 700;
-    }
-
-    .detail-stat span {
-        font-size: 13px;
-        opacity: 0.9;
-    }
-
-    .items-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 16px;
-    }
-
-    .item-card {
-        background: var(--card-bg);
-        border-radius: 12px;
-        padding: 16px;
-        box-shadow: var(--shadow-sm);
-        display: flex;
-        gap: 12px;
-    }
-
-    .item-card img {
-        width: 60px;
-        height: 60px;
-        object-fit: cover;
-        border-radius: 8px;
-        flex-shrink: 0;
-    }
-
-    .item-info {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .item-info h6 {
-        font-size: 13px;
-        margin: 0 0 4px 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .item-info small {
-        color: var(--muted-foreground);
-        font-size: 11px;
-    }
-
-    .item-info .price {
-        font-weight: 700;
-        color: var(--jema-teal);
-        font-size: 14px;
-    }
-
-    .item-qty {
-        background: var(--muted);
-        border-radius: 8px;
-        padding: 4px 10px;
-        font-weight: 700;
-        font-size: 14px;
-        display: inline-block;
-        margin-top: 8px;
-    }
-
-    .status-timeline {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 16px;
-    }
-
-    .status-timeline form {
-        display: inline;
-    }
-
-    .status-btn {
-        padding: 8px 16px;
-        border-radius: 20px;
-        border: 2px solid var(--border);
-        background: white;
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-
-    .status-btn:hover {
-        border-color: var(--jema-purple);
-    }
-
-    .status-btn.active {
-        background: var(--jema-purple);
-        color: white;
-        border-color: var(--jema-purple);
-    }
-
-    .print-section {
-        background: var(--card-bg);
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 24px;
-    }
-
-    @media print {
-        .no-print {
-            display: none !important;
-        }
-
-        .detail-header {
-            background: #6B2D7B !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-
-        .item-card {
-            break-inside: avoid;
-        }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid">
-    <!-- Back button -->
     <div class="mb-3 no-print">
         <a href="{% url 'internal_orders_list' %}" class="text-muted text-decoration-none">
             <i class="bi bi-arrow-left"></i> Volver a pedidos
         </a>
     </div>
 
-    <!-- Header -->
-    <div class="detail-header">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div class="card mb-4">
+        <div class="card-body d-flex justify-content-between flex-wrap gap-3">
             <div>
-                <h3><i class="bi bi-box-seam me-2"></i>{{ order.name }}</h3>
-                {% if order.description %}
-                <p class="mb-0 mt-2 opacity-75">{{ order.description }}</p>
-                {% endif %}
+                <h4 class="mb-1">{{ order.name }}</h4>
+                {% if order.description %}<p class="text-muted mb-0">{{ order.description }}</p>{% endif %}
             </div>
-            <div class="no-print">
-                <span class="badge bg-light text-dark fs-6">
-                    {{ order.get_status_display }}
-                </span>
-            </div>
-        </div>
-
-        <div class="detail-stats">
-            <div class="detail-stat">
-                <h4>{{ order.total_items }}</h4>
-                <span>Referencias</span>
-            </div>
-            <div class="detail-stat">
-                <h4>${{ order.total_estimated|floatformat:0 }}</h4>
-                <span>Total Estimado</span>
-            </div>
-            <div class="detail-stat">
-                <h4>{{ order.created_at|date:"d/m/Y" }}</h4>
-                <span>Fecha Creación</span>
-            </div>
-            <div class="detail-stat">
-                <h4>{{ order_items.count }}</h4>
-                <span>Líneas</span>
+            <div class="text-end">
+                <div><small class="text-muted">Total Estimado</small></div>
+                <div class="fw-bold fs-4">${{ order.total_estimated|floatformat:0 }}</div>
+                <div><small class="text-muted">Items: {{ order.total_items }}</small></div>
             </div>
         </div>
     </div>
 
-    <!-- Status Change -->
     <div class="card mb-4 no-print">
         <div class="card-body">
             <h6 class="mb-3"><i class="bi bi-arrow-repeat"></i> Cambiar Estado</h6>
-            <div class="status-timeline">
+            <div class="d-flex gap-2 flex-wrap">
                 {% for code, name in order.STATUS_CHOICES %}
                 <form method="post" action="{% url 'internal_order_update_status' order.id %}">
                     {% csrf_token %}
                     <input type="hidden" name="status" value="{{ code }}">
-                    <button type="submit" class="status-btn {% if order.status == code %}active{% endif %}">
-                        {% if code == 'draft' %}<i class="bi bi-pencil"></i>
-                        {% elif code == 'confirmed' %}<i class="bi bi-check-circle"></i>
-                        {% elif code == 'in_production' %}<i class="bi bi-gear"></i>
-                        {% elif code == 'completed' %}<i class="bi bi-trophy"></i>
-                        {% elif code == 'cancelled' %}<i class="bi bi-x-circle"></i>
-                        {% endif %}
+                    <button type="submit" class="btn btn-sm {% if order.status == code %}btn-primary{% else %}btn-outline-secondary{% endif %}">
                         {{ name }}
                     </button>
                 </form>
@@ -226,7 +42,6 @@
         </div>
     </div>
 
-    <!-- Actions -->
     <div class="d-flex gap-2 mb-4 no-print flex-wrap">
         <a href="{% url 'internal_order_edit' order.id %}" class="btn btn-jema-primary">
             <i class="bi bi-pencil"></i> Editar Pedido
@@ -239,100 +54,75 @@
         </button>
     </div>
 
-    <!-- Items -->
-    <div class="card">
+    <div class="card mb-4">
         <div class="card-header bg-white">
             <h5 class="mb-0"><i class="bi bi-list-ul"></i> Items del Pedido</h5>
         </div>
         <div class="card-body">
-            {% if order_items %}
-            <div class="items-grid">
-                {% for item in order_items %}
-                <div class="item-card">
-                    {% if item.variant.product.image %}
-                    <img src="{{ item.variant.product.image.url }}" alt="">
-                    {% else %}
-                    <img src="https://via.placeholder.com/60x60?text=IMG" alt="">
-                    {% endif %}
-                    <div class="item-info">
-                        <h6 title="{{ item.product_name }}">{{ item.product_name }}</h6>
-                        <small>{{ item.variant_details }}</small>
-                        <div class="d-flex justify-content-between align-items-center mt-1">
-                            <span class="price">${{ item.unit_price|floatformat:0 }}</span>
-                            <span class="item-qty">x{{ item.quantity }}</span>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Variante</th>
+                            <th class="text-end">Cantidad</th>
+                            <th class="text-end">Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order_items %}
+                        <tr>
+                            <td>{{ item.product_name }}</td>
+                            <td>{{ item.variant_details }}</td>
+                            <td class="text-end">{{ item.quantity }}</td>
+                            <td class="text-end">${{ item.unit_price|floatformat:0 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted">Sin items</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            {% else %}
-            <div class="text-center py-5 text-muted">
-                <i class="bi bi-inbox" style="font-size: 48px;"></i>
-                <p class="mt-2">Este pedido no tiene items</p>
-            </div>
-            {% endif %}
         </div>
     </div>
 
-    <!-- Estado Financiero -->
     <div class="card mb-4 no-print">
         <div class="card-header bg-white">
             <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Estado Financiero</h5>
         </div>
         <div class="card-body">
             {% if financial_status %}
-            <div class="d-flex align-items-center gap-3 flex-wrap">
-                <span class="badge {{ financial_status.get_state_badge_class }} fs-6" id="fsBadge">
-                    {{ financial_status.get_state_display }}
-                </span>
-                <div class="d-flex gap-2">
-                    {% if financial_status.state == 'creado' %}
-                    <button class="btn btn-sm btn-outline-primary" onclick="transitionFinancialState({{ financial_status.id }}, 'enviado')">
-                        <i class="bi bi-truck"></i> Marcar Enviado
-                    </button>
-                    {% endif %}
-                    {% if financial_status.state == 'enviado' %}
-                    <button class="btn btn-sm btn-outline-success" onclick="transitionFinancialState({{ financial_status.id }}, 'cobrado')">
-                        <i class="bi bi-cash-coin"></i> Marcar Cobrado
-                    </button>
-                    {% endif %}
-                    {% if financial_status.state != 'cancelado' %}
-                    <button class="btn btn-sm btn-outline-danger" onclick="transitionFinancialState({{ financial_status.id }}, 'cancelado')">
-                        <i class="bi bi-x-lg"></i> Cancelar
-                    </button>
-                    {% endif %}
-                </div>
-                <div class="ms-auto">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="loadProfitability({{ financial_status.id }})">
-                        <i class="bi bi-calculator"></i> Ver Rentabilidad
-                    </button>
-                </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge {{ financial_status.get_state_badge_class }} fs-6">{{ financial_status.get_state_display }}</span>
+                {% if financial_status.state == 'creado' %}
+                <button class="btn btn-sm btn-outline-primary" onclick="transitionFinancialState({{ financial_status.id }}, 'enviado')">Marcar Enviado</button>
+                {% endif %}
+                {% if financial_status.state == 'enviado' %}
+                <button class="btn btn-sm btn-outline-success" onclick="transitionFinancialState({{ financial_status.id }}, 'cobrado')">Marcar Cobrado</button>
+                {% endif %}
+                {% if financial_status.state != 'cancelado' %}
+                <button class="btn btn-sm btn-outline-danger" onclick="transitionFinancialState({{ financial_status.id }}, 'cancelado')">Cancelar</button>
+                {% endif %}
+                <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="loadProfitability({{ financial_status.id }})">
+                    <i class="bi bi-calculator"></i> Ver Rentabilidad
+                </button>
             </div>
-            <div id="profitData" class="mt-3" style="display: none;">
-                <div class="row g-2">
-                    <div class="col-md-2"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Venta</small><strong id="pSale">—</strong></div></div>
-                    <div class="col-md-2"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Costos</small><strong id="pCosts" class="text-danger">—</strong></div></div>
-                    <div class="col-md-2"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Envio</small><strong id="pShipping">—</strong></div></div>
-                    <div class="col-md-3"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Overhead</small><strong id="pOverhead" class="text-warning">—</strong></div></div>
-                    <div class="col-md-3"><div class="bg-light rounded p-2 text-center"><small class="text-muted d-block">Utilidad</small><strong id="pProfit">—</strong></div></div>
-                </div>
-            </div>
+            <div id="profitData" class="mt-3 small text-muted" style="display:none;"></div>
             {% else %}
             <p class="text-muted mb-0">Sin estado financiero asignado.</p>
             {% endif %}
         </div>
     </div>
 
-    <!-- Costos de Producción -->
     <div class="card mb-4 no-print" id="costsSection">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-calculator"></i> Costos de Producción</h5>
+            <h5 class="mb-0"><i class="bi bi-calculator"></i> Costos del Pedido</h5>
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-jema-primary" onclick="calculateCosts()" id="btnCalcCosts">
-                    <i class="bi bi-calculator"></i> Calcular Costos
+                <button class="btn btn-sm btn-jema-primary" onclick="openCostModal()">
+                    <i class="bi bi-plus-lg"></i> Agregar gasto
                 </button>
                 <a href="{% url 'cost_config' %}" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-gear"></i> Configuración
+                    <i class="bi bi-gear"></i> Configuracion
                 </a>
             </div>
         </div>
@@ -341,45 +131,62 @@
                 <table class="table table-sm mb-0" id="costsTable">
                     <thead class="bg-light">
                         <tr>
-                            <th>Tipo de Costo</th>
-                            <th>Descripción</th>
-                            <th class="text-end">Cantidad</th>
-                            <th class="text-end">Precio Unit.</th>
+                            <th>Tipo</th>
+                            <th>Descripcion</th>
+                            <th>Estado Contable</th>
                             <th class="text-end">Total</th>
+                            <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="costsBody">
                         {% for breakdown in cost_breakdowns %}
-                        <tr>
+                        <tr data-breakdown-id="{{ breakdown.id }}">
                             <td>{{ breakdown.cost_type.name }}</td>
-                            <td>{{ breakdown.description }}</td>
-                            <td class="text-end">{{ breakdown.calculated_quantity }}</td>
-                            <td class="text-end">${{ breakdown.unit_price|floatformat:0 }}</td>
+                            <td>
+                                <div class="fw-medium">{{ breakdown.description }}</div>
+                                {% if breakdown.notes %}<small class="text-muted">{{ breakdown.notes }}</small>{% endif %}
+                            </td>
+                            <td>
+                                {% if breakdown.accounting_status == 'posted' %}
+                                <span class="badge bg-success">Registrado</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                                {% if breakdown.accounting_category %}
+                                <div><small class="text-muted">{{ breakdown.accounting_category.name }}</small></div>
+                                {% endif %}
+                            </td>
                             <td class="text-end fw-bold">${{ breakdown.total|floatformat:0 }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr id="noCostsRow">
-                            <td colspan="5" class="text-center text-muted py-3">
-                                <i class="bi bi-info-circle"></i> No hay costos calculados. Presiona "Calcular Costos".
+                            <td class="text-end">
+                                {% if breakdown.accounting_status == 'posted' %}
+                                    {% if breakdown.accounting_transaction_id %}
+                                    <a class="btn btn-sm btn-outline-success" href="{% url 'accounting_transaction_update' breakdown.accounting_transaction_id %}">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                    {% endif %}
+                                {% else %}
+                                <button class="btn btn-sm btn-outline-secondary" onclick="openCostModal({{ breakdown.id }})"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="openPostModal({{ breakdown.id }})"><i class="bi bi-cash-coin"></i></button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCost({{ breakdown.id }})"><i class="bi bi-trash"></i></button>
+                                {% endif %}
                             </td>
                         </tr>
+                        {% empty %}
+                        <tr id="noCostsRow"><td colspan="5" class="text-center text-muted py-3">No hay gastos registrados.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
 
-            <!-- Envío y Descuento -->
             <div class="border-top pt-3 mt-3">
                 <div class="row g-3 align-items-center">
                     <div class="col-md-4">
-                        <label class="form-label fw-bold mb-0"><i class="bi bi-truck"></i> Costo de Envío</label>
+                        <label class="form-label fw-bold mb-0"><i class="bi bi-truck"></i> Costo de Envio</label>
                     </div>
                     <div class="col-md-2">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text">$</span>
-                            <input type="number" step="1" min="0" class="form-control"
-                                id="shippingCostInput" value="{{ order.shipping_cost|floatformat:0 }}"
-                                onchange="updateShipping()">
+                            <input type="number" step="1" min="0" class="form-control" id="shippingCostInput" value="{{ order.shipping_cost|floatformat:0 }}" onchange="updateShipping()">
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -388,26 +195,19 @@
                     <div class="col-md-2">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text">$</span>
-                            <input type="number" step="1" min="0" class="form-control text-danger fw-bold"
-                                id="discountInput" value="{{ order.discount_amount|floatformat:0 }}"
-                                onchange="updateDiscount()">
+                            <input type="number" step="1" min="0" class="form-control text-danger fw-bold" id="discountInput" value="{{ order.discount_amount|floatformat:0 }}" onchange="updateDiscount()">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Totales -->
             <div class="border-top pt-3 mt-3" id="costsTotals">
                 <div class="d-flex justify-content-between mb-1">
-                    <span>Producción Automática:</span>
+                    <span>Total costos del pedido:</span>
                     <span class="fw-bold" id="totalProduction">${{ total_production_cost|floatformat:0|default:"0" }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
-                    <span>Costos Manuales:</span>
-                    <span class="fw-bold" id="totalManual">$0</span>
-                </div>
-                <div class="d-flex justify-content-between mb-1">
-                    <span>Costo de Envío:</span>
+                    <span>Costo de Envio:</span>
                     <span class="fw-bold" id="totalShipping">${{ order.shipping_cost|floatformat:0|default:"0" }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
@@ -424,44 +224,86 @@
                 </div>
                 <div class="d-flex justify-content-between">
                     <span class="fw-bold">Margen:</span>
-                    <span class="fw-bold {% if margin >= 0 %}text-success{% else %}text-danger{% endif %}" id="marginDisplay">
-                        ${{ margin|floatformat:0|default:"0" }}
-                    </span>
+                    <span class="fw-bold {% if margin >= 0 %}text-success{% else %}text-danger{% endif %}" id="marginDisplay">${{ margin|floatformat:0|default:"0" }}</span>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Print Summary -->
-    <div class="print-section" style="display: none;">
-        <h5>Resumen de Pedido</h5>
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Variante</th>
-                    <th>Cant.</th>
-                    <th>Precio</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in order_items %}
-                <tr>
-                    <td>{{ item.product_name }}</td>
-                    <td>{{ item.variant_details }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>${{ item.unit_price|floatformat:0 }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th colspan="2">Total</th>
-                    <th>{{ order.total_items }}</th>
-                    <th>${{ order.total_estimated|floatformat:0 }}</th>
-                </tr>
-            </tfoot>
-        </table>
+<div class="modal fade" id="costModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="costModalTitle">Agregar gasto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="costBreakdownId">
+                <div class="mb-3">
+                    <label class="form-label">Tipo de gasto</label>
+                    <select id="costTypeInput" class="form-select">
+                        {% for ct in cost_types %}
+                        <option value="{{ ct.id }}">{{ ct.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" id="costDescriptionInput"></div>
+                <div class="mb-3"><label class="form-label">Total</label><input type="number" min="0" step="1" class="form-control" id="costTotalInput"></div>
+                <div class="mb-3">
+                    <label class="form-label">Categoria contable sugerida</label>
+                    <select id="costAccountingCategoryInput" class="form-select">
+                        <option value="">Sin categoria</option>
+                        {% for category in accounting_categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div><label class="form-label">Notas</label><textarea id="costNotesInput" class="form-control" rows="2"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-jema-primary" onclick="saveCost()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="postCostModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar pago en contabilidad</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="postBreakdownId">
+                <div class="alert alert-light border mb-3" id="postBreakdownLabel"></div>
+                <div class="mb-3">
+                    <label class="form-label">Cuenta</label>
+                    <select id="postAccountInput" class="form-select">
+                        {% for account in accounting_accounts %}
+                        <option value="{{ account.id }}">{{ account.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Categoria contable</label>
+                    <select id="postCategoryInput" class="form-select">
+                        <option value="">Usar categoria del gasto</option>
+                        {% for category in accounting_categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3"><label class="form-label">Fecha</label><input type="date" id="postDateInput" class="form-control"></div>
+                <div><label class="form-label">Descripcion movimiento</label><input type="text" id="postDescriptionInput" class="form-control"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="postCostToAccounting()">Registrar</button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -470,77 +312,163 @@
 <script>
 const csrfToken = '{{ csrf_token }}';
 const orderId = {{ order.id }};
+let costsCache = {};
+const costModal = new bootstrap.Modal(document.getElementById('costModal'));
+const postCostModal = new bootstrap.Modal(document.getElementById('postCostModal'));
+const transactionUrlTemplate = '{% url "accounting_transaction_update" 0 %}';
 
-function calculateCosts() {
-    const btn = document.getElementById('btnCalcCosts');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculando...';
+function currency(value) { return '$' + Math.round(parseFloat(value || 0)).toLocaleString(); }
+function accountingUrl(id) { return transactionUrlTemplate.replace('/0/', '/' + id + '/'); }
+function escapeHtml(value) {
+    return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+function toDateInputValue(today = new Date()) {
+    const offset = today.getTimezoneOffset();
+    const adjusted = new Date(today.getTime() - (offset * 60 * 1000));
+    return adjusted.toISOString().split('T')[0];
+}
 
-    fetch('{% url "api_calculate_costs" %}', {
+function refreshTotals(payload) {
+    document.getElementById('totalProduction').textContent = currency(payload.total_costs);
+    document.getElementById('totalShipping').textContent = currency(payload.shipping);
+    document.getElementById('totalEstimatedDisplay').textContent = currency(payload.sale_total);
+    document.getElementById('grandTotal').textContent = currency(payload.grand_total);
+    const margin = parseFloat(payload.margin || 0);
+    const marginEl = document.getElementById('marginDisplay');
+    marginEl.textContent = currency(margin);
+    marginEl.className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
+}
+
+function renderCosts(breakdowns) {
+    const tbody = document.getElementById('costsBody');
+    costsCache = {};
+    if (!breakdowns || breakdowns.length === 0) {
+        tbody.innerHTML = '<tr id="noCostsRow"><td colspan="5" class="text-center text-muted py-3">No hay gastos registrados.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = '';
+    breakdowns.forEach((b) => {
+        costsCache[b.id] = b;
+        const status = b.accounting_status === 'posted'
+            ? '<span class="badge bg-success">Registrado</span>'
+            : '<span class="badge bg-warning text-dark">Pendiente</span>';
+        const category = b.accounting_category_name ? `<div><small class="text-muted">${escapeHtml(b.accounting_category_name)}</small></div>` : '';
+        let actions = '';
+        if (b.accounting_status === 'posted') {
+            if (b.accounting_transaction_id) {
+                actions = `<a class="btn btn-sm btn-outline-success" href="${accountingUrl(b.accounting_transaction_id)}"><i class="bi bi-box-arrow-up-right"></i></a>`;
+            }
+        } else {
+            actions = `<button class="btn btn-sm btn-outline-secondary" onclick="openCostModal(${b.id})"><i class="bi bi-pencil"></i></button>
+                       <button class="btn btn-sm btn-outline-primary" onclick="openPostModal(${b.id})"><i class="bi bi-cash-coin"></i></button>
+                       <button class="btn btn-sm btn-outline-danger" onclick="deleteCost(${b.id})"><i class="bi bi-trash"></i></button>`;
+        }
+        const notes = b.notes ? `<small class="text-muted">${escapeHtml(b.notes)}</small>` : '';
+        tbody.innerHTML += `<tr data-breakdown-id="${b.id}"><td>${escapeHtml(b.cost_type_name)}</td><td><div class="fw-medium">${escapeHtml(b.description)}</div>${notes}</td><td>${status}${category}</td><td class="text-end fw-bold">${currency(b.total)}</td><td class="text-end">${actions}</td></tr>`;
+    });
+}
+
+function fetchCosts() {
+    fetch('{% url "api_get_order_costs" %}', {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify({order_type: 'internal', order_id: orderId})
-    })
-    .then(r => r.json())
-    .then(res => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Recalcular';
+    }).then((r) => r.json()).then((res) => {
+        if (!res.ok) { alert(res.error || 'No se pudieron cargar los costos'); return; }
+        renderCosts(res.breakdowns || []);
+        refreshTotals(res);
+    }).catch(() => alert('Error de conexion al cargar costos'));
+}
 
-        if (!res.ok) {
-            alert('Error: ' + res.error);
-            return;
-        }
-        const diagnostics = res.diagnostics || {};
-        console.log('Diagnostico costos interno:', diagnostics);
+function openCostModal(breakdownId = null) {
+    document.getElementById('costBreakdownId').value = breakdownId || '';
+    if (!breakdownId) {
+        document.getElementById('costModalTitle').textContent = 'Agregar gasto';
+        document.getElementById('costDescriptionInput').value = '';
+        document.getElementById('costTotalInput').value = '';
+        document.getElementById('costNotesInput').value = '';
+        document.getElementById('costAccountingCategoryInput').value = '';
+    } else {
+        const b = costsCache[breakdownId];
+        if (!b) return;
+        document.getElementById('costModalTitle').textContent = 'Editar gasto';
+        document.getElementById('costTypeInput').value = b.cost_type_id;
+        document.getElementById('costDescriptionInput').value = b.description;
+        document.getElementById('costTotalInput').value = parseFloat(b.total || 0);
+        document.getElementById('costNotesInput').value = b.notes || '';
+        document.getElementById('costAccountingCategoryInput').value = b.accounting_category_id || '';
+    }
+    costModal.show();
+}
 
-        const tbody = document.getElementById('costsBody');
-        tbody.innerHTML = '';
+function saveCost() {
+    const breakdownId = document.getElementById('costBreakdownId').value;
+    const payload = {
+        order_type: 'internal',
+        order_id: orderId,
+        cost_type_id: document.getElementById('costTypeInput').value,
+        description: document.getElementById('costDescriptionInput').value,
+        total: document.getElementById('costTotalInput').value || 0,
+        notes: document.getElementById('costNotesInput').value,
+        accounting_category_id: document.getElementById('costAccountingCategoryInput').value || null
+    };
+    const url = breakdownId ? '{% url "api_update_order_cost" %}' : '{% url "api_create_order_cost" %}';
+    if (breakdownId) payload.breakdown_id = parseInt(breakdownId, 10);
+    fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify(payload)
+    }).then((r) => r.json()).then((res) => {
+        if (!res.ok) { alert(res.error || 'No se pudo guardar el gasto'); return; }
+        costModal.hide();
+        fetchCosts();
+    }).catch(() => alert('Error de conexion al guardar gasto'));
+}
 
-        if (res.breakdowns.length === 0) {
-            let msg = 'No se encontraron costos configurados para los productos de este pedido.';
-            if ((diagnostics.items_total || 0) > 0 && (diagnostics.items_grouped || 0) === 0) {
-                msg = 'No se pudo identificar el tipo de producto de los items del pedido.';
-            } else if ((diagnostics.types_detected || []).length > 0) {
-                msg = 'Hay reglas de costo, pero no generaron resultado (revisa metodo y dimensiones de variantes).';
-            }
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">${msg}</td></tr>`;
-        } else {
-            res.breakdowns.forEach(b => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${b.cost_type_name}</td>
-                    <td>${b.description}</td>
-                    <td class="text-end">${parseFloat(b.quantity).toFixed(2)}</td>
-                    <td class="text-end">$${parseInt(b.unit_price).toLocaleString()}</td>
-                    <td class="text-end fw-bold">$${parseInt(b.total).toLocaleString()}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
+function deleteCost(breakdownId) {
+    if (!confirm('Eliminar este gasto del pedido?')) return;
+    fetch('{% url "api_delete_order_cost" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({breakdown_id: breakdownId})
+    }).then((r) => r.json()).then((res) => {
+        if (!res.ok) { alert(res.error || 'No se pudo eliminar el gasto'); return; }
+        fetchCosts();
+    }).catch(() => alert('Error de conexion al eliminar gasto'));
+}
 
-        const shipping = parseFloat(document.getElementById('shippingCostInput').value) || 0;
-        const totalAuto = parseFloat(res.total_production) || 0;
-        const totalManual = parseFloat(res.total_manual) || 0;
-        const totalProd = totalAuto + totalManual;
-        const grandTotal = totalProd + shipping;
-        const totalEstimated = {{ order.total_estimated|default:"0" }};
-        const margin = totalEstimated - grandTotal;
+function openPostModal(breakdownId) {
+    document.getElementById('postBreakdownId').value = breakdownId;
+    document.getElementById('postBreakdownLabel').textContent = costsCache[breakdownId]?.description || 'Gasto';
+    document.getElementById('postCategoryInput').value = '';
+    document.getElementById('postDescriptionInput').value = '';
+    document.getElementById('postDateInput').value = toDateInputValue();
+    postCostModal.show();
+}
 
-        document.getElementById('totalProduction').textContent = '$' + Math.round(totalAuto).toLocaleString();
-        document.getElementById('totalManual').textContent = '$' + Math.round(totalManual).toLocaleString();
-        if (document.getElementById('totalShipping')) {
-            document.getElementById('totalShipping').textContent = '$' + Math.round(shipping).toLocaleString();
-        }
-        document.getElementById('grandTotal').textContent = '$' + Math.round(grandTotal).toLocaleString();
-        document.getElementById('marginDisplay').textContent = '$' + Math.round(margin).toLocaleString();
-        document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
-    })
-    .catch(err => {
-        console.error('Error calculating costs:', err);
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-calculator"></i> Calcular Costos';
-        alert('Error de conexión al calcular costos');
-    });
+function postCostToAccounting() {
+    const breakdownId = document.getElementById('postBreakdownId').value;
+    const payload = {
+        breakdown_id: parseInt(breakdownId, 10),
+        account_id: document.getElementById('postAccountInput').value,
+        category_id: document.getElementById('postCategoryInput').value || null,
+        date: document.getElementById('postDateInput').value,
+        description: document.getElementById('postDescriptionInput').value
+    };
+    fetch('{% url "api_post_order_cost_to_accounting" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify(payload)
+    }).then((r) => r.json()).then((res) => {
+        if (!res.ok) { alert(res.error || 'No se pudo registrar el gasto en contabilidad'); return; }
+        postCostModal.hide();
+        fetchCosts();
+    }).catch(() => alert('Error de conexion al registrar en contabilidad'));
 }
 
 function updateShipping() {
@@ -549,28 +477,10 @@ function updateShipping() {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify({order_type: 'internal', order_id: orderId, shipping_cost: val})
-    })
-    .then(r => r.json())
-    .then(res => {
-        if (res.ok) {
-            const shippingVal = parseInt(val) || 0;
-            if (document.getElementById('totalShipping')) {
-                document.getElementById('totalShipping').textContent = '$' + shippingVal.toLocaleString();
-            }
-            
-            const totalProdAutoText = document.getElementById('totalProduction').textContent.replace(/[$,]/g, '') || '0';
-            const totalManualText = document.getElementById('totalManual').textContent.replace(/[$,]/g, '') || '0';
-            const totalProd = parseInt(totalProdAutoText) + parseInt(totalManualText);
-            
-            const grandTotal = totalProd + shippingVal;
-            const totalEstimated = {{ order.total_estimated|default:"0" }};
-            const margin = totalEstimated - grandTotal;
-            
-            document.getElementById('grandTotal').textContent = '$' + Math.round(grandTotal).toLocaleString();
-            document.getElementById('marginDisplay').textContent = '$' + Math.round(margin).toLocaleString();
-            document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
-        }
-    });
+    }).then((r) => r.json()).then((res) => {
+        if (!res.ok) { alert(res.error || 'No se pudo actualizar envio'); return; }
+        fetchCosts();
+    }).catch(() => alert('Error de conexion al actualizar envio'));
 }
 
 function updateDiscount() {
@@ -579,58 +489,46 @@ function updateDiscount() {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify({order_type: 'internal', order_id: orderId, discount_amount: val})
-    })
-    .then(r => r.json())
-    .then(res => {
-        if (res.ok) {
-            document.getElementById('totalDiscount').textContent = '-$' + parseInt(val).toLocaleString();
-            document.getElementById('totalEstimatedDisplay').textContent = '$' + parseInt(res.total_estimated).toLocaleString();
-            
-            // Recalcular margen
-            const totalEstimated = parseFloat(res.total_estimated);
-            const grandTotalText = document.getElementById('grandTotal').textContent.replace(/[$,]/g, '');
-            const grandTotal = parseFloat(grandTotalText) || 0;
-            const margin = totalEstimated - grandTotal;
-            
-            document.getElementById('marginDisplay').textContent = '$' + Math.round(margin).toLocaleString();
-            document.getElementById('marginDisplay').className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
-        }
-    });
+    }).then((r) => r.json()).then((res) => {
+        if (!res.ok) { alert(res.error || 'No se pudo actualizar descuento'); return; }
+        document.getElementById('totalDiscount').textContent = '-$' + parseInt(val || 0, 10).toLocaleString();
+        fetchCosts();
+    }).catch(() => alert('Error de conexion al actualizar descuento'));
 }
 
 function transitionFinancialState(fsId, newState) {
     const labels = {enviado: 'Enviado', cobrado: 'Cobrado', cancelado: 'Cancelado'};
     if (!confirm('Cambiar estado financiero a ' + labels[newState] + '?')) return;
-
     fetch('{% url "api_jc_transition" %}', {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify({financial_status_id: fsId, new_state: newState})
-    })
-    .then(r => r.json())
-    .then(res => {
+    }).then((r) => r.json()).then((res) => {
         if (res.ok) location.reload();
         else alert(res.message || 'Error');
-    })
-    .catch(() => alert('Error de conexion'));
+    }).catch(() => alert('Error de conexion'));
 }
 
 function loadProfitability(fsId) {
     fetch('{% url "api_jc_profitability" %}?financial_status_id=' + fsId)
-    .then(r => r.json())
-    .then(res => {
+    .then((r) => r.json())
+    .then((res) => {
         if (!res.ok) { alert(res.error); return; }
-        document.getElementById('profitData').style.display = 'block';
-        document.getElementById('pSale').textContent = '$' + parseInt(res.sale_amount).toLocaleString();
-        document.getElementById('pCosts').textContent = '-$' + parseInt(res.direct_costs).toLocaleString();
-        document.getElementById('pShipping').textContent = '-$' + parseInt(res.shipping_cost).toLocaleString();
-        document.getElementById('pOverhead').textContent = '-$' + parseInt(res.overhead_amount).toLocaleString() + ' (' + parseFloat(res.overhead_percentage).toFixed(2) + '%)';
+        const el = document.getElementById('profitData');
         const profit = parseFloat(res.net_profit);
-        const el = document.getElementById('pProfit');
-        el.textContent = '$' + parseInt(res.net_profit).toLocaleString();
-        el.className = profit >= 0 ? 'text-success' : 'text-danger';
+        const cls = profit >= 0 ? 'text-success' : 'text-danger';
+        el.style.display = 'block';
+        el.innerHTML = `
+            <div class="d-flex justify-content-between mb-1"><small>Venta:</small><small class="fw-bold">$${parseInt(res.sale_amount, 10).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Costos:</small><small class="text-danger">-$${parseInt(res.direct_costs, 10).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Envio:</small><small>-$${parseInt(res.shipping_cost, 10).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between mb-1"><small>Overhead (${parseFloat(res.overhead_percentage).toFixed(2)}%):</small><small class="text-warning">-$${parseInt(res.overhead_amount, 10).toLocaleString()}</small></div>
+            <div class="d-flex justify-content-between border-top pt-1 mt-1"><small class="fw-bold">Utilidad:</small><small class="fw-bold ${cls}">$${parseInt(res.net_profit, 10).toLocaleString()}</small></div>
+        `;
     })
     .catch(() => alert('Error de conexion'));
 }
+
+fetchCosts();
 </script>
 {% endblock %}

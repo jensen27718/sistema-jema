@@ -1,183 +1,103 @@
 {% extends 'base_admin.html' %}
 {% load l10n %}
 
-{% block title %}Configuración de Costos - JEMA{% endblock %}
+{% block title %}Configuracion de Costos - JEMA{% endblock %}
 {% block page_title %}
 <div class="d-flex align-items-center gap-3">
-    <i class="bi bi-calculator"></i> Configuración de Costos de Producción
+    <i class="bi bi-tags"></i> Categorias de Gastos del Pedido
 </div>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-    .cost-section {
-        background: var(--card-bg);
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 24px;
-    }
-    .cost-section h5 {
-        font-weight: 700;
-        margin-bottom: 16px;
-        color: var(--jema-purple);
-    }
-    .product-type-card {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 12px;
-    }
-    .product-type-card h6 {
-        font-weight: 600;
-        margin-bottom: 12px;
-    }
-    .config-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 0;
-        border-bottom: 1px solid #f0f0f0;
-        flex-wrap: wrap;
-    }
-    .config-row:last-child {
-        border-bottom: none;
-    }
-    .badge-unit {
-        font-size: 11px;
-        padding: 3px 8px;
-        border-radius: 6px;
-    }
-</style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Sección 1: Tipos de Costo -->
-    <div class="cost-section">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5><i class="bi bi-tags me-2"></i>Tipos de Costo</h5>
+    <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Tipos de Costo</h5>
             <button class="btn btn-sm btn-jema-primary" onclick="showCreateCostType()">
                 <i class="bi bi-plus-lg"></i> Nuevo Tipo
             </button>
         </div>
-
-        <div class="table-responsive">
-            <table class="table table-hover mb-0" id="costTypesTable">
-                <thead class="bg-light">
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Unidad</th>
-                        <th>Precio Normal</th>
-                        <th>Precio Especial</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ct in cost_types %}
-                    <tr id="ct-row-{{ ct.id }}">
-                        <td>
-                            <input type="text" class="form-control form-control-sm border-0 bg-transparent"
-                                value="{{ ct.name }}" data-field="name" data-id="{{ ct.id }}"
-                                onchange="updateCostType(this)">
-                        </td>
-                        <td>
-                            <select class="form-select form-select-sm border-0 bg-transparent"
-                                data-field="unit" data-id="{{ ct.id }}" onchange="updateCostType(this)">
-                                <option value="unidad" {% if ct.unit == 'unidad' %}selected{% endif %}>Por Unidad</option>
-                                <option value="metro_lineal" {% if ct.unit == 'metro_lineal' %}selected{% endif %}>Metro Lineal</option>
-                                <option value="metro_cuadrado" {% if ct.unit == 'metro_cuadrado' %}selected{% endif %}>Metro Cuadrado</option>
-                                <option value="fijo" {% if ct.unit == 'fijo' %}selected{% endif %}>Costo Fijo</option>
-                            </select>
-                        </td>
-                        <td>
-                            <div class="input-group input-group-sm" style="max-width: 130px;">
-                                <span class="input-group-text">$</span>
-                                <input type="number" step="0.01" class="form-control"
-                                    value="{{ ct.default_unit_price|unlocalize }}" data-field="default_unit_price"
-                                    data-id="{{ ct.id }}" onchange="updateCostType(this)">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="input-group input-group-sm" style="max-width: 130px;">
-                                <span class="input-group-text">$</span>
-                                <input type="number" step="0.01" class="form-control"
-                                    value="{{ ct.special_material_price|unlocalize }}" data-field="special_material_price"
-                                    data-id="{{ ct.id }}" onchange="updateCostType(this)"
-                                    title="Precio para materiales especiales (Metalizado, Mailan)">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox"
-                                    {% if ct.is_active %}checked{% endif %}
-                                    data-field="is_active" data-id="{{ ct.id }}"
+        <div class="card-body">
+            <p class="text-muted small">
+                Estos tipos se usan para registrar gastos manuales en pedidos.
+                El vinculo con categoria contable es opcional y solo aplica al momento de registrar pago.
+            </p>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="costTypesTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Unidad</th>
+                            <th>Precio Ref.</th>
+                            <th>Categoria Contable por Defecto</th>
+                            <th>Activo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ct in cost_types %}
+                        <tr id="ct-row-{{ ct.id }}">
+                            <td>
+                                <input type="text" class="form-control form-control-sm border-0 bg-transparent"
+                                    value="{{ ct.name }}" data-field="name" data-id="{{ ct.id }}"
                                     onchange="updateCostType(this)">
-                            </div>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCostType({{ ct.id }})">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr id="no-cost-types">
-                        <td colspan="6" class="text-center text-muted py-4">
-                            No hay tipos de costo creados. Usa el botón "Nuevo Tipo" o carga los datos base.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Sección 2: Asignación por Tipo de Producto -->
-    <div class="cost-section">
-        <h5><i class="bi bi-diagram-3 me-2"></i>Asignación de Costos por Tipo de Producto</h5>
-        <p class="text-muted small mb-3">Define qué costos aplican a cada tipo de producto y cómo se calculan.</p>
-
-        {% for code, info in configs_by_type.items %}
-        <div class="product-type-card">
-            <div class="d-flex justify-content-between align-items-center">
-                <h6>
-                    {% if code == 'vinilo_corte' %}<i class="bi bi-scissors me-1"></i>
-                    {% elif code == 'impreso_globo' %}<i class="bi bi-printer me-1"></i>
-                    {% elif code == 'cinta' %}<i class="bi bi-ribbon me-1"></i>
-                    {% elif code == 'logo' %}<i class="bi bi-star me-1"></i>
-                    {% else %}<i class="bi bi-box me-1"></i>
-                    {% endif %}
-                    {{ info.label }}
-                </h6>
-                <button class="btn btn-sm btn-outline-primary" onclick="showAddConfig('{{ code }}', '{{ info.label }}')">
-                    <i class="bi bi-plus"></i> Agregar Costo
-                </button>
-            </div>
-
-            <div id="configs-{{ code }}">
-                {% for config in info.configs %}
-                <div class="config-row" id="config-{{ config.id }}">
-                    <span class="fw-medium flex-grow-1">{{ config.cost_type.name }}</span>
-                    <span class="badge bg-light text-dark badge-unit">{{ config.get_calculation_method_display }}</span>
-                    {% if config.material_width_cm %}
-                    <span class="badge bg-info text-white badge-unit">Ancho: {{ config.material_width_cm }}cm</span>
-                    {% endif %}
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteConfig({{ config.id }})">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </div>
-                {% empty %}
-                <div class="text-muted small py-2" id="no-configs-{{ code }}">Sin costos asignados</div>
-                {% endfor %}
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm border-0 bg-transparent"
+                                    data-field="unit" data-id="{{ ct.id }}" onchange="updateCostType(this)">
+                                    <option value="unidad" {% if ct.unit == 'unidad' %}selected{% endif %}>Por Unidad</option>
+                                    <option value="metro_lineal" {% if ct.unit == 'metro_lineal' %}selected{% endif %}>Metro Lineal</option>
+                                    <option value="metro_cuadrado" {% if ct.unit == 'metro_cuadrado' %}selected{% endif %}>Metro Cuadrado</option>
+                                    <option value="fijo" {% if ct.unit == 'fijo' %}selected{% endif %}>Costo Fijo</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="input-group input-group-sm" style="max-width: 130px;">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" step="0.01" class="form-control"
+                                        value="{{ ct.default_unit_price|unlocalize }}" data-field="default_unit_price"
+                                        data-id="{{ ct.id }}" onchange="updateCostType(this)">
+                                </div>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm"
+                                    data-field="accounting_category_id" data-id="{{ ct.id }}" onchange="updateCostType(this)">
+                                    <option value="">Sin categoria</option>
+                                    {% for category in categories_expense %}
+                                    <option value="{{ category.id }}" {% if ct.accounting_category_id == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox"
+                                        {% if ct.is_active %}checked{% endif %}
+                                        data-field="is_active" data-id="{{ ct.id }}"
+                                        onchange="updateCostType(this)">
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCostType({{ ct.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr id="no-cost-types">
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No hay tipos de costo creados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-        {% endfor %}
     </div>
 </div>
 
-<!-- Modal: Crear Tipo de Costo -->
 <div class="modal fade" id="createCostTypeModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -200,56 +120,25 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Precio por defecto</label>
+                    <label class="form-label">Precio referencia</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
                         <input type="number" step="0.01" class="form-control" id="newCostPrice" value="0">
                     </div>
                 </div>
+                <div class="mb-0">
+                    <label class="form-label">Categoria contable por defecto</label>
+                    <select class="form-select" id="newCostAccountingCategory">
+                        <option value="">Sin categoria</option>
+                        {% for category in categories_expense %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-jema-primary" onclick="createCostType()">Crear</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal: Agregar Config de Costo a Tipo de Producto -->
-<div class="modal fade" id="addConfigModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Agregar Costo a <span id="configProductTypeLabel"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="configProductType">
-                <div class="mb-3">
-                    <label class="form-label">Tipo de Costo</label>
-                    <select class="form-select" id="configCostType">
-                        {% for ct in cost_types %}
-                        <option value="{{ ct.id }}">{{ ct.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Método de cálculo</label>
-                    <select class="form-select" id="configCalcMethod">
-                        {% for code, label in calc_methods %}
-                        <option value="{{ code }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3" id="materialWidthGroup">
-                    <label class="form-label">Ancho del material (cm)</label>
-                    <input type="number" step="0.01" class="form-control" id="configMaterialWidth" placeholder="Ej: 60">
-                    <small class="text-muted">Solo aplica para metros lineales</small>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-jema-primary" onclick="saveConfig()">Guardar</button>
             </div>
         </div>
     </div>
@@ -264,6 +153,7 @@ function showCreateCostType() {
     document.getElementById('newCostName').value = '';
     document.getElementById('newCostUnit').value = 'unidad';
     document.getElementById('newCostPrice').value = '0';
+    document.getElementById('newCostAccountingCategory').value = '';
     new bootstrap.Modal(document.getElementById('createCostTypeModal')).show();
 }
 
@@ -272,19 +162,17 @@ function createCostType() {
         name: document.getElementById('newCostName').value,
         unit: document.getElementById('newCostUnit').value,
         default_unit_price: document.getElementById('newCostPrice').value || 0,
+        accounting_category_id: document.getElementById('newCostAccountingCategory').value || null
     };
     fetch('{% url "api_create_cost_type" %}', {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify(data)
     })
-    .then(r => r.json())
-    .then(res => {
-        if (res.ok) {
-            location.reload();
-        } else {
-            alert('Error: ' + res.error);
-        }
+    .then((r) => r.json())
+    .then((res) => {
+        if (res.ok) location.reload();
+        else alert('Error: ' + res.error);
     });
 }
 
@@ -292,7 +180,9 @@ function updateCostType(el) {
     const id = el.dataset.id;
     const field = el.dataset.field;
     let value = el.type === 'checkbox' ? el.checked : el.value;
-    const data = {id: parseInt(id)};
+    if (value === '') value = null;
+
+    const data = {id: parseInt(id, 10)};
     data[field] = value;
 
     fetch('{% url "api_update_cost_type" %}', {
@@ -300,72 +190,23 @@ function updateCostType(el) {
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify(data)
     })
-    .then(r => r.json())
-    .then(res => {
+    .then((r) => r.json())
+    .then((res) => {
         if (!res.ok) alert('Error: ' + res.error);
     });
 }
 
 function deleteCostType(id) {
-    if (!confirm('¿Eliminar este tipo de costo?')) return;
+    if (!confirm('Eliminar este tipo de costo?')) return;
     fetch('{% url "api_delete_cost_type" %}', {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
         body: JSON.stringify({id: id})
     })
-    .then(r => r.json())
-    .then(res => {
-        if (res.ok) {
-            document.getElementById('ct-row-' + id).remove();
-        } else {
-            alert('Error: ' + res.error);
-        }
-    });
-}
-
-function showAddConfig(productType, label) {
-    document.getElementById('configProductType').value = productType;
-    document.getElementById('configProductTypeLabel').textContent = label;
-    document.getElementById('configMaterialWidth').value = '';
-    new bootstrap.Modal(document.getElementById('addConfigModal')).show();
-}
-
-function saveConfig() {
-    const data = {
-        product_type: document.getElementById('configProductType').value,
-        cost_type_id: document.getElementById('configCostType').value,
-        calculation_method: document.getElementById('configCalcMethod').value,
-        material_width_cm: document.getElementById('configMaterialWidth').value || null,
-    };
-    fetch('{% url "api_save_product_type_cost" %}', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
-        body: JSON.stringify(data)
-    })
-    .then(r => r.json())
-    .then(res => {
-        if (res.ok) {
-            location.reload();
-        } else {
-            alert('Error: ' + res.error);
-        }
-    });
-}
-
-function deleteConfig(configId) {
-    if (!confirm('¿Eliminar esta asignación?')) return;
-    fetch('{% url "api_save_product_type_cost" %}', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
-        body: JSON.stringify({action: 'delete', config_id: configId})
-    })
-    .then(r => r.json())
-    .then(res => {
-        if (res.ok) {
-            document.getElementById('config-' + configId)?.remove();
-        } else {
-            alert('Error: ' + res.error);
-        }
+    .then((r) => r.json())
+    .then((res) => {
+        if (res.ok) document.getElementById('ct-row-' + id)?.remove();
+        else alert('Error: ' + res.error);
     });
 }
 </script>

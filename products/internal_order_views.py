@@ -176,11 +176,16 @@ def internal_order_detail_view(request, order_id):
     )
 
     # Costos de producción
-    from products.models_costs import OrderCostBreakdown
+    from products.models_costs import CostType, OrderCostBreakdown
+    from contabilidad.models import Account, TransactionCategory
     from decimal import Decimal
     cost_breakdowns = OrderCostBreakdown.objects.filter(
         internal_order=order
-    ).select_related('cost_type').order_by('product_type', 'cost_type__name')
+    ).select_related(
+        'cost_type',
+        'accounting_category',
+        'accounting_transaction',
+    ).order_by('-created_at')
 
     total_production_cost = sum(b.total for b in cost_breakdowns)
     shipping = order.shipping_cost or Decimal('0')
@@ -195,6 +200,9 @@ def internal_order_detail_view(request, order_id):
         'order': order,
         'order_items': order_items,
         'cost_breakdowns': cost_breakdowns,
+        'cost_types': CostType.objects.filter(is_active=True).order_by('name'),
+        'accounting_accounts': Account.objects.order_by('name'),
+        'accounting_categories': TransactionCategory.objects.filter(transaction_type='egreso').order_by('name'),
         'total_production_cost': total_production_cost,
         'grand_total_cost': grand_total_cost,
         'margin': margin,
@@ -913,4 +921,3 @@ def api_internal_order_update_task(request):
             'is_completed': item.completed_quantity >= item.quantity
         }
     })
-
