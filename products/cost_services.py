@@ -1,11 +1,124 @@
 """
 Servicio de cálculo de costos de producción por pedido.
 """
+import logging
 from decimal import Decimal
-from math import ceil, floor
+from math import ceil
 from collections import defaultdict
 
 from products.models_costs import CostType, ProductTypeCostConfig, OrderCostBreakdown
+
+logger = logging.getLogger(__name__)
+
+
+def _parse_variant_tokens(text):
+    """Normaliza texto de variante ('Mediano - Full Color') en tokens."""
+    if not text:
+        return []
+    return [part.strip().lower() for part in text.split('-') if part.strip()]
+
+
+def _get_item_product_fallback(item):
+    """
+    Obtiene producto del item:
+    1) item.product (si existe)
+    2) fallback por item.product_name (pedidos antiguos)
+    """
+    if hasattr(item, '_resolved_product_cache'):
+        return item._resolved_product_cache
+
+    direct_product = getattr(item, 'product', None)
+    if direct_product:
+        item._resolved_product_cache = direct_product
+        return direct_product
+
+    product_name = (getattr(item, 'product_name', '') or '').strip()
+    if not product_name:
+        item._resolved_product_cache = None
+        return None
+
+    # Import local para evitar acoplamiento circular al cargar modulo.
+    from products.models import Product
+
+    product = Product.objects.filter(name__iexact=product_name).order_by('id').first()
+    if product:
+        logger.warning(
+            "Costos: item %s sin FK product. Usando fallback por nombre '%s' -> producto #%s.",
+            getattr(item, 'id', None),
+            product_name,
+            product.id,
+        )
+    else:
+        logger.warning(
+            "Costos: item %s sin FK product y sin fallback por nombre '%s'.",
+            getattr(item, 'id', None),
+            product_name,
+        )
+
+    item._resolved_product_cache = product
+    return product
+
+
+def _get_item_variant(item):
+    """
+    Retorna variante para item interno o de catalogo.
+    Para catalogo intenta resolver por texto; si falla usa primera variante.
+    """
+    if hasattr(item, '_resolved_variant_cache'):
+        return item._resolved_variant_cache
+
+    direct_variant = getattr(item, 'variant', None)
+    if direct_variant:
+        item._resolved_variant_cache = direct_variant
+        return direct_variant
+
+    product = _get_item_product_fallback(item)
+    if not product:
+        item._resolved_variant_cache = None
+        return None
+
+    variants = list(product.variants.all())
+    if not variants:
+        item._resolved_variant_cache = None
+        return None
+
+    raw_variant_text = (getattr(item, 'variant_text', '') or getattr(item, 'variant_details', '') or '').strip()
+    tokens = _parse_variant_tokens(raw_variant_text)
+
+    if tokens:
+        size_token = tokens[0]
+        for variant in variants:
+            if variant.size and variant.size.name and variant.size.name.strip().lower() == size_token:
+                item._resolved_variant_cache = variant
+                return variant
+
+    for token in tokens:
+        for variant in variants:
+            if variant.color and variant.color.name and variant.color.name.strip().lower() == token:
+                item._resolved_variant_cache = variant
+                return variant
+            if variant.material and variant.material.name and variant.material.name.strip().lower() == token:
+                item._resolved_variant_cache = variant
+                return variant
+
+    fallback = variants[0]
+    logger.warning(
+        "Costos: item %s sin match de variante (texto='%s'). Usando variante #%s del producto #%s.",
+        getattr(item, 'id', None),
+        raw_variant_text,
+        fallback.id,
+        product.id,
+    )
+    item._resolved_variant_cache = fallback
+    return fallback
+
+
+def _get_item_product(item):
+    """Retorna Product para item interno o de catalogo."""
+    variant = _get_item_variant(item)
+    if variant and getattr(variant, 'product', None):
+        return variant.product
+    return _get_item_product_fallback(item)
 
 
 def calculate_order_costs(order, order_type='internal'):
@@ -21,18 +134,37 @@ def calculate_order_costs(order, order_type='internal'):
     """
     # 1. Obtener items del pedido
     if order_type == 'internal':
-        items = order.items.select_related('variant__product', 'variant__size', 'variant__material').all()
+        items_qs = order.items.select_related('variant__product', 'variant__size', 'variant__material', 'variant__color')
     else:
         # OrderItem (catalogo) no tiene FK a variant
-        items = order.items.select_related('product').all()
+        # Prefetch de variantes para poder resolver dimensiones/material.
+        items_qs = order.items.select_related('product').prefetch_related(
+            'product__variants__size',
+            'product__variants__material',
+            'product__variants__color',
+        )
+
+    items = list(items_qs.all())
 
     # 2. Agrupar items por product_type
     items_by_type = defaultdict(list)
+    skipped_items = []
     for item in items:
-        variant = getattr(item, 'variant', None)
-        product = variant.product if variant and variant.product else getattr(item, 'product', None)
+        product = _get_item_product(item)
         if product and product.product_type:
             items_by_type[product.product_type].append(item)
+        else:
+            skipped_items.append(getattr(item, 'id', None))
+
+    logger.warning(
+        "Costos: pedido #%s (%s) -> items=%s, agrupados=%s, omitidos=%s, tipos=%s",
+        getattr(order, 'id', None),
+        order_type,
+        len(items),
+        sum(len(v) for v in items_by_type.values()),
+        len(skipped_items),
+        list(items_by_type.keys()),
+    )
 
     # 3. Borrar breakdowns anteriores (recalcular)
     if order_type == 'internal':
@@ -44,13 +176,28 @@ def calculate_order_costs(order, order_type='internal'):
 
     # 4. Para cada product_type, buscar configs y calcular
     for ptype, type_items in items_by_type.items():
-        configs = ProductTypeCostConfig.objects.filter(
+        configs = list(ProductTypeCostConfig.objects.filter(
             product_type=ptype,
             cost_type__is_active=True
-        ).select_related('cost_type').order_by('position')
+        ).select_related('cost_type').order_by('position'))
+
+        if not configs:
+            logger.warning(
+                "Costos: pedido #%s tipo '%s' sin configuraciones activas.",
+                getattr(order, 'id', None),
+                ptype,
+            )
 
         for config in configs:
             results = _calculate_cost(config, type_items)
+            if not results:
+                logger.warning(
+                    "Costos: pedido #%s tipo '%s' config '%s' (%s) no genero resultados.",
+                    getattr(order, 'id', None),
+                    ptype,
+                    config.cost_type.name,
+                    config.calculation_method,
+                )
             for result in results:
                 breakdown_kwargs = {
                     'cost_type': config.cost_type,
@@ -86,12 +233,22 @@ def calculate_order_costs(order, order_type='internal'):
     total_manual = sum(manual_costs)
     shipping = order.shipping_cost or Decimal('0')
 
+    diagnostics = {
+        'items_total': len(items),
+        'items_grouped': sum(len(v) for v in items_by_type.values()),
+        'items_skipped': len(skipped_items),
+        'skipped_item_ids': [sid for sid in skipped_items if sid is not None][:20],
+        'types_detected': sorted(items_by_type.keys()),
+        'breakdowns_created': len(breakdowns_created),
+    }
+
     return {
         'breakdowns': breakdowns_created,
         'total_production': total_costs,
         'total_manual': total_manual,
         'shipping': shipping,
         'grand_total': total_costs + total_manual + shipping,
+        'diagnostics': diagnostics,
     }
 
 
@@ -113,7 +270,7 @@ def _calculate_cost(config, items):
 
     if has_special_pricing and method in ('linear_meters', 'per_unit'):
         def _is_special(item):
-            variant = getattr(item, 'variant', None)
+            variant = _get_item_variant(item)
             return bool(variant and variant.material and variant.material.is_special)
 
         normal_items = [i for i in items if not _is_special(i)]
@@ -125,7 +282,7 @@ def _calculate_cost(config, items):
             if r:
                 results.append(r)
         if special_items:
-            first_variant = getattr(special_items[0], 'variant', None)
+            first_variant = _get_item_variant(special_items[0])
             mat_name = first_variant.material.name if first_variant and first_variant.material else "Especial"
             r = _calc_single(method, cost_type, special_items, special_price, config.material_width_cm, f" ({mat_name})")
             if r:
@@ -181,7 +338,7 @@ def _calc_linear_meters(cost_type, items, unit_price, material_width_cm):
     # Agrupar items por dimensiones de variante
     groups = defaultdict(lambda: Decimal('0'))
     for item in items:
-        v = getattr(item, 'variant', None)
+        v = _get_item_variant(item)
         if v and v.height_cm and v.width_cm:
             key = (v.height_cm, v.width_cm)
             groups[key] += Decimal(str(item.quantity))
@@ -216,7 +373,7 @@ def _calc_square_meters(cost_type, items, unit_price):
     total_area_cm2 = Decimal('0')
 
     for item in items:
-        v = getattr(item, 'variant', None)
+        v = _get_item_variant(item)
         if v and v.height_cm and v.width_cm:
             area = v.height_cm * v.width_cm * Decimal(str(item.quantity))
             total_area_cm2 += area

@@ -236,12 +236,20 @@ function calculateCosts() {
         btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Recalcular';
 
         if (!res.ok) { alert('Error: ' + res.error); return; }
+        const diagnostics = res.diagnostics || {};
+        console.log('Diagnostico costos catalogo:', diagnostics);
 
         const tbody = document.getElementById('costsBody');
         tbody.innerHTML = '';
 
         if (res.breakdowns.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-2">Sin costos configurados</td></tr>';
+            let msg = 'Sin costos configurados';
+            if ((diagnostics.items_total || 0) > 0 && (diagnostics.items_grouped || 0) === 0) {
+                msg = 'No se pudo identificar el tipo de producto de los items del pedido.';
+            } else if ((diagnostics.types_detected || []).length > 0) {
+                msg = 'Hay reglas de costo, pero no generaron resultado (revisa metodo y dimensiones de variantes).';
+            }
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-2">${msg}</td></tr>`;
         } else {
             res.breakdowns.forEach(b => {
                 tbody.innerHTML += `<tr><td>${b.cost_type_name}</td><td>${b.description}</td><td class="text-end fw-bold">$${parseInt(b.total).toLocaleString()}</td></tr>`;

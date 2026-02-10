@@ -490,12 +490,20 @@ function calculateCosts() {
             alert('Error: ' + res.error);
             return;
         }
+        const diagnostics = res.diagnostics || {};
+        console.log('Diagnostico costos interno:', diagnostics);
 
         const tbody = document.getElementById('costsBody');
         tbody.innerHTML = '';
 
         if (res.breakdowns.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No se encontraron costos configurados para los productos de este pedido.</td></tr>';
+            let msg = 'No se encontraron costos configurados para los productos de este pedido.';
+            if ((diagnostics.items_total || 0) > 0 && (diagnostics.items_grouped || 0) === 0) {
+                msg = 'No se pudo identificar el tipo de producto de los items del pedido.';
+            } else if ((diagnostics.types_detected || []).length > 0) {
+                msg = 'Hay reglas de costo, pero no generaron resultado (revisa metodo y dimensiones de variantes).';
+            }
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">${msg}</td></tr>`;
         } else {
             res.breakdowns.forEach(b => {
                 const row = document.createElement('tr');

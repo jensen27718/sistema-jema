@@ -2,6 +2,7 @@
 Vistas y APIs para el sistema de costos de producción.
 """
 import json
+import logging
 from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, get_object_or_404
@@ -13,6 +14,8 @@ from products.models import Product, ProductVariant, Order
 from products.models_internal_orders import InternalOrder
 from products.models_costs import CostType, ProductTypeCostConfig, OrderCostBreakdown
 from products.cost_services import calculate_order_costs
+
+logger = logging.getLogger(__name__)
 
 
 def is_staff(user):
@@ -189,6 +192,8 @@ def api_save_product_type_cost(request):
 @require_POST
 def api_calculate_costs(request):
     """Calcular costos de un pedido"""
+    order_type = 'unknown'
+    order_id = None
     try:
         data = json.loads(request.body)
         order_type = data.get('order_type', 'internal')
@@ -199,6 +204,7 @@ def api_calculate_costs(request):
         else:
             order = get_object_or_404(Order, id=order_id)
 
+        logger.warning("API costos: iniciando calculo para pedido #%s (%s)", order_id, order_type)
         result = calculate_order_costs(order, order_type)
 
         breakdowns_data = []
@@ -224,6 +230,16 @@ def api_calculate_costs(request):
                 'is_manual': b.is_manual,
             })
 
+        diagnostics = result.get('diagnostics', {})
+        logger.warning(
+            "API costos: pedido #%s (%s) -> breakdowns=%s, total_production=%s, diagnostics=%s",
+            order_id,
+            order_type,
+            len(breakdowns_data),
+            result['total_production'],
+            diagnostics,
+        )
+
         return JsonResponse({
             'ok': True,
             'breakdowns': breakdowns_data,
@@ -231,8 +247,10 @@ def api_calculate_costs(request):
             'total_manual': str(result['total_manual']),
             'shipping': str(result['shipping']),
             'grand_total': str(result['grand_total']),
+            'diagnostics': diagnostics,
         })
     except Exception as e:
+        logger.exception("API costos: error calculando pedido #%s (%s)", order_id, order_type)
         return JsonResponse({'ok': False, 'error': str(e)}, status=400)
 
 
