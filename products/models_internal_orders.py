@@ -69,6 +69,26 @@ class InternalOrder(models.Model):
         return colors.get(self.status, 'secondary')
 
     @property
+    def items_breakdown(self):
+        """Retorna un desglose de cantidades por tipo de producto"""
+        from django.db.models import Sum
+        from products.models import Product
+        
+        breakdown = self.items.values('variant__product__product_type').annotate(total_qty=Sum('quantity'))
+        type_map = dict(Product.TYPE_CHOICES)
+        
+        result = []
+        for entry in breakdown:
+            p_type = entry['variant__product__product_type']
+            if p_type:
+                label = type_map.get(p_type, p_type.replace('_', ' ').title())
+                result.append({
+                    'label': label,
+                    'total': entry['total_qty']
+                })
+        return result
+
+    @property
     def total_items_price(self):
         """Suma de cantidad * precio de todos los items"""
         from django.db.models import Sum, F

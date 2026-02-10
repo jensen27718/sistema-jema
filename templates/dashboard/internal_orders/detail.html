@@ -21,6 +21,13 @@
                 <div><small class="text-muted">Total Neto (Ingresos - Gastos)</small></div>
                 <div class="fw-bold fs-4">${{ order.total_estimated|floatformat:0 }}</div>
                 <div><small class="text-muted">Items: {{ order.total_items }}</small></div>
+                {% if order.items_breakdown %}
+                <div class="mt-1">
+                    {% for b in order.items_breakdown %}
+                    <span class="badge bg-light text-dark border fw-normal">{{ b.label }}: {{ b.total }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
