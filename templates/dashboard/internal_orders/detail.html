@@ -333,6 +333,16 @@
 const csrfToken = '{{ csrf_token }}';
 const orderId = {{ order.id }};
 let costsCache = {};
+
+const costTypeDefaults = {
+    {% for ct in cost_types %}
+    {{ ct.id }}: {
+        name: '{{ ct.name|escapejs }}',
+        defaultCategory: '{{ ct.accounting_category_id|default:"" }}'
+    },
+    {% endfor %}
+};
+
 const costModal = new bootstrap.Modal(document.getElementById('costModal'));
 const postCostModal = new bootstrap.Modal(document.getElementById('postCostModal'));
 const transactionUrlTemplate = '{% url "accounting_transaction_update" 0 %}';
@@ -422,10 +432,15 @@ function openCostModal(breakdownId = null) {
     document.getElementById('costBreakdownId').value = breakdownId || '';
     if (!breakdownId) {
         document.getElementById('costModalTitle').textContent = 'Agregar gasto';
-        document.getElementById('costDescriptionInput').value = '';
-        document.getElementById('costTotalInput').value = '';
+        if (document.getElementById('costTypeInput').options.length > 0) {
+            document.getElementById('costTypeInput').selectedIndex = 0;
+            onCostTypeChange();
+        } else {
+            document.getElementById('costDescriptionInput').value = '';
+            document.getElementById('costTotalInput').value = '';
+            document.getElementById('costAccountingCategoryInput').value = '';
+        }
         document.getElementById('costNotesInput').value = '';
-        document.getElementById('costAccountingCategoryInput').value = '';
     } else {
         const b = costsCache[breakdownId];
         if (!b) return;
@@ -437,6 +452,20 @@ function openCostModal(breakdownId = null) {
         document.getElementById('costAccountingCategoryInput').value = b.accounting_category_id || '';
     }
     costModal.show();
+}
+
+function onCostTypeChange() {
+    const costTypeInput = document.getElementById('costTypeInput');
+    const descriptionInput = document.getElementById('costDescriptionInput');
+    const accountingCategoryInput = document.getElementById('costAccountingCategoryInput');
+    const selected = costTypeInput.value;
+
+    if (!document.getElementById('costBreakdownId').value && !descriptionInput.value.trim()) {
+        descriptionInput.value = costTypeDefaults[selected]?.name || '';
+    }
+    if (!accountingCategoryInput.value) {
+        accountingCategoryInput.value = costTypeDefaults[selected]?.defaultCategory || '';
+    }
 }
 
 function saveCost() {
@@ -562,6 +591,7 @@ function loadProfitability(fsId) {
     .catch(() => alert('Error de conexion'));
 }
 
+document.getElementById('costTypeInput').addEventListener('change', onCostTypeChange);
 fetchCosts();
 </script>
 {% endblock %}
