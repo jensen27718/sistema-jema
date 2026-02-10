@@ -84,6 +84,8 @@ def _build_totals(order, order_type):
         "sale_total": sale_total,
         "grand_total": grand_total,
         "margin": margin,
+        "total_items_income": getattr(order, 'total_items_price', Decimal("0")) if order_type == 'internal' else sale_total,
+        "discount_amount": getattr(order, 'discount_amount', Decimal("0")),
     }
 
 
@@ -117,6 +119,8 @@ def _totals_payload(order, order_type):
         "sale_total": str(totals["sale_total"]),
         "grand_total": str(totals["grand_total"]),
         "margin": str(totals["margin"]),
+        "total_items_income": str(totals["total_items_income"]),
+        "discount_amount": str(totals["discount_amount"]),
     }
 
 
@@ -309,10 +313,12 @@ def api_create_order_cost(request):
         }
         if order_type == "internal":
             payload["internal_order"] = order
+            breakdown = OrderCostBreakdown.objects.create(**payload)
+            order.recalculate_totals()
         else:
             payload["order"] = order
+            breakdown = OrderCostBreakdown.objects.create(**payload)
 
-        breakdown = OrderCostBreakdown.objects.create(**payload)
         return JsonResponse(
             {
                 "ok": True,
@@ -400,6 +406,9 @@ def api_update_order_cost(request):
 
         if update_fields:
             breakdown.save(update_fields=list(set(update_fields)))
+            order_type, order = _resolve_order_context_from_breakdown(breakdown)
+            if order_type == "internal":
+                order.recalculate_totals()
 
         order_type, order = _resolve_order_context_from_breakdown(breakdown)
         return JsonResponse(
@@ -432,6 +441,8 @@ def api_delete_order_cost(request):
 
         order_type, order = _resolve_order_context_from_breakdown(breakdown)
         breakdown.delete()
+        if order_type == "internal":
+            order.recalculate_totals()
         return JsonResponse({"ok": True, **_totals_payload(order, order_type)})
     except Exception as exc:  # pragma: no cover - guarded API error
         logger.exception("Error deleting manual order cost")

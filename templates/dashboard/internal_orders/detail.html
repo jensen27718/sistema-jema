@@ -18,7 +18,7 @@
                 {% if order.description %}<p class="text-muted mb-0">{{ order.description }}</p>{% endif %}
             </div>
             <div class="text-end">
-                <div><small class="text-muted">Total Estimado</small></div>
+                <div><small class="text-muted">Total Neto (Ingresos - Gastos)</small></div>
                 <div class="fw-bold fs-4">${{ order.total_estimated|floatformat:0 }}</div>
                 <div><small class="text-muted">Items: {{ order.total_items }}</small></div>
             </div>
@@ -116,7 +116,7 @@
 
     <div class="card mb-4 no-print" id="costsSection">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-calculator"></i> Costos del Pedido</h5>
+            <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Gastos del Pedido</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-jema-primary" onclick="openCostModal()">
                     <i class="bi bi-plus-lg"></i> Agregar gasto
@@ -203,28 +203,31 @@
 
             <div class="border-top pt-3 mt-3" id="costsTotals">
                 <div class="d-flex justify-content-between mb-1">
-                    <span>Total costos del pedido:</span>
-                    <span class="fw-bold" id="totalProduction">${{ total_production_cost|floatformat:0|default:"0" }}</span>
+                    <span>Total Ingresos (Items):</span>
+                    <span class="fw-bold" id="totalItemsIncome">${{ order.total_items_price|floatformat:0|default:"0" }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
-                    <span>Costo de Envio:</span>
-                    <span class="fw-bold" id="totalShipping">${{ order.shipping_cost|floatformat:0|default:"0" }}</span>
+                    <span>Total Gastos:</span>
+                    <span class="fw-bold text-danger" id="totalProduction">-${{ total_production_cost|floatformat:0|default:"0" }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
                     <span>Descuento Especial:</span>
                     <span class="fw-bold text-danger" id="totalDiscount">-${{ order.discount_amount|floatformat:0 }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1 border-top pt-2">
-                    <span class="fw-bold">Total General Costos:</span>
-                    <span class="fw-bold text-danger" id="grandTotal">${{ grand_total_cost|floatformat:0|default:"0" }}</span>
+                    <span class="fw-bold">Total Neto (Final):</span>
+                    <span class="fw-bold fs-5 text-success" id="totalEstimatedDisplay">${{ order.total_estimated|floatformat:0 }}</span>
                 </div>
-                <div class="d-flex justify-content-between mb-1">
-                    <span>Total Estimado (Venta):</span>
-                    <span class="fw-bold text-success" id="totalEstimatedDisplay">${{ order.total_estimated|floatformat:0 }}</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span class="fw-bold">Margen:</span>
-                    <span class="fw-bold {% if margin >= 0 %}text-success{% else %}text-danger{% endif %}" id="marginDisplay">${{ margin|floatformat:0|default:"0" }}</span>
+                
+                <div class="mt-3 border-top pt-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Costo de Envio (No incluido en neto):</span>
+                        <span class="fw-bold" id="totalShipping">${{ order.shipping_cost|floatformat:0|default:"0" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-bold">Margen Real (Neto - Envio):</span>
+                        <span class="fw-bold {% if margin >= 0 %}text-success{% else %}text-danger{% endif %}" id="marginDisplay">${{ margin|floatformat:0|default:"0" }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -334,14 +337,27 @@ function toDateInputValue(today = new Date()) {
 }
 
 function refreshTotals(payload) {
-    document.getElementById('totalProduction').textContent = currency(payload.total_costs);
-    document.getElementById('totalShipping').textContent = currency(payload.shipping);
-    document.getElementById('totalEstimatedDisplay').textContent = currency(payload.sale_total);
-    document.getElementById('grandTotal').textContent = currency(payload.grand_total);
+    const totalProduction = document.getElementById('totalProduction');
+    if (totalProduction) totalProduction.textContent = '-' + currency(payload.total_costs);
+    
+    const totalItemsIncome = document.getElementById('totalItemsIncome');
+    if (totalItemsIncome) totalItemsIncome.textContent = currency(payload.total_items_income || 0);
+
+    const totalShipping = document.getElementById('totalShipping');
+    if (totalShipping) totalShipping.textContent = currency(payload.shipping);
+
+    const totalEstimatedDisplay = document.getElementById('totalEstimatedDisplay');
+    if (totalEstimatedDisplay) totalEstimatedDisplay.textContent = currency(payload.sale_total);
+
+    const totalDiscount = document.getElementById('totalDiscount');
+    if (totalDiscount) totalDiscount.textContent = '-' + currency(payload.discount_amount || 0);
+
     const margin = parseFloat(payload.margin || 0);
     const marginEl = document.getElementById('marginDisplay');
-    marginEl.textContent = currency(margin);
-    marginEl.className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
+    if (marginEl) {
+        marginEl.textContent = currency(margin);
+        marginEl.className = 'fw-bold ' + (margin >= 0 ? 'text-success' : 'text-danger');
+    }
 }
 
 function renderCosts(breakdowns) {

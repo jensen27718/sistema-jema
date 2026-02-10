@@ -1,6 +1,7 @@
 """
 Modelos para el sistema de Pedidos Internos con Drag & Drop
 """
+from decimal import Decimal
 from django.db import models
 from django.conf import settings
 
@@ -67,6 +68,14 @@ class InternalOrder(models.Model):
         }
         return colors.get(self.status, 'secondary')
 
+    @property
+    def total_items_price(self):
+        """Suma de cantidad * precio de todos los items"""
+        from django.db.models import Sum, F
+        return self.items.aggregate(
+            total=Sum(F('quantity') * F('unit_price'))
+        )['total'] or 0
+
     def recalculate_totals(self):
         """Recalcula los totales del pedido"""
         from django.db.models import Sum, F
@@ -76,9 +85,14 @@ class InternalOrder(models.Model):
             total_price=Sum(F('quantity') * F('unit_price'))
         )
 
+        # Sumar también los gastos manuales cargados al pedido
+        expenses_total = self.cost_breakdowns.aggregate(total=Sum('total'))['total'] or 0
+
         self.total_items = aggregates['total_qty'] or 0
         total_price = aggregates['total_price'] or 0
-        self.total_estimated = total_price - (self.discount_amount or 0)
+        
+        # El total estimado es: Ingresos - Descuento - Gastos
+        self.total_estimated = total_price - (self.discount_amount or 0) - Decimal(str(expenses_total))
         self.save(update_fields=['total_items', 'total_estimated'])
 
 
