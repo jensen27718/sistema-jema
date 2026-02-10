@@ -262,12 +262,26 @@
                     <label class="form-label">Descripcion</label>
                     <input type="text" class="form-control" id="costDescriptionInput" placeholder="Ej: Descartonado frente">
                 </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Cantidad <span id="costUnitLabel" class="text-muted small"></span></label>
+                        <input type="number" step="any" min="0" class="form-control" id="costQuantityInput">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Precio Unitario</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="any" min="0" class="form-control" id="costUnitPriceInput">
+                        </div>
+                    </div>
+                </div>
                 <div class="mb-3">
-                    <label class="form-label">Total</label>
+                    <label class="form-label">Total Gasto</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input type="number" min="0" step="1" class="form-control" id="costTotalInput">
+                        <input type="number" step="any" min="0" class="form-control fw-bold" id="costTotalInput" readonly>
                     </div>
+                    <small class="text-muted">Se calcula automáticamente: Cantidad × Precio</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Categoria contable sugerida</label>
@@ -346,7 +360,9 @@ const costTypeDefaults = {
     {% for ct in cost_types %}
     {{ ct.id }}: {
         name: '{{ ct.name|escapejs }}',
-        defaultCategory: '{{ ct.accounting_category_id|default:"" }}'
+        defaultCategory: '{{ ct.accounting_category_id|default:"" }}',
+        unit: '{{ ct.get_unit_display|escapejs }}',
+        price: {{ ct.default_unit_price|stringformat:".2f" }}
     },
     {% endfor %}
 };
@@ -467,14 +483,15 @@ function openCostModal(breakdownId = null) {
         document.getElementById('costModalTitle').textContent = 'Agregar gasto';
         if (costTypeInput.options.length > 0) {
             costTypeInput.selectedIndex = 0;
-            const selectedCostType = costTypeInput.value;
-            descriptionInput.value = costTypeDefaults[selectedCostType]?.name || '';
-            accountingCategoryInput.value = costTypeDefaults[selectedCostType]?.defaultCategory || '';
+            document.getElementById('costQuantityInput').value = 1;
+            onCostTypeChange();
         } else {
-            descriptionInput.value = '';
+            document.getElementById('costDescriptionInput').value = '';
+            document.getElementById('costQuantityInput').value = '';
+            document.getElementById('costUnitPriceInput').value = '';
             accountingCategoryInput.value = '';
+            totalInput.value = '';
         }
-        totalInput.value = '';
         notesInput.value = '';
     } else {
         const breakdown = costsCache[breakdownId];
@@ -485,26 +502,51 @@ function openCostModal(breakdownId = null) {
         document.getElementById('costModalTitle').textContent = 'Editar gasto';
         costTypeInput.value = breakdown.cost_type_id;
         descriptionInput.value = breakdown.description;
+        document.getElementById('costQuantityInput').value = parseFloat(breakdown.quantity || 1);
+        document.getElementById('costUnitPriceInput').value = parseFloat(breakdown.unit_price || 0);
         totalInput.value = parseFloat(breakdown.total || 0);
         notesInput.value = breakdown.notes || '';
         accountingCategoryInput.value = breakdown.accounting_category_id || '';
+        
+        const selected = breakdown.cost_type_id;
+        document.getElementById('costUnitLabel').textContent = costTypeDefaults[selected] ? `(${costTypeDefaults[selected].unit})` : '';
     }
 
     costModal.show();
+}
+
+function calculateCostTotal() {
+    const qty = parseFloat(document.getElementById('costQuantityInput').value || 0);
+    const price = parseFloat(document.getElementById('costUnitPriceInput').value || 0);
+    document.getElementById('costTotalInput').value = (qty * price).toFixed(2);
 }
 
 function onCostTypeChange() {
     const costTypeInput = document.getElementById('costTypeInput');
     const descriptionInput = document.getElementById('costDescriptionInput');
     const accountingCategoryInput = document.getElementById('costAccountingCategoryInput');
+    const qtyInput = document.getElementById('costQuantityInput');
+    const priceInput = document.getElementById('costUnitPriceInput');
+    const unitLabel = document.getElementById('costUnitLabel');
     const selected = costTypeInput.value;
+    const isNew = !document.getElementById('costBreakdownId').value;
 
-    if (!document.getElementById('costBreakdownId').value && !descriptionInput.value.trim()) {
+    if (isNew && !descriptionInput.value.trim()) {
         descriptionInput.value = costTypeDefaults[selected]?.name || '';
     }
     if (!accountingCategoryInput.value) {
         accountingCategoryInput.value = costTypeDefaults[selected]?.defaultCategory || '';
     }
+    
+    if (costTypeDefaults[selected]) {
+        unitLabel.textContent = `(${costTypeDefaults[selected].unit})`;
+        if (isNew || !priceInput.value) {
+            priceInput.value = costTypeDefaults[selected].price;
+        }
+    } else {
+        unitLabel.textContent = '';
+    }
+    calculateCostTotal();
 }
 
 function saveCost() {
@@ -514,6 +556,8 @@ function saveCost() {
         order_id: orderId,
         cost_type_id: document.getElementById('costTypeInput').value,
         description: document.getElementById('costDescriptionInput').value,
+        calculated_quantity: document.getElementById('costQuantityInput').value || 1,
+        unit_price: document.getElementById('costUnitPriceInput').value || 0,
         total: document.getElementById('costTotalInput').value || 0,
         notes: document.getElementById('costNotesInput').value,
         accounting_category_id: document.getElementById('costAccountingCategoryInput').value || null
@@ -650,6 +694,8 @@ function loadProfitability(fsId) {
 }
 
 document.getElementById('costTypeInput')?.addEventListener('change', onCostTypeChange);
+document.getElementById('costQuantityInput')?.addEventListener('input', calculateCostTotal);
+document.getElementById('costUnitPriceInput')?.addEventListener('input', calculateCostTotal);
 fetchCosts();
 </script>
 {% endblock %}
