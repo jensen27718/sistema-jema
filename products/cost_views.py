@@ -135,8 +135,8 @@ def sync_discount_expense(order, order_type, discount_amount):
                 "cost_type": cost_type,
                 "description": "Descuento Especial",
                 "calculated_quantity": 1,
-                "unit_price": -discount_amount,  # Negative to reduce total
-                "total": -discount_amount,
+                "unit_price": discount_amount,  # Positive - discount is a cost
+                "total": discount_amount,
                 "is_manual": False,
             }
         )
@@ -149,8 +149,8 @@ def sync_discount_expense(order, order_type, discount_amount):
                 "cost_type": cost_type,
                 "description": "Descuento Especial",
                 "calculated_quantity": 1,
-                "unit_price": -discount_amount,
-                "total": -discount_amount,
+                "unit_price": discount_amount,
+                "total": discount_amount,
                 "is_manual": False,
             }
         )
