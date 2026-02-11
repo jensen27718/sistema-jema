@@ -1571,26 +1571,29 @@
         // Asignar listeners a los chips de tipo de producto (estaticos)
         attachChipListeners();
 
-        // Cargar filtros dinamicos basados en los datos reales
-        await loadAvailableFilters();
-
         // CHECK URL PARAMS FOR AUTO-SELECTION
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode');
 
         if (mode && mode !== 'mixed') {
+            // Pre-select the product type chip BEFORE loading filters
             const typeChip = document.querySelector(`.filter-chip[data-filter="product_type"][data-value="${mode}"]`);
             if (typeChip) {
-                // Simular click en el chip
-                typeChip.click();
-            } else {
-                // Fallback si no encuentra el chip
-                 applyFilters();
+                // Visually activate the chip
+                typeChip.closest('.filter-row').querySelectorAll('.filter-chip').forEach(c => {
+                    c.classList.remove('active');
+                });
+                typeChip.classList.add('active');
+                // Update the filter state
+                currentFilters.product_type = mode;
             }
-        } else {
-            // Cargar variantes default
-            applyFilters();
         }
+
+        // Cargar filtros dinamicos basados en los datos reales
+        await loadAvailableFilters();
+
+        // Apply filters to show products
+        applyFilters();
 
         // Inicializar drag & drop
         initDragAndDrop();

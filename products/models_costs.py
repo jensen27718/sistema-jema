@@ -117,6 +117,15 @@ class OrderCostBreakdown(models.Model):
     unit_price = models.DecimalField("Precio unitario", max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField("Total", max_digits=12, decimal_places=2, default=0)
     is_manual = models.BooleanField("Ingresado manualmente", default=False)
+    is_system_generated = models.BooleanField("Generado automáticamente", default=False, help_text="Indica si fue creado automáticamente (descuento/envío)")
+    
+    COST_CATEGORY_CHOICES = [
+        ('production', 'Producción'),
+        ('discount', 'Descuento'),
+        ('shipping', 'Envío'),
+        ('other', 'Otro'),
+    ]
+    cost_category = models.CharField("Categoría de costo", max_length=20, choices=COST_CATEGORY_CHOICES, default='production')
     notes = models.TextField("Notas", blank=True)
 
     accounting_category = models.ForeignKey(

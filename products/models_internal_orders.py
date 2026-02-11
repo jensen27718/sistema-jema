@@ -48,6 +48,13 @@ class InternalOrder(models.Model):
         decimal_places=2,
         default=0
     )
+    discount_percentage = models.DecimalField(
+        "Porcentaje de descuento",
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Porcentaje de descuento sobre el total (0-100)"
+    )
 
     class Meta:
         ordering = ['-created_at']

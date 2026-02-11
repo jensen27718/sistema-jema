@@ -89,6 +89,130 @@ def _build_totals(order, order_type):
     }
 
 
+def _get_or_create_special_cost_type(name, description):
+    """Get or create special cost types for discount/shipping."""
+    cost_type, _ = CostType.objects.get_or_create(
+        name=name,
+        defaults={
+            "unit": "fijo",
+            "is_active": True,
+            "description": description,
+        }
+    )
+    return cost_type
+
+
+def sync_discount_expense(order, order_type, discount_amount):
+    """Create or update discount as an expense item."""
+    if discount_amount <= 0:
+        # Remove discount expense if amount is 0
+        if order_type == "internal":
+            OrderCostBreakdown.objects.filter(
+                internal_order=order,
+                cost_category='discount',
+                is_system_generated=True
+            ).delete()
+        else:
+            OrderCostBreakdown.objects.filter(
+                order=order,
+                cost_category='discount',
+                is_system_generated=True
+            ).delete()
+        return None
+    
+    cost_type = _get_or_create_special_cost_type(
+        "Descuento Especial",
+        "Descuento aplicado al pedido"
+    )
+    
+    # Get or create the discount expense item
+    if order_type == "internal":
+        breakdown, created = OrderCostBreakdown.objects.update_or_create(
+            internal_order=order,
+            cost_category='discount',
+            is_system_generated=True,
+            defaults={
+                "cost_type": cost_type,
+                "description": "Descuento Especial",
+                "calculated_quantity": 1,
+                "unit_price": -discount_amount,  # Negative to reduce total
+                "total": -discount_amount,
+                "is_manual": False,
+            }
+        )
+    else:
+        breakdown, created = OrderCostBreakdown.objects.update_or_create(
+            order=order,
+            cost_category='discount',
+            is_system_generated=True,
+            defaults={
+                "cost_type": cost_type,
+                "description": "Descuento Especial",
+                "calculated_quantity": 1,
+                "unit_price": -discount_amount,
+                "total": -discount_amount,
+                "is_manual": False,
+            }
+        )
+    return breakdown
+
+
+def sync_shipping_expense(order, order_type, shipping_cost):
+    """Create or update shipping as an expense item."""
+    if shipping_cost <= 0:
+        # Remove shipping expense if cost is 0
+        if order_type == "internal":
+            OrderCostBreakdown.objects.filter(
+                internal_order=order,
+                cost_category='shipping',
+                is_system_generated=True
+            ).delete()
+        else:
+            OrderCostBreakdown.objects.filter(
+                order=order,
+                cost_category='shipping',
+                is_system_generated=True
+            ).delete()
+        return None
+    
+    cost_type = _get_or_create_special_cost_type(
+        "Envío",
+        "Costo de envío del pedido"
+    )
+    
+    # Get or create the shipping expense item
+    if order_type == "internal":
+        breakdown, created = OrderCostBreakdown.objects.update_or_create(
+            internal_order=order,
+            cost_category='shipping',
+            is_system_generated=True,
+            defaults={
+                "cost_type": cost_type,
+                "description": "Envío",
+                "calculated_quantity": 1,
+                "unit_price": shipping_cost,
+                "total": shipping_cost,
+                "is_manual": False,
+            }
+        )
+    else:
+        breakdown, created = OrderCostBreakdown.objects.update_or_create(
+            order=order,
+            cost_category='shipping',
+            is_system_generated=True,
+            defaults={
+                "cost_type": cost_type,
+                "description": "Envío",
+                "calculated_quantity": 1,
+                "unit_price": shipping_cost,
+                "total": shipping_cost,
+                "is_manual": False,
+            }
+        )
+    return breakdown
+
+
+
 def _serialize_breakdown(breakdown):
     return {
         "id": breakdown.id,
@@ -541,6 +665,9 @@ def api_update_shipping(request):
         order = _resolve_order(order_type, order_id)
         order.shipping_cost = shipping_cost
         order.save(update_fields=["shipping_cost"])
+        
+        # Sync shipping as expense item
+        sync_shipping_expense(order, order_type, shipping_cost)
 
         return JsonResponse({"ok": True, "shipping_cost": str(shipping_cost)})
     except Exception as exc:  # pragma: no cover - guarded API error
@@ -551,30 +678,59 @@ def api_update_shipping(request):
 @user_passes_test(is_staff)
 @require_POST
 def api_update_discount(request):
-    """Update discount amount for order/internal order."""
+    """Update discount percentage for order/internal order."""
     try:
         data = json.loads(request.body)
         order_type = data.get("order_type", "internal")
         order_id = data.get("order_id")
+        
+        # Accept both percentage and amount for backward compatibility
+        discount_percentage = _parse_decimal(data.get("discount_percentage"), default=Decimal("0"))
         discount_amount = _parse_decimal(data.get("discount_amount"), default=Decimal("0"))
 
         if order_type == "internal":
             order = get_object_or_404(InternalOrder, id=order_id)
-            order.discount_amount = discount_amount
+            
+            # If percentage is provided, calculate amount
+            if discount_percentage > 0:
+                order.discount_percentage = discount_percentage
+                # Calculate discount from total items price (before discount)
+                total_items = order.total_items_price or Decimal("0")
+                discount_amount = (total_items * discount_percentage / Decimal("100")).quantize(Decimal("0.01"))
+                order.discount_amount = discount_amount
+            else:
+                # If amount is provided directly (legacy)
+                order.discount_percentage = Decimal("0")
+                order.discount_amount = discount_amount
+            
             order.recalculate_totals()
+            
+            # Sync discount as expense item
+            sync_discount_expense(order, order_type, discount_amount)
         else:
             order = get_object_or_404(Order, id=order_id)
+            
+            # For catalog orders, calculate from total
+            if discount_percentage > 0:
+                total = order.total or Decimal("0")
+                discount_amount = (total * discount_percentage / Decimal("100")).quantize(Decimal("0.01"))
+            
             order.discount_amount = discount_amount
             order.save(update_fields=["discount_amount"])
+            
+            # Sync discount as expense item
+            sync_discount_expense(order, order_type, discount_amount)
 
         return JsonResponse(
             {
                 "ok": True,
+                "discount_percentage": str(discount_percentage),
                 "discount_amount": str(discount_amount),
                 "total_estimated": str(order.total_estimated) if order_type == "internal" else str(order.total),
             }
         )
     except Exception as exc:  # pragma: no cover - guarded API error
+        logger.exception("Error updating discount")
         return JsonResponse({"ok": False, "error": str(exc)}, status=400)
 
 
