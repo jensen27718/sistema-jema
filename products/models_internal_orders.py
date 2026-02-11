@@ -111,8 +111,7 @@ class InternalOrder(models.Model):
         self.total_items = aggregates['total_qty'] or 0
         total_price = aggregates['total_price'] or 0
         
-        # El total estimado es: Ingresos - Descuento - Gastos
-        self.total_estimated = total_price - (self.discount_amount or 0) - Decimal(str(expenses_total))
+        self.total_estimated = total_price - (self.discount_amount or 0)
         self.save(update_fields=['total_items', 'total_estimated'])
 
 

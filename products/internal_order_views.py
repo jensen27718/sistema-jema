@@ -190,6 +190,7 @@ def internal_order_detail_view(request, order_id):
     total_production_cost = sum(b.total for b in cost_breakdowns)
     shipping = order.shipping_cost or Decimal('0')
     grand_total_cost = total_production_cost + shipping
+    # El margen es lo que queda después de gastos y envío
     margin = (order.total_estimated or Decimal('0')) - grand_total_cost
 
     # Estado financiero (Job Costing)

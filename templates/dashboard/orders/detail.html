@@ -56,7 +56,6 @@
                     <thead class="bg-light">
                         <tr>
                             <th>Tipo</th>
-                            <th>Descripcion</th>
                             <th>Estado Contable</th>
                             <th class="text-end">Total</th>
                             <th class="text-end">Acciones</th>
@@ -67,19 +66,13 @@
                         <tr data-breakdown-id="{{ breakdown.id }}">
                             <td>{{ breakdown.cost_type.name }}</td>
                             <td>
-                                <div class="fw-medium">{{ breakdown.description }}</div>
-                                {% if breakdown.notes %}
-                                <small class="text-muted">{{ breakdown.notes }}</small>
-                                {% endif %}
-                            </td>
-                            <td>
                                 {% if breakdown.accounting_status == 'posted' %}
                                 <span class="badge bg-success">Registrado</span>
                                 {% else %}
                                 <span class="badge bg-warning text-dark">Pendiente</span>
                                 {% endif %}
-                                {% if breakdown.accounting_category %}
-                                <div><small class="text-muted">{{ breakdown.accounting_category.name }}</small></div>
+                                {% if breakdown.notes %}
+                                <div class="mt-1"><small class="text-muted">{{ breakdown.notes }}</small></div>
                                 {% endif %}
                             </td>
                             <td class="text-end fw-bold">${{ breakdown.total|floatformat:0 }}</td>
@@ -105,7 +98,7 @@
                         </tr>
                         {% empty %}
                         <tr id="noCostsRow">
-                            <td colspan="5" class="text-center text-muted py-2">
+                            <td colspan="4" class="text-center text-muted py-2">
                                 Sin gastos registrados
                             </td>
                         </tr>
@@ -251,27 +244,23 @@
             <div class="modal-body">
                 <input type="hidden" id="costBreakdownId">
                 <div class="mb-3">
-                    <label class="form-label">Tipo de gasto</label>
-                    <select id="costTypeInput" class="form-select">
+                    <label class="form-label">Tipo de Gasto</label>
+                    <select id="costTypeInput" class="form-select" onchange="onCostTypeChange()">
                         {% for ct in cost_types %}
                         <option value="{{ ct.id }}" data-default-category="{{ ct.accounting_category_id|default:'' }}">{{ ct.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Descripcion</label>
-                    <input type="text" class="form-control" id="costDescriptionInput" placeholder="Ej: Descartonado frente">
-                </div>
                 <div class="row g-2 mb-3">
                     <div class="col-6">
                         <label class="form-label">Cantidad <span id="costUnitLabel" class="text-muted small"></span></label>
-                        <input type="number" step="any" min="0" class="form-control" id="costQuantityInput">
+                        <input type="number" step="any" min="0" class="form-control" id="costQuantityInput" oninput="calculateCostTotal()">
                     </div>
                     <div class="col-6">
                         <label class="form-label">Precio Unitario</label>
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" step="any" min="0" class="form-control" id="costUnitPriceInput">
+                            <input type="number" step="any" min="0" class="form-control" id="costUnitPriceInput" oninput="calculateCostTotal()">
                         </div>
                     </div>
                 </div>
@@ -410,7 +399,7 @@ function renderCosts(breakdowns) {
     if (!breakdowns || breakdowns.length === 0) {
         tbody.innerHTML = `
             <tr id="noCostsRow">
-                <td colspan="5" class="text-center text-muted py-2">Sin gastos registrados</td>
+                <td colspan="4" class="text-center text-muted py-2">Sin gastos registrados</td>
             </tr>
         `;
         return;
@@ -419,10 +408,10 @@ function renderCosts(breakdowns) {
     tbody.innerHTML = '';
     breakdowns.forEach((b) => {
         costsCache[b.id] = b;
+        const notesHtml = b.notes ? `<div class="mt-1"><small class="text-muted">${escapeHtml(b.notes)}</small></div>` : '';
         const statusBadge = b.accounting_status === 'posted'
             ? '<span class="badge bg-success">Registrado</span>'
             : '<span class="badge bg-warning text-dark">Pendiente</span>';
-        const categoryText = b.accounting_category_name ? `<div><small class="text-muted">${escapeHtml(b.accounting_category_name)}</small></div>` : '';
 
         let actions = '';
         if (b.accounting_status === 'posted') {
@@ -437,15 +426,10 @@ function renderCosts(breakdowns) {
             `;
         }
 
-        const notes = b.notes ? `<small class="text-muted">${escapeHtml(b.notes)}</small>` : '';
         tbody.innerHTML += `
             <tr data-breakdown-id="${b.id}">
                 <td>${escapeHtml(b.cost_type_name)}</td>
-                <td>
-                    <div class="fw-medium">${escapeHtml(b.description)}</div>
-                    ${notes}
-                </td>
-                <td>${statusBadge}${categoryText}</td>
+                <td>${statusBadge}${notesHtml}</td>
                 <td class="text-end fw-bold">${currency(b.total)}</td>
                 <td class="text-end">${actions}</td>
             </tr>
@@ -474,23 +458,21 @@ function fetchCosts() {
 function openCostModal(breakdownId = null) {
     document.getElementById('costBreakdownId').value = breakdownId || '';
     const costTypeInput = document.getElementById('costTypeInput');
-    const descriptionInput = document.getElementById('costDescriptionInput');
     const totalInput = document.getElementById('costTotalInput');
     const notesInput = document.getElementById('costNotesInput');
     const accountingCategoryInput = document.getElementById('costAccountingCategoryInput');
 
     if (!breakdownId) {
         document.getElementById('costModalTitle').textContent = 'Agregar gasto';
-        if (costTypeInput.options.length > 0) {
-            costTypeInput.selectedIndex = 0;
+        if (document.getElementById('costTypeInput').options.length > 0) {
+            document.getElementById('costTypeInput').selectedIndex = 0;
             document.getElementById('costQuantityInput').value = 1;
             onCostTypeChange();
         } else {
-            document.getElementById('costDescriptionInput').value = '';
             document.getElementById('costQuantityInput').value = '';
             document.getElementById('costUnitPriceInput').value = '';
-            accountingCategoryInput.value = '';
-            totalInput.value = '';
+            document.getElementById('costAccountingCategoryInput').value = '';
+            document.getElementById('costTotalInput').value = '';
         }
         notesInput.value = '';
     } else {
@@ -500,11 +482,10 @@ function openCostModal(breakdownId = null) {
             return;
         }
         document.getElementById('costModalTitle').textContent = 'Editar gasto';
-        costTypeInput.value = breakdown.cost_type_id;
-        descriptionInput.value = breakdown.description;
+        document.getElementById('costTypeInput').value = breakdown.cost_type_id;
         document.getElementById('costQuantityInput').value = parseFloat(breakdown.quantity || 1);
         document.getElementById('costUnitPriceInput').value = parseFloat(breakdown.unit_price || 0);
-        totalInput.value = parseFloat(breakdown.total || 0);
+        document.getElementById('costTotalInput').value = parseFloat(breakdown.total || 0);
         notesInput.value = breakdown.notes || '';
         accountingCategoryInput.value = breakdown.accounting_category_id || '';
         
@@ -523,7 +504,6 @@ function calculateCostTotal() {
 
 function onCostTypeChange() {
     const costTypeInput = document.getElementById('costTypeInput');
-    const descriptionInput = document.getElementById('costDescriptionInput');
     const accountingCategoryInput = document.getElementById('costAccountingCategoryInput');
     const qtyInput = document.getElementById('costQuantityInput');
     const priceInput = document.getElementById('costUnitPriceInput');
@@ -531,10 +511,7 @@ function onCostTypeChange() {
     const selected = costTypeInput.value;
     const isNew = !document.getElementById('costBreakdownId').value;
 
-    if (isNew && !descriptionInput.value.trim()) {
-        descriptionInput.value = costTypeDefaults[selected]?.name || '';
-    }
-    if (!accountingCategoryInput.value) {
+    if (isNew) {
         accountingCategoryInput.value = costTypeDefaults[selected]?.defaultCategory || '';
     }
     
@@ -555,7 +532,7 @@ function saveCost() {
         order_type: 'catalog',
         order_id: orderId,
         cost_type_id: document.getElementById('costTypeInput').value,
-        description: document.getElementById('costDescriptionInput').value,
+        description: costTypeDefaults[document.getElementById('costTypeInput').value]?.name || 'Gasto',
         calculated_quantity: document.getElementById('costQuantityInput').value || 1,
         unit_price: document.getElementById('costUnitPriceInput').value || 0,
         total: document.getElementById('costTotalInput').value || 0,

@@ -149,7 +149,6 @@
                     <thead class="bg-light">
                         <tr>
                             <th>Tipo</th>
-                            <th>Descripcion</th>
                             <th>Estado Contable</th>
                             <th class="text-end">Total</th>
                             <th class="text-end">Acciones</th>
@@ -160,17 +159,13 @@
                         <tr data-breakdown-id="{{ breakdown.id }}">
                             <td>{{ breakdown.cost_type.name }}</td>
                             <td>
-                                <div class="fw-medium">{{ breakdown.description }}</div>
-                                {% if breakdown.notes %}<small class="text-muted">{{ breakdown.notes }}</small>{% endif %}
-                            </td>
-                            <td>
                                 {% if breakdown.accounting_status == 'posted' %}
                                 <span class="badge bg-success">Registrado</span>
                                 {% else %}
                                 <span class="badge bg-warning text-dark">Pendiente</span>
                                 {% endif %}
-                                {% if breakdown.accounting_category %}
-                                <div><small class="text-muted">{{ breakdown.accounting_category.name }}</small></div>
+                                {% if breakdown.notes %}
+                                <div class="mt-1"><small class="text-muted">{{ breakdown.notes }}</small></div>
                                 {% endif %}
                             </td>
                             <td class="text-end fw-bold">${{ breakdown.total|floatformat:0 }}</td>
@@ -189,7 +184,7 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr id="noCostsRow"><td colspan="5" class="text-center text-muted py-3">No hay gastos registrados.</td></tr>
+                        <tr id="noCostsRow"><td colspan="4" class="text-center text-muted py-3">No hay gastos registrados.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -261,24 +256,23 @@
             <div class="modal-body">
                 <input type="hidden" id="costBreakdownId">
                 <div class="mb-3">
-                    <label class="form-label">Tipo de gasto</label>
-                    <select id="costTypeInput" class="form-select">
+                    <label class="form-label">Tipo de Gasto</label>
+                    <select id="costTypeInput" class="form-select" onchange="onCostTypeChange()">
                         {% for ct in cost_types %}
                         <option value="{{ ct.id }}">{{ ct.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" id="costDescriptionInput"></div>
                 <div class="row g-2 mb-3">
                     <div class="col-6">
                         <label class="form-label">Cantidad <span id="costUnitLabel" class="text-muted small"></span></label>
-                        <input type="number" step="any" min="0" class="form-control" id="costQuantityInput">
+                        <input type="number" step="any" min="0" class="form-control" id="costQuantityInput" oninput="calculateCostTotal()">
                     </div>
                     <div class="col-6">
                         <label class="form-label">Precio Unitario</label>
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" step="any" min="0" class="form-control" id="costUnitPriceInput">
+                            <input type="number" step="any" min="0" class="form-control" id="costUnitPriceInput" oninput="calculateCostTotal()">
                         </div>
                     </div>
                 </div>
@@ -413,7 +407,7 @@ function renderCosts(breakdowns) {
     const tbody = document.getElementById('costsBody');
     costsCache = {};
     if (!breakdowns || breakdowns.length === 0) {
-        tbody.innerHTML = '<tr id="noCostsRow"><td colspan="5" class="text-center text-muted py-3">No hay gastos registrados.</td></tr>';
+        tbody.innerHTML = '<tr id="noCostsRow"><td colspan="4" class="text-center text-muted py-3">No hay gastos registrados.</td></tr>';
         return;
     }
     tbody.innerHTML = '';
@@ -422,7 +416,7 @@ function renderCosts(breakdowns) {
         const status = b.accounting_status === 'posted'
             ? '<span class="badge bg-success">Registrado</span>'
             : '<span class="badge bg-warning text-dark">Pendiente</span>';
-        const category = b.accounting_category_name ? `<div><small class="text-muted">${escapeHtml(b.accounting_category_name)}</small></div>` : '';
+        const notes = b.notes ? `<div class="mt-1"><small class="text-muted">${escapeHtml(b.notes)}</small></div>` : '';
         let actions = '';
         if (b.accounting_status === 'posted') {
             if (b.accounting_transaction_id) {
@@ -433,8 +427,7 @@ function renderCosts(breakdowns) {
                        <button class="btn btn-sm btn-outline-primary" onclick="openPostModal(${b.id})"><i class="bi bi-cash-coin"></i></button>
                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCost(${b.id})"><i class="bi bi-trash"></i></button>`;
         }
-        const notes = b.notes ? `<small class="text-muted">${escapeHtml(b.notes)}</small>` : '';
-        tbody.innerHTML += `<tr data-breakdown-id="${b.id}"><td>${escapeHtml(b.cost_type_name)}</td><td><div class="fw-medium">${escapeHtml(b.description)}</div>${notes}</td><td>${status}${category}</td><td class="text-end fw-bold">${currency(b.total)}</td><td class="text-end">${actions}</td></tr>`;
+        tbody.innerHTML += `<tr data-breakdown-id="${b.id}"><td>${escapeHtml(b.cost_type_name)}</td><td>${status}${notes}</td><td class="text-end fw-bold">${currency(b.total)}</td><td class="text-end">${actions}</td></tr>`;
     });
 }
 
@@ -456,11 +449,9 @@ function openCostModal(breakdownId = null) {
         document.getElementById('costModalTitle').textContent = 'Agregar gasto';
         if (document.getElementById('costTypeInput').options.length > 0) {
             document.getElementById('costTypeInput').selectedIndex = 0;
-            document.getElementById('costDescriptionInput').value = '';
             document.getElementById('costQuantityInput').value = 1;
             onCostTypeChange();
         } else {
-            document.getElementById('costDescriptionInput').value = '';
             document.getElementById('costQuantityInput').value = '';
             document.getElementById('costUnitPriceInput').value = '';
             document.getElementById('costAccountingCategoryInput').value = '';
@@ -472,7 +463,6 @@ function openCostModal(breakdownId = null) {
         if (!b) return;
         document.getElementById('costModalTitle').textContent = 'Editar gasto';
         document.getElementById('costTypeInput').value = b.cost_type_id;
-        document.getElementById('costDescriptionInput').value = b.description;
         document.getElementById('costQuantityInput').value = parseFloat(b.quantity || 1);
         document.getElementById('costUnitPriceInput').value = parseFloat(b.unit_price || 0);
         document.getElementById('costTotalInput').value = parseFloat(b.total || 0);
@@ -493,7 +483,6 @@ function calculateCostTotal() {
 
 function onCostTypeChange() {
     const costTypeInput = document.getElementById('costTypeInput');
-    const descriptionInput = document.getElementById('costDescriptionInput');
     const accountingCategoryInput = document.getElementById('costAccountingCategoryInput');
     const qtyInput = document.getElementById('costQuantityInput');
     const priceInput = document.getElementById('costUnitPriceInput');
@@ -501,10 +490,7 @@ function onCostTypeChange() {
     const selected = costTypeInput.value;
     const isNew = !document.getElementById('costBreakdownId').value;
 
-    if (isNew && !descriptionInput.value.trim()) {
-        descriptionInput.value = costTypeDefaults[selected]?.name || '';
-    }
-    if (!accountingCategoryInput.value) {
+    if (isNew) {
         accountingCategoryInput.value = costTypeDefaults[selected]?.defaultCategory || '';
     }
     
@@ -525,7 +511,7 @@ function saveCost() {
         order_type: 'internal',
         order_id: orderId,
         cost_type_id: document.getElementById('costTypeInput').value,
-        description: document.getElementById('costDescriptionInput').value,
+        description: costTypeDefaults[document.getElementById('costTypeInput').value]?.name || 'Gasto',
         calculated_quantity: document.getElementById('costQuantityInput').value || 1,
         unit_price: document.getElementById('costUnitPriceInput').value || 0,
         total: document.getElementById('costTotalInput').value || 0,
