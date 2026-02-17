@@ -10,7 +10,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
-from django.db.models import F, Max, Q, Sum
+from django.db.models import Count, F, Max, Q, Sum
 from django.views.decorators.http import require_POST, require_GET
 from django.core.paginator import Paginator
 
@@ -30,13 +30,43 @@ def _latest_active_product_ids(product_type=None):
     Retorna IDs de productos activos manteniendo solo el registro mas reciente
     por combinacion (name, product_type). Evita mostrar duplicados antiguos.
     """
-    products = Product.objects.filter(is_active=True)
+    # Solo productos que realmente tengan variantes disponibles.
+    products = Product.objects.filter(is_active=True, variants__isnull=False).distinct()
     if product_type:
         products = products.filter(product_type=product_type)
 
     return products.values('name', 'product_type').annotate(
         latest_id=Max('id')
     ).values_list('latest_id', flat=True)
+
+
+def _ensure_variants_for_product_type(product_type):
+    """
+    Auto-repair para imports de BD:
+    si un tipo de producto activo no tiene variantes, intenta generarlas.
+    """
+    if not product_type:
+        return 0
+
+    has_any_variant = ProductVariant.objects.filter(
+        product__is_active=True,
+        product__product_type=product_type,
+    ).exists()
+    if has_any_variant:
+        return 0
+
+    from products.services import sincronizar_variantes_producto
+
+    created_total = 0
+    products_without_variants = Product.objects.filter(
+        is_active=True,
+        product_type=product_type,
+    ).annotate(vcount=Count('variants')).filter(vcount=0)
+
+    for product in products_without_variants.iterator():
+        created_total += sincronizar_variantes_producto(product) or 0
+
+    return created_total
 
 
 # ============================================================
@@ -350,6 +380,7 @@ def api_get_available_filters(request):
         return JsonResponse({'status': 'error', 'message': 'JSON inválido'}, status=400)
 
     product_type = data.get('product_type', '')
+    _ensure_variants_for_product_type(product_type)
 
     # 1. Base: solo variantes de productos activos y no duplicados por nombre/tipo
     latest_product_ids = _latest_active_product_ids(product_type if product_type else None)
@@ -406,6 +437,7 @@ def api_filter_variants(request):
         return JsonResponse({'status': 'error', 'message': 'JSON inválido'}, status=400)
 
     product_type = data.get('product_type')
+    _ensure_variants_for_product_type(product_type)
     latest_product_ids = _latest_active_product_ids(product_type if product_type else None)
 
     # 1. Base: Solo productos activos no duplicados (evita productos viejos repetidos)
@@ -697,6 +729,7 @@ def api_internal_order_auto_select(request):
     order = get_object_or_404(InternalOrder, id=order_id)
 
     product_type = data.get('product_type')
+    _ensure_variants_for_product_type(product_type)
     latest_product_ids = _latest_active_product_ids(product_type if product_type else None)
 
     # Construir query con filtros

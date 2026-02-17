@@ -6,6 +6,7 @@ from django.urls import reverse
 
 from contabilidad.models import Account, Transaction, TransactionCategory
 from contabilidad.models_job_costing import FinancialStatus
+from products.models import Color, Product, ProductVariant, Size
 from products.models_costs import CostType, OrderCostBreakdown
 from products.models_internal_orders import InternalOrder
 
@@ -141,3 +142,26 @@ class ManualOrderCostsApiTests(TestCase):
 
         self.assertEqual(fs.state, "cobrado")
         self.assertEqual(self.order.status, "completed")
+
+
+class ProductSignalsTests(TestCase):
+    def test_new_cinta_product_creates_variants(self):
+        Size.objects.create(name="Grande", dimensions="19x25cm")
+        Color.objects.create(name="Azul", hex_code="#0000FF")
+
+        product = Product.objects.create(name="Cinta prueba", product_type="cinta", is_active=True)
+
+        self.assertTrue(ProductVariant.objects.filter(product=product).exists())
+
+    def test_new_color_syncs_to_active_cinta_products(self):
+        Size.objects.create(name="Mediano", dimensions="19x15cm")
+        product = Product.objects.create(name="Cinta color test", product_type="cinta", is_active=True)
+
+        # El producto puede iniciar sin variantes si no habia colores de venta al crearlo.
+        self.assertEqual(ProductVariant.objects.filter(product=product).count(), 0)
+
+        new_color = Color.objects.create(name="Fucsia Test", hex_code="#FF00AA")
+
+        self.assertTrue(
+            ProductVariant.objects.filter(product=product, color=new_color).exists()
+        )
