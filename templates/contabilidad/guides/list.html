@@ -245,7 +245,7 @@
                 </td>
                 <td data-label="Remitente">{{ guide.sender_name }} {{ guide.sender_lastname }}</td>
                 <td data-label="Destinatario">{{ guide.recipient_name }} {{ guide.recipient_lastname }}</td>
-                <td data-label="Ciudad Destino">{{ guide.recipient_city }} ({{ guide.recipient_department }})</td>
+                <td data-label="Ciudad Destino">{{ guide.recipient_city }}{% if guide.recipient_department %} ({{ guide.recipient_department }}){% endif %}</td>
                 <td data-label="Fecha">{{ guide.created_at|date:"d/m/Y" }}</td>
                 <td data-label="Acciones" class="text-end">
                     <div class="d-flex gap-2 justify-content-end">

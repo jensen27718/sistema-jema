@@ -1025,28 +1025,55 @@ def guide_create_view(request):
 
     if request.method == 'POST':
         try:
-            guide = ShippingGuide(
-                number=ShippingGuide.get_next_number(),
-                sender_name=request.POST.get('sender_name', ''),
-                sender_lastname=request.POST.get('sender_lastname', ''),
-                sender_cedula=request.POST.get('sender_cedula', ''),
-                sender_phone=request.POST.get('sender_phone', ''),
-                sender_department=request.POST.get('sender_department', ''),
-                sender_city=request.POST.get('sender_city', ''),
-                sender_address=request.POST.get('sender_address', ''),
-                recipient_name=request.POST.get('recipient_name', ''),
-                recipient_lastname=request.POST.get('recipient_lastname', ''),
-                recipient_cedula=request.POST.get('recipient_cedula', ''),
-                recipient_phone=request.POST.get('recipient_phone', ''),
-                recipient_department=request.POST.get('recipient_department', ''),
-                recipient_city=request.POST.get('recipient_city', ''),
-                recipient_address=request.POST.get('recipient_address', ''),
-                observation=request.POST.get('observation', ''),
-            )
-
+            client = None
             client_id = request.POST.get('client_id')
             if client_id:
-                guide.client = User.objects.filter(id=client_id).first()
+                client = User.objects.filter(id=client_id).first()
+
+            recipient_address = request.POST.get('recipient_address', '').strip()
+            if not recipient_address and client:
+                recipient_address = (client.address or '').strip()
+
+            guide = ShippingGuide(
+                number=ShippingGuide.get_next_number(),
+                sender_name=request.POST.get('sender_name', '').strip(),
+                sender_lastname=request.POST.get('sender_lastname', '').strip(),
+                sender_cedula=request.POST.get('sender_cedula', '').strip(),
+                sender_phone=request.POST.get('sender_phone', '').strip(),
+                sender_department=request.POST.get('sender_department', '').strip(),
+                sender_city=request.POST.get('sender_city', '').strip(),
+                sender_address=request.POST.get('sender_address', '').strip(),
+                recipient_name=request.POST.get('recipient_name', '').strip(),
+                recipient_lastname=request.POST.get('recipient_lastname', '').strip(),
+                recipient_cedula=request.POST.get('recipient_cedula', '').strip(),
+                recipient_phone=request.POST.get('recipient_phone', '').strip(),
+                recipient_department=request.POST.get('recipient_department', '').strip(),
+                recipient_city=request.POST.get('recipient_city', '').strip(),
+                recipient_address=recipient_address,
+                observation=request.POST.get('observation', '').strip(),
+            )
+
+            if client:
+                guide.client = client
+                updated_fields = []
+
+                if guide.recipient_name and client.first_name != guide.recipient_name:
+                    client.first_name = guide.recipient_name
+                    updated_fields.append('first_name')
+                if guide.recipient_lastname and client.last_name != guide.recipient_lastname:
+                    client.last_name = guide.recipient_lastname
+                    updated_fields.append('last_name')
+                if guide.recipient_cedula and client.cedula != guide.recipient_cedula:
+                    client.cedula = guide.recipient_cedula
+                    updated_fields.append('cedula')
+                if guide.recipient_phone and client.phone_number != guide.recipient_phone:
+                    client.phone_number = guide.recipient_phone
+                    updated_fields.append('phone_number')
+                if recipient_address and client.address != recipient_address:
+                    client.address = recipient_address
+                    updated_fields.append('address')
+                if updated_fields:
+                    client.save(update_fields=updated_fields)
 
             try:
                 guide.collection_value = Decimal(request.POST.get('collection_value') or '0')

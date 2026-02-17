@@ -72,6 +72,29 @@
         </div>
     </div>
 
+    <div class="col-12">
+        <div class="jema-card p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h6 class="text-muted fw-bold small text-uppercase mb-0">Pipeline Financiero</h6>
+                <span class="badge bg-light text-dark">Pedidos abiertos: {{ pipeline_open_count }}</span>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                {% for item in state_summary %}
+                <span class="badge
+                    {% if item.code == 'creado' %}bg-secondary
+                    {% elif item.code == 'material_comprado' %}bg-info
+                    {% elif item.code == 'en_produccion' %}bg-warning text-dark
+                    {% elif item.code == 'entregado' %}bg-primary
+                    {% elif item.code == 'cobrado' %}bg-success
+                    {% elif item.code == 'cancelado' %}bg-danger
+                    {% else %}bg-secondary{% endif %}">
+                    {{ item.label }}: {{ item.count }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
     <!-- Tabla: Pedidos cobrados de la semana -->
     <div class="col-lg-8">
         <div class="jema-card p-4">

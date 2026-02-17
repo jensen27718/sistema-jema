@@ -34,10 +34,27 @@ def job_costing_dashboard_view(request):
     closed_weeks = FinancialWeek.objects.filter(status='closed').order_by('-year', '-week_number')[:5]
 
     # Ahorro acumulado
-    from django.db.models import Sum
+    from django.db.models import Count, Sum
     total_savings = FinancialWeek.objects.filter(status='closed').aggregate(
         total=Sum('savings_amount')
     )['total'] or Decimal('0')
+
+    state_rows = FinancialStatus.objects.values('state').annotate(total=Count('id'))
+    raw_counts = {row['state']: row['total'] for row in state_rows}
+    state_summary = []
+    for code, label in FinancialStatus.STATE_CHOICES:
+        if code == 'enviado':
+            continue
+        state_summary.append({
+            'code': code,
+            'label': label,
+            'count': raw_counts.get(code, 0),
+        })
+
+    pipeline_open_count = sum(
+        item['count'] for item in state_summary
+        if item['code'] not in ('cobrado', 'cancelado')
+    )
 
     # Socios activos
     partners = Partner.objects.filter(is_active=True)
@@ -48,6 +65,8 @@ def job_costing_dashboard_view(request):
         'closed_weeks': closed_weeks,
         'total_savings': total_savings,
         'partners': partners,
+        'state_summary': state_summary,
+        'pipeline_open_count': pipeline_open_count,
     }
     return render(request, 'contabilidad/job_costing/dashboard.html', context)
 
@@ -261,6 +280,7 @@ def api_transition_financial_state(request):
         'ok': success,
         'message': msg,
         'new_state': fs.state,
+        'new_state_display': fs.get_state_display(),
         'badge_class': fs.get_state_badge_class(),
     })
 

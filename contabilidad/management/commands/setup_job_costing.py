@@ -17,6 +17,10 @@ class Command(BaseCommand):
         from contabilidad.models_job_costing import (
             JobCostingConfig, Partner, FinancialStatus
         )
+        from contabilidad.job_costing_services import (
+            ensure_financial_status,
+            sync_internal_order_financial_status,
+        )
         from products.models import Order
         from products.models_internal_orders import InternalOrder
 
@@ -77,35 +81,17 @@ class Command(BaseCommand):
         # 5. Retroactivar FinancialStatus para pedidos existentes
         created_orders = 0
         for order in Order.objects.all():
-            _, created = FinancialStatus.objects.get_or_create(
-                order=order,
-                defaults={
-                    'sale_amount': order.total or 0,
-                    'state': 'cobrado' if order.is_paid else 'creado',
-                }
-            )
-            if created:
+            existed = FinancialStatus.objects.filter(order=order).exists()
+            ensure_financial_status(order=order)
+            if not existed:
                 created_orders += 1
         self.stdout.write(f'  FinancialStatus creados para {created_orders} pedidos de catalogo')
 
         created_internal = 0
         for io in InternalOrder.objects.all():
-            state = 'creado'
-            if io.status == 'completed':
-                state = 'cobrado'
-            elif io.status == 'cancelled':
-                state = 'cancelado'
-            elif io.status in ('confirmed', 'in_production'):
-                state = 'enviado'
-
-            _, created = FinancialStatus.objects.get_or_create(
-                internal_order=io,
-                defaults={
-                    'sale_amount': io.total_estimated or 0,
-                    'state': state,
-                }
-            )
-            if created:
+            existed = FinancialStatus.objects.filter(internal_order=io).exists()
+            sync_internal_order_financial_status(io, allow_downgrade=True)
+            if not existed:
                 created_internal += 1
         self.stdout.write(f'  FinancialStatus creados para {created_internal} pedidos internos')
 

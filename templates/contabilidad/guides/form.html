@@ -30,17 +30,18 @@
         border: 2px solid #f0f0f0; padding: 1.5rem;
     }
     .section-title {
-        font-weight: 700; font-size: 1rem;
+        font-weight: 700; font-size: 1.1rem;
         color: var(--jema-purple); margin-bottom: 1rem;
         display: flex; align-items: center; gap: 0.5rem;
     }
     .form-label-sm {
-        font-size: 0.8rem; font-weight: 600; color: #666;
+        font-size: 0.95rem; font-weight: 600; color: #555;
         margin-bottom: 0.25rem;
     }
     .form-control, .form-select {
         border: 2px solid #eee; border-radius: 10px;
-        padding: 0.6rem 0.75rem; transition: all 0.2s;
+        padding: 0.65rem 0.8rem; transition: all 0.2s;
+        font-size: 1rem;
     }
     .form-control:focus, .form-select:focus {
         border-color: var(--jema-purple);
@@ -79,6 +80,11 @@
         background: rgba(26,154,154,0.1); color: #1A9A9A;
         padding: 4px 10px; border-radius: 8px; font-size: 0.8rem;
         font-weight: 600;
+    }
+    #obsText {
+        min-height: 120px;
+        font-size: 1.05rem;
+        line-height: 1.5;
     }
 </style>
 {% endblock %}
@@ -166,6 +172,10 @@
                         <input type="text" name="recipient_city" id="r_city" class="form-control" required placeholder="Ej: Medellín">
                     </div>
                     <div class="col-6">
+                        <label class="form-label-sm">Departamento</label>
+                        <input type="text" name="recipient_department" id="r_department" class="form-control" placeholder="Ej: Antioquia">
+                    </div>
+                    <div class="col-6">
                         <label class="form-label-sm">Dirección</label>
                         <input type="text" name="recipient_address" id="r_address" class="form-control" required>
                     </div>
@@ -200,7 +210,7 @@
             </div>
             <div class="col-12">
                 <label class="form-label-sm">Observación</label>
-                <textarea name="observation" id="obsText" class="form-control" rows="2" placeholder="Escriba una observación..."></textarea>
+                <textarea name="observation" id="obsText" class="form-control" rows="4" placeholder="Escriba una observación..."></textarea>
                 <span id="obsSavedMsg" class="obs-saved-badge mt-1" style="display:none;">
                     <i class="bi bi-check-circle"></i> Guardada
                 </span>

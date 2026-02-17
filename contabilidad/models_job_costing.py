@@ -76,7 +76,10 @@ class FinancialStatus(models.Model):
     """Estado financiero de un pedido, separado del estado operativo"""
     STATE_CHOICES = [
         ('creado', 'Creado'),
-        ('enviado', 'Enviado'),
+        ('material_comprado', 'Material Comprado'),
+        ('en_produccion', 'En Produccion'),
+        ('entregado', 'Entregado'),
+        ('enviado', 'Enviado (Legacy)'),
         ('cobrado', 'Cobrado'),
         ('cancelado', 'Cancelado'),
     ]
@@ -132,6 +135,9 @@ class FinancialStatus(models.Model):
     def get_state_badge_class(self):
         return {
             'creado': 'bg-secondary',
+            'material_comprado': 'bg-info',
+            'en_produccion': 'bg-warning text-dark',
+            'entregado': 'bg-primary',
             'enviado': 'bg-primary',
             'cobrado': 'bg-success',
             'cancelado': 'bg-danger',

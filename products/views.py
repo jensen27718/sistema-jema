@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 # Importa TANTO Product COMO Category
 from .models import Product, Category, ProductVariant, Cart, CartItem, Size, Material, Color
 from .forms import ProductForm, CategoryForm
-from .services import generar_variantes_vinilo, generar_variantes_impresos # <--- Importamos la magia
+from .services import sincronizar_color_en_productos, sincronizar_variantes_producto
 from django.db.models import Min, Q
 import json  # <--- AGREGAR ESTA LÍNEA
 from django.http import JsonResponse
@@ -131,22 +131,15 @@ def product_create_view(request):
         if form.is_valid():
             product = form.save()
             
-            count = 0
-            # --- LÓGICA DE SELECCIÓN DE PRECIOS ---
             try:
-                if product.product_type == 'vinilo_corte':
-                    count = generar_variantes_vinilo(product)
-                
-                elif product.product_type == 'impreso_globo':
-                    count = generar_variantes_impresos(product) # <--- NUEVA LÍNEA
-                
+                count = sincronizar_variantes_producto(product)
                 if count > 0:
-                    messages.success(request, f"Producto creado. Se generaron {count} precios automáticamente.")
+                    messages.success(request, f"Producto creado. Se generaron {count} variantes automaticamente.")
                 else:
-                    messages.warning(request, "Producto creado, pero no se generaron precios (revisa los tamaños).")
+                    messages.warning(request, "Producto creado, pero no se generaron variantes (revisa tamanos/colores).")
 
             except Exception as e:
-                messages.warning(request, f"Error generando precios: {e}")
+                messages.warning(request, f"Error generando variantes: {e}")
             
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'status': 'ok', 'redirect_url': reverse('panel_product_list')})
@@ -426,6 +419,7 @@ def panel_order_detail_view(request, order_id):
 
     # Estado financiero (Job Costing)
     from contabilidad.job_costing_services import ensure_financial_status
+    from contabilidad.models_job_costing import FinancialStatus
     financial_status = ensure_financial_status(order=order)
 
     return render(request, 'dashboard/orders/detail.html', {
@@ -439,6 +433,7 @@ def panel_order_detail_view(request, order_id):
         'grand_total_cost': grand_total_cost,
         'margin': margin,
         'financial_status': financial_status,
+        'financial_state_choices': FinancialStatus.STATE_CHOICES,
     })
 
 
@@ -909,8 +904,13 @@ def mass_edit_products_view(request):
 
                 elif action == 'change_type':
                     products.update(product_type=new_type)
-                    # Forzar regeneración de variantes si es necesario (opcional)
-                    messages.success(request, f'✓ Tipo de producto cambiado en {count} productos.')
+                    generated = 0
+                    for product in products:
+                        generated += sincronizar_variantes_producto(product)
+                    messages.success(
+                        request,
+                        f'Tipo de producto cambiado en {count} productos. Variantes nuevas creadas: {generated}.'
+                    )
 
                 elif action == 'change_description':
                     products.update(description=new_desc)
@@ -1114,8 +1114,9 @@ def color_create_update_view(request, color_id=None):
             instance.save()
             messages.success(request, 'Color actualizado.')
         else:
-            Color.objects.create(name=name, hex_code=hex_code)
-            messages.success(request, 'Color creado.')
+            new_color = Color.objects.create(name=name, hex_code=hex_code)
+            synced = sincronizar_color_en_productos(new_color, only_active=True)
+            messages.success(request, f'Color creado. Variantes antiguas actualizadas: {synced}.')
         return redirect('product_types_dashboard')
     return render(request, 'dashboard/products/color_form.html', {
         'object': instance,

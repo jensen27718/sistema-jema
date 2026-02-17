@@ -106,6 +106,7 @@ urlpatterns = [
     path('api/internal-orders/clear/', views_internal_orders.api_internal_order_clear, name='api_clear_order'),
     path('api/internal-orders/update-info/', views_internal_orders.api_internal_order_update_info, name='api_update_order_info'),
     path('api/internal-orders/update-task/', views_internal_orders.api_internal_order_update_task, name='api_update_task'),
+    path('api/internal-orders/update-status/', views_internal_orders.api_internal_order_update_status, name='api_internal_order_update_status'),
 
     # === CRUD TAMAÑOS, MATERIALES, COLORES ===
     path('panel/tipos-producto/', views_products.product_types_dashboard_view, name='product_types_dashboard'),

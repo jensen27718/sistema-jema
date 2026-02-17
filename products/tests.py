@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from contabilidad.models import Account, Transaction, TransactionCategory
+from contabilidad.models_job_costing import FinancialStatus
 from products.models_costs import CostType, OrderCostBreakdown
 from products.models_internal_orders import InternalOrder
 
@@ -100,3 +101,43 @@ class ManualOrderCostsApiTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(edit_response.status_code, 400)
+
+    def test_internal_order_status_api_updates_financial_status(self):
+        response = self.client.post(
+            reverse("api_internal_order_update_status"),
+            data={
+                "order_id": self.order.id,
+                "status": "material_purchased",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["status"], "ok")
+
+        self.order.refresh_from_db()
+        fs = FinancialStatus.objects.get(internal_order=self.order)
+
+        self.assertEqual(self.order.status, "material_purchased")
+        self.assertEqual(fs.state, "material_comprado")
+
+    def test_transition_financial_state_to_cobrado_syncs_internal_order_completed(self):
+        fs = FinancialStatus.objects.get(internal_order=self.order)
+
+        response = self.client.post(
+            reverse("api_jc_transition"),
+            data={
+                "financial_status_id": fs.id,
+                "new_state": "cobrado",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+
+        fs.refresh_from_db()
+        self.order.refresh_from_db()
+
+        self.assertEqual(fs.state, "cobrado")
+        self.assertEqual(self.order.status, "completed")

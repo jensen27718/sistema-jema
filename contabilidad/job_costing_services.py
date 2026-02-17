@@ -8,6 +8,130 @@ from django.db import transaction as db_transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+AUTO_SYNC_INTERNAL_STATES = {
+    'creado',
+    'material_comprado',
+    'en_produccion',
+    'entregado',
+    'enviado',  # compatibilidad con registros legacy
+}
+
+STATE_RANK = {
+    'creado': 0,
+    'material_comprado': 1,
+    'en_produccion': 2,
+    'entregado': 3,
+    'enviado': 3,
+    'cobrado': 4,
+    'cancelado': 5,
+}
+
+
+def infer_internal_order_financial_state(internal_order):
+    """
+    Determina el estado financiero sugerido para un pedido interno
+    usando estado operativo + evidencia de costos.
+    """
+    status = internal_order.status
+
+    if status == 'cancelled':
+        return 'cancelado'
+    if status in ('completed', 'delivered'):
+        return 'entregado'
+    if status == 'in_production':
+        return 'en_produccion'
+    if status == 'material_purchased':
+        return 'material_comprado'
+
+    # Si ya hay gastos cargados, al menos existe compra/preparacion de material.
+    if internal_order.cost_breakdowns.exists():
+        return 'material_comprado'
+
+    return 'creado'
+
+
+def _should_sync_internal_state(current_state, target_state, allow_downgrade=False):
+    if current_state == target_state:
+        return False
+
+    # Los terminales solo cambian si el pedido pasa a cancelado.
+    if current_state == 'cobrado':
+        return target_state == 'cancelado'
+    if current_state == 'cancelado':
+        return False
+
+    if allow_downgrade:
+        return True
+
+    return STATE_RANK.get(target_state, 0) >= STATE_RANK.get(current_state, 0)
+
+
+def _apply_state_timestamps(financial_status, new_state):
+    now = timezone.now()
+    update_fields = []
+
+    if new_state in ('entregado', 'enviado') and not financial_status.sent_at:
+        financial_status.sent_at = now
+        update_fields.append('sent_at')
+
+    if new_state == 'cobrado' and not financial_status.collected_at:
+        financial_status.collected_at = now
+        update_fields.append('collected_at')
+
+    if new_state == 'cancelado' and not financial_status.cancelled_at:
+        financial_status.cancelled_at = now
+        update_fields.append('cancelled_at')
+
+    return update_fields
+
+
+def _map_financial_to_internal_status(financial_state):
+    return {
+        'material_comprado': 'material_purchased',
+        'en_produccion': 'in_production',
+        'entregado': 'delivered',
+        'enviado': 'delivered',  # legacy
+        'cobrado': 'completed',
+        'cancelado': 'cancelled',
+    }.get(financial_state)
+
+
+def sync_internal_order_financial_status(internal_order, allow_downgrade=False):
+    """Sincroniza FinancialStatus de un pedido interno (estado + monto)."""
+    from contabilidad.models_job_costing import FinancialStatus
+
+    target_state = infer_internal_order_financial_state(internal_order)
+    target_sale_amount = internal_order.total_estimated or Decimal('0')
+
+    fs, created = FinancialStatus.objects.get_or_create(
+        internal_order=internal_order,
+        defaults={
+            'sale_amount': target_sale_amount,
+            'state': target_state,
+        }
+    )
+
+    update_fields = []
+
+    if fs.sale_amount != target_sale_amount:
+        fs.sale_amount = target_sale_amount
+        update_fields.append('sale_amount')
+
+    can_autosync = fs.state in AUTO_SYNC_INTERNAL_STATES or allow_downgrade
+    if can_autosync and _should_sync_internal_state(fs.state, target_state, allow_downgrade=allow_downgrade):
+        fs.state = target_state
+        update_fields.append('state')
+        update_fields.extend(_apply_state_timestamps(fs, target_state))
+
+    # Si se creo en un estado avanzado, completar timestamps base.
+    if created:
+        update_fields.extend(_apply_state_timestamps(fs, fs.state))
+
+    if update_fields:
+        fs.save(update_fields=list(dict.fromkeys(update_fields)))
+
+    return fs
+
 
 def get_or_create_current_week():
     """Retorna/crea la FinancialWeek del lunes actual"""
@@ -54,29 +178,31 @@ def ensure_financial_status(order=None, internal_order=None):
     from contabilidad.models_job_costing import FinancialStatus
 
     if order:
+        expected_sale = order.total or Decimal('0')
+        expected_state = 'cobrado' if order.is_paid else None
         fs, created = FinancialStatus.objects.get_or_create(
             order=order,
             defaults={
-                'sale_amount': order.total or 0,
-                'state': 'cobrado' if order.is_paid else 'creado',
+                'sale_amount': expected_sale,
+                'state': expected_state or 'creado',
             }
         )
-    elif internal_order:
-        state = 'creado'
-        if internal_order.status == 'completed':
-            state = 'cobrado'
-        elif internal_order.status == 'cancelled':
-            state = 'cancelado'
-        elif internal_order.status in ('confirmed', 'in_production'):
-            state = 'enviado'
 
-        fs, created = FinancialStatus.objects.get_or_create(
-            internal_order=internal_order,
-            defaults={
-                'sale_amount': internal_order.total_estimated or 0,
-                'state': state,
-            }
-        )
+        update_fields = []
+        if fs.sale_amount != expected_sale:
+            fs.sale_amount = expected_sale
+            update_fields.append('sale_amount')
+
+        # Solo forzamos cobrado si Order ya esta pagado.
+        if expected_state == 'cobrado' and fs.state not in ('cancelado', 'cobrado'):
+            fs.state = expected_state
+            update_fields.append('state')
+            update_fields.extend(_apply_state_timestamps(fs, expected_state))
+
+        if update_fields:
+            fs.save(update_fields=list(dict.fromkeys(update_fields)))
+    elif internal_order:
+        fs = sync_internal_order_financial_status(internal_order, allow_downgrade=False)
     else:
         raise ValueError("Debe proporcionar order o internal_order")
 
@@ -89,8 +215,11 @@ def transition_financial_state(financial_status, new_state, user=None):
     Retorna (success: bool, message: str)
     """
     VALID_TRANSITIONS = {
-        'creado': ['enviado', 'cancelado'],
-        'enviado': ['cobrado', 'cancelado'],
+        'creado': ['material_comprado', 'en_produccion', 'entregado', 'cobrado', 'cancelado'],
+        'material_comprado': ['en_produccion', 'entregado', 'cobrado', 'cancelado'],
+        'en_produccion': ['entregado', 'cobrado', 'cancelado'],
+        'entregado': ['cobrado', 'cancelado'],
+        'enviado': ['entregado', 'cobrado', 'cancelado'],
         'cobrado': ['cancelado'],
         'cancelado': [],
     }
@@ -104,7 +233,7 @@ def transition_financial_state(financial_status, new_state, user=None):
     now = timezone.now()
     financial_status.state = new_state
 
-    if new_state == 'enviado':
+    if new_state in ('enviado', 'entregado'):
         financial_status.sent_at = now
     elif new_state == 'cobrado':
         financial_status.collected_at = now
@@ -116,6 +245,14 @@ def transition_financial_state(financial_status, new_state, user=None):
         financial_status.cancelled_at = now
 
     financial_status.save()
+
+    # Mantener sincronia basica con estado operativo de pedidos internos.
+    if financial_status.internal_order:
+        target_internal_status = _map_financial_to_internal_status(new_state)
+        if target_internal_status and financial_status.internal_order.status != target_internal_status:
+            financial_status.internal_order.status = target_internal_status
+            financial_status.internal_order.save(update_fields=['status'])
+
     return True, f"Estado cambiado a '{new_state}'"
 
 

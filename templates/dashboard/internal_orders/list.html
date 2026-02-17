@@ -1,4 +1,4 @@
-{% extends 'base_admin.html' %}
+﻿{% extends 'base_admin.html' %}
 
 {% block title %}Pedidos Internos - JEMA{% endblock %}
 {% block page_title %}Pedidos Internos{% endblock %}
@@ -102,7 +102,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1"><i class="bi bi-box-seam text-jema-purple"></i> Pedidos Internos</h4>
-            <p class="text-muted mb-0">Gestiona los pedidos de producción interna</p>
+            <p class="text-muted mb-0">Gestiona los pedidos de producciÃ³n interna</p>
         </div>
         <a href="{% url 'internal_order_create' %}" class="btn btn-jema-primary">
             <i class="bi bi-plus-lg"></i> Nuevo Pedido
@@ -182,7 +182,8 @@
                         <tr>
                             <th style="width: 60px;">#</th>
                             <th>Nombre</th>
-                            <th style="width: 120px;">Estado</th>
+                            <th style="width: 240px;">Estado Operativo</th>
+                            <th style="width: 170px;">Estado Financiero</th>
                             <th style="width: 100px;">Items</th>
                             <th style="width: 130px;">Estimado</th>
                             <th style="width: 150px;">Creado</th>
@@ -202,8 +203,27 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="status-badge bg-{{ order.get_status_color }}">
-                                    {{ order.get_status_display }}
+                                <div class="d-flex flex-column gap-2">
+                                    <span id="orderStatusBadge-{{ order.id }}" class="status-badge bg-{{ order.get_status_color }}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                    <select class="form-select form-select-sm order-status-select"
+                                            data-order-id="{{ order.id }}"
+                                            data-previous-status="{{ order.status }}">
+                                        {% for code, name in status_choices %}
+                                        <option value="{{ code }}" {% if order.status == code %}selected{% endif %}>{{ name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </td>
+                            <td>
+                                <span id="orderFinancialBadge-{{ order.id }}"
+                                      class="badge {% if order.financial_status %}{{ order.financial_status.get_state_badge_class }}{% else %}bg-secondary{% endif %}">
+                                    {% if order.financial_status %}
+                                        {{ order.financial_status.get_state_display }}
+                                    {% else %}
+                                        Sin estado
+                                    {% endif %}
                                 </span>
                             </td>
                             <td>
@@ -286,7 +306,7 @@
             <div class="empty-state">
                 <i class="bi bi-box-seam"></i>
                 <h5>No hay pedidos internos</h5>
-                <p class="mb-3">Crea tu primer pedido para empezar a gestionar la producción</p>
+                <p class="mb-3">Crea tu primer pedido para empezar a gestionar la producciÃ³n</p>
                 <a href="{% url 'internal_order_create' %}" class="btn btn-jema-primary">
                     <i class="bi bi-plus-lg"></i> Crear Pedido
                 </a>
@@ -299,22 +319,86 @@
 
 {% block extra_js %}
 <script>
-    // Contar pedidos por estado (simplificado, cuenta solo los visibles)
-    document.addEventListener('DOMContentLoaded', function() {
-        const badges = document.querySelectorAll('.status-badge');
-        let draft = 0, confirmed = 0, completed = 0;
+const csrfToken = '{{ csrf_token }}';
 
-        badges.forEach(badge => {
-            const text = badge.textContent.trim();
-            if (text === 'Borrador') draft++;
-            else if (text === 'Confirmado') confirmed++;
-            else if (text === 'Completado') completed++;
-        });
+function refreshStatusCounters() {
+    const selects = document.querySelectorAll('.order-status-select');
+    let draft = 0;
+    let confirmed = 0;
+    let completed = 0;
 
-        // Estos son solo para la página actual, idealmente se harían con una API
-        document.getElementById('draftCount').textContent = draft || '-';
-        document.getElementById('confirmedCount').textContent = confirmed || '-';
-        document.getElementById('completedCount').textContent = completed || '-';
+    selects.forEach((select) => {
+        if (select.value === 'draft') draft += 1;
+        if (select.value === 'confirmed') confirmed += 1;
+        if (select.value === 'completed') completed += 1;
     });
+
+    document.getElementById('draftCount').textContent = draft || '-';
+    document.getElementById('confirmedCount').textContent = confirmed || '-';
+    document.getElementById('completedCount').textContent = completed || '-';
+}
+
+function updateOrderStatus(selectEl) {
+    const orderId = selectEl.dataset.orderId;
+    const newStatus = selectEl.value;
+    const previousStatus = selectEl.dataset.previousStatus || '';
+
+    selectEl.disabled = true;
+    fetch('{% url "api_internal_order_update_status" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            order_id: orderId,
+            status: newStatus
+        })
+    })
+    .then((r) => r.json())
+    .then((res) => {
+        if (res.status !== 'ok') {
+            throw new Error(res.message || 'No se pudo actualizar el estado');
+        }
+
+        const orderData = res.order || {};
+        const financialData = res.financial_status || null;
+
+        const statusBadge = document.getElementById('orderStatusBadge-' + orderId);
+        if (statusBadge) {
+            statusBadge.className = 'status-badge bg-' + (orderData.status_color || 'secondary');
+            statusBadge.textContent = orderData.status_display || orderData.status || 'Actualizado';
+        }
+
+        const financialBadge = document.getElementById('orderFinancialBadge-' + orderId);
+        if (financialBadge && financialData) {
+            financialBadge.className = 'badge ' + (financialData.badge_class || 'bg-secondary');
+            financialBadge.textContent = financialData.state_display || financialData.state || 'Actualizado';
+        }
+
+        selectEl.dataset.previousStatus = orderData.status || newStatus;
+        refreshStatusCounters();
+    })
+    .catch((error) => {
+        if (previousStatus) {
+            selectEl.value = previousStatus;
+        }
+        alert(error.message || 'Error de conexion');
+    })
+    .finally(() => {
+        selectEl.disabled = false;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.order-status-select').forEach((selectEl) => {
+        selectEl.addEventListener('change', function() {
+            updateOrderStatus(selectEl);
+        });
+    });
+
+    refreshStatusCounters();
+});
 </script>
 {% endblock %}
+

@@ -9,7 +9,7 @@ from .models import Product
 from .ai_services import (
     extract_product_name_from_file
 )
-from .services import generar_variantes_vinilo, generar_variantes_impresos
+from .services import sincronizar_variantes_producto
 
 logger = logging.getLogger(__name__)
 
@@ -55,13 +55,8 @@ def process_single_upload_item(item, product_type):
 
     logger.info("Bulk producto creado: #%d - %s", product.id, product.name)
 
-    # 4. Generar variantes según tipo
-    if product_type == 'vinilo_corte':
-        count = generar_variantes_vinilo(product)
-    elif product_type == 'impreso_globo':
-        count = generar_variantes_impresos(product)
-    else:
-        count = 0
+    # 4. Generar variantes segun tipo
+    count = sincronizar_variantes_producto(product)
 
     logger.info("Bulk %d variantes generadas para %s", count, product.name)
 

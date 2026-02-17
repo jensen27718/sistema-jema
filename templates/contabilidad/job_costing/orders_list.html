@@ -63,23 +63,14 @@
                             </td>
                             <td class="small text-muted">{{ fs.created_at|date:"d/m/Y" }}</td>
                             <td class="text-center">
-                                <div class="btn-group btn-group-sm">
-                                    {% if fs.state == 'creado' %}
-                                    <button class="btn btn-outline-primary btn-sm" onclick="transitionState({{ fs.id }}, 'enviado')" title="Marcar Enviado">
-                                        <i class="bi bi-truck"></i>
-                                    </button>
-                                    {% endif %}
-                                    {% if fs.state == 'enviado' %}
-                                    <button class="btn btn-outline-success btn-sm" onclick="transitionState({{ fs.id }}, 'cobrado')" title="Marcar Cobrado">
-                                        <i class="bi bi-cash-coin"></i>
-                                    </button>
-                                    {% endif %}
-                                    {% if fs.state != 'cancelado' %}
-                                    <button class="btn btn-outline-danger btn-sm" onclick="transitionState({{ fs.id }}, 'cancelado')" title="Cancelar">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
-                                    {% endif %}
-                                </div>
+                                <select class="form-select form-select-sm"
+                                        style="max-width: 190px; margin: 0 auto;"
+                                        data-current-state="{{ fs.state }}"
+                                        onchange="transitionState({{ fs.id }}, this)">
+                                    {% for code, label in state_choices %}
+                                    <option value="{{ code }}" {% if fs.state == code %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
                             </td>
                         </tr>
                         {% empty %}
@@ -129,9 +120,15 @@
 <script>
 const csrfToken = '{{ csrf_token }}';
 
-function transitionState(fsId, newState) {
-    const labels = {enviado: 'Enviado', cobrado: 'Cobrado', cancelado: 'Cancelado'};
-    if (!confirm('Cambiar estado a ' + labels[newState] + '?')) return;
+function transitionState(fsId, selectEl) {
+    const newState = selectEl.value;
+    const currentState = selectEl.dataset.currentState || '';
+    const label = selectEl.options[selectEl.selectedIndex]?.text || newState;
+    if (newState === currentState) return;
+    if (!confirm('Cambiar estado a ' + label + '?')) {
+        selectEl.value = currentState;
+        return;
+    }
 
     fetch('{% url "api_jc_transition" %}', {
         method: 'POST',
@@ -143,10 +140,14 @@ function transitionState(fsId, newState) {
         if (res.ok) {
             location.reload();
         } else {
+            selectEl.value = currentState;
             alert(res.message || 'Error');
         }
     })
-    .catch(() => alert('Error de conexion'));
+    .catch(() => {
+        selectEl.value = currentState;
+        alert('Error de conexion');
+    });
 }
 </script>
 {% endblock %}

@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            font-size: 11px;
+            font-size: 12px;
             color: #222;
         }
 
@@ -49,7 +49,7 @@
             width: 100%;
             height: calc(25vh - 0.25cm);
             border: 1.5px solid #333;
-            padding: 8px 12px;
+            padding: 10px 14px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -76,11 +76,11 @@
 
         .guide-number {
             font-weight: 800;
-            font-size: 14px;
+            font-size: 16px;
         }
 
         .guide-date {
-            font-size: 10px;
+            font-size: 11px;
             color: #666;
         }
 
@@ -94,12 +94,12 @@
             flex: 1;
             border: 1px solid #ddd;
             border-radius: 4px;
-            padding: 6px 8px;
+            padding: 8px 10px;
         }
 
         .person-header {
             font-weight: 700;
-            font-size: 10px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #6B2D7B;
@@ -111,20 +111,20 @@
         .person-row {
             display: flex;
             gap: 4px;
-            margin-bottom: 1px;
+            margin-bottom: 2px;
             line-height: 1.4;
         }
 
         .person-label {
             font-weight: 600;
             color: #888;
-            font-size: 9px;
-            min-width: 45px;
+            font-size: 10px;
+            min-width: 54px;
             text-transform: uppercase;
         }
 
         .person-value {
-            font-size: 10px;
+            font-size: 12px;
         }
 
         .guide-footer {
@@ -137,14 +137,14 @@
         }
 
         .guide-obs {
-            font-size: 9px;
+            font-size: 11px;
             color: #555;
             flex: 1;
         }
 
         .guide-collection {
             font-weight: 800;
-            font-size: 13px;
+            font-size: 14px;
             text-align: right;
             white-space: nowrap;
         }
@@ -157,7 +157,7 @@
         @media print {
             .print-controls { display: none !important; }
 
-            body { font-size: 10px; }
+            body { font-size: 11px; }
 
             .guide-block {
                 height: calc(25% - 0.25cm);
@@ -177,7 +177,7 @@
 
             .guide-block {
                 height: auto;
-                min-height: 160px;
+                min-height: 180px;
                 margin-bottom: 0;
             }
         }
@@ -216,7 +216,7 @@
                     </div>
                     <div class="person-row">
                         <span class="person-label">Ciudad</span>
-                        <span class="person-value">{{ guide.sender_city }}</span>
+                        <span class="person-value">{{ guide.sender_city }}{% if guide.sender_department %} ({{ guide.sender_department }}){% endif %}</span>
                     </div>
                     <div class="person-row">
                         <span class="person-label">Dir.</span>
@@ -240,7 +240,7 @@
                     </div>
                     <div class="person-row">
                         <span class="person-label">Ciudad</span>
-                        <span class="person-value">{{ guide.recipient_city }}</span>
+                        <span class="person-value">{{ guide.recipient_city }}{% if guide.recipient_department %} ({{ guide.recipient_department }}){% endif %}</span>
                     </div>
                     <div class="person-row">
                         <span class="person-label">Dir.</span>

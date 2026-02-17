@@ -11,7 +11,9 @@ class InternalOrder(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Borrador'),
         ('confirmed', 'Confirmado'),
+        ('material_purchased', 'Material Comprado'),
         ('in_production', 'En Producción'),
+        ('delivered', 'Entregado'),
         ('completed', 'Completado'),
         ('cancelled', 'Cancelado'),
     ]
@@ -69,7 +71,9 @@ class InternalOrder(models.Model):
         colors = {
             'draft': 'secondary',
             'confirmed': 'primary',
+            'material_purchased': 'info',
             'in_production': 'warning',
+            'delivered': 'success',
             'completed': 'success',
             'cancelled': 'danger',
         }

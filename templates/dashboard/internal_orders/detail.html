@@ -111,15 +111,14 @@
             {% if financial_status %}
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="badge {{ financial_status.get_state_badge_class }} fs-6">{{ financial_status.get_state_display }}</span>
-                {% if financial_status.state == 'creado' %}
-                <button class="btn btn-sm btn-outline-primary" onclick="transitionFinancialState({{ financial_status.id }}, 'enviado')">Marcar Enviado</button>
-                {% endif %}
-                {% if financial_status.state == 'enviado' %}
-                <button class="btn btn-sm btn-outline-success" onclick="transitionFinancialState({{ financial_status.id }}, 'cobrado')">Marcar Cobrado</button>
-                {% endif %}
-                {% if financial_status.state != 'cancelado' %}
-                <button class="btn btn-sm btn-outline-danger" onclick="transitionFinancialState({{ financial_status.id }}, 'cancelado')">Cancelar</button>
-                {% endif %}
+                <select id="financialStateSelect" class="form-select form-select-sm" style="max-width: 220px;">
+                    {% for code, label in financial_state_choices %}
+                    <option value="{{ code }}" {% if financial_status.state == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-sm btn-outline-primary" onclick="applyFinancialState({{ financial_status.id }})">
+                    Actualizar estado
+                </button>
                 <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="loadProfitability({{ financial_status.id }})">
                     <i class="bi bi-calculator"></i> Ver Rentabilidad
                 </button>
@@ -580,9 +579,17 @@ function updateDiscountPercentage() {
     }).catch(() => alert('Error de conexion al actualizar descuento'));
 }
 
-function transitionFinancialState(fsId, newState) {
-    const labels = {enviado: 'Enviado', cobrado: 'Cobrado', cancelado: 'Cancelado'};
-    if (!confirm('Cambiar estado financiero a ' + labels[newState] + '?')) return;
+function applyFinancialState(fsId) {
+    const select = document.getElementById('financialStateSelect');
+    if (!select) return;
+    const newState = select.value;
+    const label = select.options[select.selectedIndex]?.text || newState;
+    transitionFinancialState(fsId, newState, label);
+}
+
+function transitionFinancialState(fsId, newState, newLabel) {
+    const label = newLabel || newState;
+    if (!confirm('Cambiar estado financiero a ' + label + '?')) return;
     fetch('{% url "api_jc_transition" %}', {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},

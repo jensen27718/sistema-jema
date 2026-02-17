@@ -105,6 +105,7 @@ def quick_client_create_view(request):
         name = request.POST.get('name', '').strip()
         phone = request.POST.get('phone', '').strip()
         email = request.POST.get('email', '').strip()
+        address = request.POST.get('address', '').strip()
         
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
         
@@ -133,6 +134,7 @@ def quick_client_create_view(request):
                     password=random_pass,
                     first_name=name,
                     phone_number=phone,
+                    address=address or None,
                     role=User.Role.CUSTOMER
                 )
                 
@@ -179,6 +181,8 @@ def client_update_view(request, user_id):
         client.first_name = request.POST.get('name', '').strip()
         client.phone_number = request.POST.get('phone', '').strip()
         client.email = request.POST.get('email', '').strip()
+        client.cedula = request.POST.get('cedula', '').strip()
+        client.address = request.POST.get('address', '').strip()
         
         if not client.first_name or not client.phone_number:
             messages.error(request, "El nombre y el teléfono son obligatorios.")

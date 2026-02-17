@@ -30,6 +30,18 @@
                         required placeholder="Ej: 3001234567">
                 </div>
 
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">CÉDULA (OPCIONAL)</label>
+                    <input type="text" name="cedula" class="form-control" value="{{ client.cedula|default:'' }}"
+                        placeholder="Ej: 1020304050">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">DIRECCIÓN (OPCIONAL)</label>
+                    <textarea name="address" class="form-control" rows="3"
+                        placeholder="Ej: Calle 10 #20-30, Barrio Centro">{{ client.address|default:'' }}</textarea>
+                </div>
+
                 <div class="mb-4">
                     <label class="form-label small fw-bold text-muted">CORREO ELECTRÓNICO (OPCIONAL)</label>
                     <input type="email" name="email" class="form-control" value="{{ client.email|default:'' }}"

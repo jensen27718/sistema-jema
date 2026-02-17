@@ -92,7 +92,7 @@
                             <span class="info-label">Celular</span><br>
                             {{ guide.sender_phone }}<br>
                             <span class="info-label">Ciudad</span><br>
-                            {{ guide.sender_city }}<br>
+                            {{ guide.sender_city }}{% if guide.sender_department %} ({{ guide.sender_department }}){% endif %}<br>
                             <span class="info-label">Dirección</span><br>
                             {{ guide.sender_address }}
                         </div>
@@ -110,7 +110,7 @@
                             <span class="info-label">Celular</span><br>
                             {{ guide.recipient_phone }}<br>
                             <span class="info-label">Ciudad</span><br>
-                            {{ guide.recipient_city }}<br>
+                            {{ guide.recipient_city }}{% if guide.recipient_department %} ({{ guide.recipient_department }}){% endif %}<br>
                             <span class="info-label">Dirección</span><br>
                             {{ guide.recipient_address }}
                         </div>

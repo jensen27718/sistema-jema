@@ -10,7 +10,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
-from django.db.models import Q, Sum, F
+from django.db.models import F, Max, Q, Sum
 from django.views.decorators.http import require_POST, require_GET
 from django.core.paginator import Paginator
 
@@ -25,6 +25,20 @@ def is_staff(user):
     return user.is_staff or user.is_superuser
 
 
+def _latest_active_product_ids(product_type=None):
+    """
+    Retorna IDs de productos activos manteniendo solo el registro mas reciente
+    por combinacion (name, product_type). Evita mostrar duplicados antiguos.
+    """
+    products = Product.objects.filter(is_active=True)
+    if product_type:
+        products = products.filter(product_type=product_type)
+
+    return products.values('name', 'product_type').annotate(
+        latest_id=Max('id')
+    ).values_list('latest_id', flat=True)
+
+
 # ============================================================
 # VISTAS DE PÁGINAS
 # ============================================================
@@ -33,7 +47,7 @@ def is_staff(user):
 @user_passes_test(is_staff)
 def internal_orders_list_view(request):
     """Lista de todos los pedidos internos"""
-    orders = InternalOrder.objects.all().select_related('created_by')
+    orders = InternalOrder.objects.all().select_related('created_by', 'financial_status')
 
     # Filtro por estado
     status_filter = request.GET.get('status')
@@ -52,6 +66,12 @@ def internal_orders_list_view(request):
     paginator = Paginator(orders, 20)
     page = request.GET.get('page', 1)
     orders_page = paginator.get_page(page)
+
+    # Garantiza estado financiero para cada fila visible (evita "Sin estado" por datos antiguos).
+    from contabilidad.job_costing_services import ensure_financial_status
+    for order in orders_page.object_list:
+        if not hasattr(order, 'financial_status'):
+            order.financial_status = ensure_financial_status(internal_order=order)
 
     context = {
         'orders': orders_page,
@@ -195,6 +215,7 @@ def internal_order_detail_view(request, order_id):
 
     # Estado financiero (Job Costing)
     from contabilidad.job_costing_services import ensure_financial_status
+    from contabilidad.models_job_costing import FinancialStatus
     financial_status = ensure_financial_status(internal_order=order)
 
     context = {
@@ -208,6 +229,7 @@ def internal_order_detail_view(request, order_id):
         'grand_total_cost': grand_total_cost,
         'margin': margin,
         'financial_status': financial_status,
+        'financial_state_choices': FinancialStatus.STATE_CHOICES,
     }
     return render(request, 'dashboard/internal_orders/detail.html', context)
 
@@ -252,14 +274,63 @@ def internal_order_update_status_view(request, order_id):
 
         if new_status in valid_statuses:
             order.status = new_status
-            order.save()
+            order.save(update_fields=['status'])
+            from contabilidad.job_costing_services import sync_internal_order_financial_status
+            sync_internal_order_financial_status(order, allow_downgrade=True)
 
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER')
+    if next_url:
+        return redirect(next_url)
     return redirect('internal_order_edit', order_id=order.id)
 
 
 # ============================================================
 # APIs AJAX
 # ============================================================
+
+@login_required
+@user_passes_test(is_staff)
+@require_POST
+def api_internal_order_update_status(request):
+    """Actualiza estado operativo por AJAX y sincroniza Job Costing."""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'JSON inválido'}, status=400)
+
+    order_id = data.get('order_id')
+    new_status = data.get('status')
+    if not order_id or not new_status:
+        return JsonResponse({'status': 'error', 'message': 'Parámetros faltantes'}, status=400)
+
+    valid_statuses = [s[0] for s in InternalOrder.STATUS_CHOICES]
+    if new_status not in valid_statuses:
+        return JsonResponse({'status': 'error', 'message': 'Estado inválido'}, status=400)
+
+    order = get_object_or_404(InternalOrder, id=order_id)
+    if order.status != new_status:
+        order.status = new_status
+        order.save(update_fields=['status'])
+
+    from contabilidad.job_costing_services import sync_internal_order_financial_status
+    financial_status = sync_internal_order_financial_status(order, allow_downgrade=True)
+
+    return JsonResponse({
+        'status': 'ok',
+        'order': {
+            'id': order.id,
+            'status': order.status,
+            'status_display': order.get_status_display(),
+            'status_color': order.get_status_color(),
+        },
+        'financial_status': {
+            'id': financial_status.id,
+            'state': financial_status.state,
+            'state_display': financial_status.get_state_display(),
+            'badge_class': financial_status.get_state_badge_class(),
+        } if financial_status else None,
+    })
+
 
 @login_required
 @require_POST
@@ -275,9 +346,9 @@ def api_get_available_filters(request):
 
     product_type = data.get('product_type', '')
 
-    # 1. Base: Solo variantes de productos ACTIVOS
-    # Usamos 'select_related' para optimizar
-    variants_query = ProductVariant.objects.filter(product__is_active=True)
+    # 1. Base: solo variantes de productos activos y no duplicados por nombre/tipo
+    latest_product_ids = _latest_active_product_ids(product_type if product_type else None)
+    variants_query = ProductVariant.objects.filter(product_id__in=latest_product_ids)
 
     # 2. Si hay tipo seleccionado, filtramos estrictamente
     if product_type:
@@ -329,15 +400,17 @@ def api_filter_variants(request):
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'JSON inválido'}, status=400)
 
-    # 1. Base: Solo productos ONLINE (Evita productos viejos)
+    product_type = data.get('product_type')
+    latest_product_ids = _latest_active_product_ids(product_type if product_type else None)
+
+    # 1. Base: Solo productos activos no duplicados (evita productos viejos repetidos)
     variants = ProductVariant.objects.select_related(
         'product', 'size', 'material', 'color'
-    ).filter(product__is_active=True)
+    ).filter(product_id__in=latest_product_ids)
 
     # --- APLICACIÓN DE FILTROS ---
 
     # Tipo de Producto
-    product_type = data.get('product_type')
     if product_type:
         variants = variants.filter(product__product_type=product_type)
 
@@ -618,13 +691,15 @@ def api_internal_order_auto_select(request):
 
     order = get_object_or_404(InternalOrder, id=order_id)
 
+    product_type = data.get('product_type')
+    latest_product_ids = _latest_active_product_ids(product_type if product_type else None)
+
     # Construir query con filtros
     variants = ProductVariant.objects.select_related(
         'product', 'size', 'material', 'color'
-    ).filter(product__is_active=True)
+    ).filter(product_id__in=latest_product_ids)
 
     # Aplicar filtros
-    product_type = data.get('product_type')
     if product_type:
         variants = variants.filter(product__product_type=product_type)
 
