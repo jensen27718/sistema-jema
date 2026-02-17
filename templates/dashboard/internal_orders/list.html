@@ -217,14 +217,25 @@
                                 </div>
                             </td>
                             <td>
-                                <span id="orderFinancialBadge-{{ order.id }}"
-                                      class="badge {% if order.financial_status %}{{ order.financial_status.get_state_badge_class }}{% else %}bg-secondary{% endif %}">
-                                    {% if order.financial_status %}
-                                        {{ order.financial_status.get_state_display }}
-                                    {% else %}
-                                        Sin estado
-                                    {% endif %}
-                                </span>
+                                <div class="d-flex flex-column gap-2">
+                                    <span id="orderFinancialBadge-{{ order.id }}"
+                                          class="badge {% if order.financial_status %}{{ order.financial_status.get_state_badge_class }}{% else %}bg-secondary{% endif %}">
+                                        {% if order.financial_status %}
+                                            {{ order.financial_status.get_state_display }}
+                                        {% else %}
+                                            Sin estado
+                                        {% endif %}
+                                    </span>
+                                    <select class="form-select form-select-sm financial-state-select"
+                                            data-order-id="{{ order.id }}"
+                                            data-financial-status-id="{% if order.financial_status %}{{ order.financial_status.id }}{% endif %}"
+                                            data-current-state="{% if order.financial_status %}{{ order.financial_status.state }}{% endif %}"
+                                            {% if not order.financial_status %}disabled{% endif %}>
+                                        {% for code, label in financial_state_choices %}
+                                        <option value="{{ code }}" {% if order.financial_status and order.financial_status.state == code %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </td>
                             <td>
                                 <span class="fw-bold">{{ order.total_items }}</span>
@@ -390,10 +401,64 @@ function updateOrderStatus(selectEl) {
     });
 }
 
+function updateOrderFinancialState(selectEl) {
+    const fsId = selectEl.dataset.financialStatusId;
+    const currentState = selectEl.dataset.currentState || '';
+    const newState = selectEl.value;
+    const label = selectEl.options[selectEl.selectedIndex]?.text || newState;
+
+    if (!fsId || newState === currentState) return;
+    if (!confirm('Cambiar estado financiero a ' + label + '?')) {
+        selectEl.value = currentState;
+        return;
+    }
+
+    selectEl.disabled = true;
+    fetch('{% url "api_jc_transition" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            financial_status_id: fsId,
+            new_state: newState
+        })
+    })
+    .then((r) => r.json())
+    .then((res) => {
+        if (!res.ok) {
+            throw new Error(res.message || 'No se pudo actualizar el estado financiero');
+        }
+
+        const orderId = selectEl.dataset.orderId;
+        const financialBadge = document.getElementById('orderFinancialBadge-' + orderId);
+        if (financialBadge) {
+            financialBadge.className = 'badge ' + (res.badge_class || 'bg-secondary');
+            financialBadge.textContent = res.new_state_display || newState;
+        }
+
+        selectEl.dataset.currentState = res.new_state || newState;
+    })
+    .catch((error) => {
+        selectEl.value = currentState;
+        alert(error.message || 'Error de conexion');
+    })
+    .finally(() => {
+        selectEl.disabled = false;
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.order-status-select').forEach((selectEl) => {
         selectEl.addEventListener('change', function() {
             updateOrderStatus(selectEl);
+        });
+    });
+
+    document.querySelectorAll('.financial-state-select').forEach((selectEl) => {
+        selectEl.addEventListener('change', function() {
+            updateOrderFinancialState(selectEl);
         });
     });
 

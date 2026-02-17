@@ -73,11 +73,16 @@ def internal_orders_list_view(request):
         if not hasattr(order, 'financial_status'):
             order.financial_status = ensure_financial_status(internal_order=order)
 
+    from contabilidad.models_job_costing import FinancialStatus
+
     context = {
         'orders': orders_page,
         'status_choices': InternalOrder.STATUS_CHOICES,
         'current_status': status_filter,
         'search_query': search or '',
+        'financial_state_choices': [
+            (code, label) for code, label in FinancialStatus.STATE_CHOICES if code != 'enviado'
+        ],
     }
     return render(request, 'dashboard/internal_orders/list.html', context)
 

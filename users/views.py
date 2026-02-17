@@ -83,7 +83,8 @@ def dashboard_home_view(request):
 @login_required
 @user_passes_test(is_staff)
 def dashboard_pedidos_view(request):
-    return render(request, 'dashboard/pedidos.html')
+    # Legacy route: redirige al listado real de pedidos.
+    return redirect('/panel/ordenes/')
 
 @login_required
 @user_passes_test(is_staff)

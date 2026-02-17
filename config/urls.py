@@ -69,6 +69,7 @@ urlpatterns = [
     # --- RUTAS DE PEDIDOS (ADMIN) ---
     path('panel/ordenes/', views_products.panel_orders_list_view, name='panel_pedidos'), # Reemplaza el placeholder
     path('panel/ordenes/<int:order_id>/', views_products.panel_order_detail_view, name='panel_order_detail'),
+    path('api/orders/update-status/', views_products.api_panel_order_update_status_view, name='api_panel_order_update_status'),
 
     # --- RUTAS DE CARRITOS (ADMIN) ---
     path('panel/carritos/', views_products.panel_cart_list_view, name='panel_cart_list'),

@@ -373,17 +373,70 @@ def status_delete_view(request, status_id):
 def panel_orders_list_view(request):
     # Filtros básicos
     status_id = request.GET.get('status')
-    orders = Order.objects.all().select_related('status', 'user').order_by('-created_at')
+    orders = Order.objects.all().select_related('status', 'user', 'financial_status').order_by('-created_at')
     
     if status_id:
         orders = orders.filter(status_id=status_id)
         
     statuses = OrderStatus.objects.all()
+
+    from contabilidad.job_costing_services import ensure_financial_status
+    for order in orders:
+        if not hasattr(order, 'financial_status'):
+            order.financial_status = ensure_financial_status(order=order)
+
+    from contabilidad.models_job_costing import FinancialStatus
+    financial_state_choices = [
+        (code, label) for code, label in FinancialStatus.STATE_CHOICES if code != 'enviado'
+    ]
     
     return render(request, 'dashboard/orders/list.html', {
         'orders': orders, 
         'statuses': statuses,
-        'current_status': int(status_id) if status_id else None
+        'current_status': int(status_id) if status_id else None,
+        'financial_state_choices': financial_state_choices,
+    })
+
+
+@login_required
+@user_passes_test(is_staff)
+def api_panel_order_update_status_view(request):
+    """Actualiza estado operativo de pedido catalogo desde la lista."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'POST requerido'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'JSON inválido'}, status=400)
+
+    order_id = data.get('order_id')
+    status_id = data.get('status_id')
+    if not order_id or not status_id:
+        return JsonResponse({'status': 'error', 'message': 'Parámetros faltantes'}, status=400)
+
+    order = get_object_or_404(Order, id=order_id)
+    status = get_object_or_404(OrderStatus, id=status_id)
+    order.status = status
+    order.save(update_fields=['status'])
+
+    from contabilidad.job_costing_services import ensure_financial_status
+    financial_status = ensure_financial_status(order=order)
+
+    return JsonResponse({
+        'status': 'ok',
+        'order': {
+            'id': order.id,
+            'status_id': order.status_id,
+            'status_name': order.status.name,
+            'status_color': order.status.color,
+        },
+        'financial_status': {
+            'id': financial_status.id,
+            'state': financial_status.state,
+            'state_display': financial_status.get_state_display(),
+            'badge_class': financial_status.get_state_badge_class(),
+        },
     })
 
 @login_required

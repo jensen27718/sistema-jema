@@ -38,7 +38,8 @@
                     <th class="ps-4">Pedido #</th>
                     <th>Cliente</th>
                     <th>Fecha</th>
-                    <th>Estado</th>
+                    <th>Estado Operativo</th>
+                    <th>Estado Financiero</th>
                     <th>Total</th>
                     <th>Acciones</th>
                 </tr>
@@ -55,14 +56,44 @@
                     </td>
                     <td class="small text-muted">{{ order.created_at|date:"d M Y, h:i a" }}</td>
                     <td>
-                        {% if order.status %}
-                        <span class="badge rounded-pill"
-                            style="background-color: {{ order.status.color }}; color: white; padding: 6px 12px; font-weight: 500;">
-                            {{ order.status.name }}
-                        </span>
-                        {% else %}
-                        <span class="badge bg-secondary rounded-pill">Sin Estado</span>
-                        {% endif %}
+                        <div class="d-flex flex-column gap-2" style="min-width: 190px;">
+                            {% if order.status %}
+                            <span id="orderStatusBadge-{{ order.id }}" class="badge rounded-pill"
+                                style="background-color: {{ order.status.color }}; color: white; padding: 6px 12px; font-weight: 500;">
+                                {{ order.status.name }}
+                            </span>
+                            {% else %}
+                            <span id="orderStatusBadge-{{ order.id }}" class="badge bg-secondary rounded-pill">Sin Estado</span>
+                            {% endif %}
+                            <select class="form-select form-select-sm order-status-select"
+                                    data-order-id="{{ order.id }}"
+                                    data-previous-status-id="{{ order.status_id|default:'' }}">
+                                {% for status in statuses %}
+                                <option value="{{ status.id }}" {% if order.status_id == status.id %}selected{% endif %}>{{ status.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex flex-column gap-2" style="min-width: 210px;">
+                            <span id="orderFinancialBadge-{{ order.id }}"
+                                  class="badge {% if order.financial_status %}{{ order.financial_status.get_state_badge_class }}{% else %}bg-secondary{% endif %}">
+                                {% if order.financial_status %}
+                                    {{ order.financial_status.get_state_display }}
+                                {% else %}
+                                    Sin estado
+                                {% endif %}
+                            </span>
+                            <select class="form-select form-select-sm financial-state-select"
+                                    data-order-id="{{ order.id }}"
+                                    data-financial-status-id="{% if order.financial_status %}{{ order.financial_status.id }}{% endif %}"
+                                    data-current-state="{% if order.financial_status %}{{ order.financial_status.state }}{% endif %}"
+                                    {% if not order.financial_status %}disabled{% endif %}>
+                                {% for code, label in financial_state_choices %}
+                                <option value="{{ code }}" {% if order.financial_status and order.financial_status.state == code %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </td>
                     <td class="fw-bold">${{ order.total|intcomma }}</td>
                     <td>
@@ -73,7 +104,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center py-5 text-muted">
+                    <td colspan="7" class="text-center py-5 text-muted">
                         <i class="bi bi-search fs-1 d-block mb-3 opacity-25"></i>
                         No se encontraron pedidos con este filtro.
                     </td>
@@ -83,4 +114,115 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function updateCatalogOrderStatus(selectEl) {
+    const orderId = selectEl.dataset.orderId;
+    const newStatusId = selectEl.value;
+    const previousStatusId = selectEl.dataset.previousStatusId || '';
+
+    selectEl.disabled = true;
+    fetch('{% url "api_panel_order_update_status" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({order_id: orderId, status_id: newStatusId})
+    })
+    .then((r) => r.json())
+    .then((res) => {
+        if (res.status !== 'ok') {
+            throw new Error(res.message || 'No se pudo actualizar el estado');
+        }
+
+        const orderData = res.order || {};
+        const financialData = res.financial_status || null;
+
+        const statusBadge = document.getElementById('orderStatusBadge-' + orderId);
+        if (statusBadge) {
+            statusBadge.className = 'badge rounded-pill';
+            statusBadge.style.backgroundColor = orderData.status_color || '#6c757d';
+            statusBadge.style.color = 'white';
+            statusBadge.style.padding = '6px 12px';
+            statusBadge.style.fontWeight = '500';
+            statusBadge.textContent = orderData.status_name || 'Sin Estado';
+        }
+
+        if (financialData) {
+            const financialBadge = document.getElementById('orderFinancialBadge-' + orderId);
+            if (financialBadge) {
+                financialBadge.className = 'badge ' + (financialData.badge_class || 'bg-secondary');
+                financialBadge.textContent = financialData.state_display || financialData.state || 'Actualizado';
+            }
+        }
+
+        selectEl.dataset.previousStatusId = orderData.status_id || newStatusId;
+    })
+    .catch((error) => {
+        if (previousStatusId) selectEl.value = previousStatusId;
+        alert(error.message || 'Error de conexion');
+    })
+    .finally(() => {
+        selectEl.disabled = false;
+    });
+}
+
+function updateCatalogFinancialState(selectEl) {
+    const fsId = selectEl.dataset.financialStatusId;
+    const currentState = selectEl.dataset.currentState || '';
+    const newState = selectEl.value;
+    const label = selectEl.options[selectEl.selectedIndex]?.text || newState;
+
+    if (!fsId || newState === currentState) return;
+    if (!confirm('Cambiar estado financiero a ' + label + '?')) {
+        selectEl.value = currentState;
+        return;
+    }
+
+    selectEl.disabled = true;
+    fetch('{% url "api_jc_transition" %}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({financial_status_id: fsId, new_state: newState})
+    })
+    .then((r) => r.json())
+    .then((res) => {
+        if (!res.ok) {
+            throw new Error(res.message || 'No se pudo actualizar estado financiero');
+        }
+
+        const orderId = selectEl.dataset.orderId;
+        const badge = document.getElementById('orderFinancialBadge-' + orderId);
+        if (badge) {
+            badge.className = 'badge ' + (res.badge_class || 'bg-secondary');
+            badge.textContent = res.new_state_display || newState;
+        }
+
+        selectEl.dataset.currentState = res.new_state || newState;
+    })
+    .catch((error) => {
+        selectEl.value = currentState;
+        alert(error.message || 'Error de conexion');
+    })
+    .finally(() => {
+        selectEl.disabled = false;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.order-status-select').forEach((selectEl) => {
+        selectEl.addEventListener('change', function() {
+            updateCatalogOrderStatus(selectEl);
+        });
+    });
+
+    document.querySelectorAll('.financial-state-select').forEach((selectEl) => {
+        selectEl.addEventListener('change', function() {
+            updateCatalogFinancialState(selectEl);
+        });
+    });
+});
+</script>
 {% endblock %}
